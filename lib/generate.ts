@@ -1,14 +1,24 @@
 import { sql } from "@/lib/db";
 import { generateScript, estimateCostCents } from "@/lib/claude";
 import { synthesize, estimateDurationSeconds } from "@/lib/tts";
-import type { Show, Briefing, Episode } from "@/lib/types";
+import type { Show, Briefing, Episode, NarrationMode } from "@/lib/types";
 
-// One run = one episode for a show. Reads active briefings, writes a script via
-// Claude, renders audio via TTS, stores the mp3, and persists episode + run rows.
-export async function generateEpisode(showId: string): Promise<{ episode: Episode; runId: string }> {
+// One run = one episode for a show. Reads active briefings and writes a script
+// via Claude, then either:
+//   - "auto":     renders audio via TTS, stores the mp3 → a published episode.
+//   - "external": skips TTS and saves a script-only draft. The user narrates it
+//                 externally (e.g. in Muse) and uploads the finished mp3 into the
+//                 episode via POST /api/episodes/[id]/audio (Pattern A).
+export async function generateEpisode(
+  showId: string,
+  modeOverride?: NarrationMode,
+): Promise<{ episode: Episode; runId: string }> {
   const showRows = (await sql`select * from shows where id = ${showId}`) as Show[];
   const show = showRows[0];
   if (!show) throw new Error("Show not found");
+
+  const mode: NarrationMode =
+    modeOverride ?? (show.narration_mode === "external" ? "external" : "auto");
 
   const briefings = (await sql`
     select * from show_briefings
@@ -35,10 +45,38 @@ export async function generateEpisode(showId: string): Promise<{ episode: Episod
       briefings: briefings.map((b) => ({ filename: b.filename, content_md: b.content_md })),
     });
 
-    const tts = await synthesize(result.script, show.voice_id);
     const duration = estimateDurationSeconds(result.script);
-    const byteSize = tts.audio.length;
     const costCents = estimateCostCents(inputTokens, outputTokens);
+
+    if (mode === "external") {
+      // Script-only: create a draft episode, no TTS. The user uploads the mp3.
+      const episodeRows = (await sql`
+        insert into episodes
+          (show_id, title, script, show_notes, duration_seconds, status)
+        values
+          (${showId}, ${result.title}, ${result.script}, ${result.show_notes},
+           ${duration}, 'draft')
+        returning *
+      `) as Episode[];
+      const episode = episodeRows[0];
+
+      await sql`
+        update runs set
+          status = 'done',
+          episode_id = ${episode.id},
+          model = ${model},
+          tts_provider = 'external',
+          cost_cents = ${costCents},
+          finished_at = now()
+        where id = ${runId}
+      `;
+
+      return { episode, runId };
+    }
+
+    // "auto": render audio and publish.
+    const tts = await synthesize(result.script, show.voice_id);
+    const byteSize = tts.audio.length;
 
     const episodeRows = (await sql`
       insert into episodes

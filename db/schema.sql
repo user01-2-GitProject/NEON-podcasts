@@ -16,6 +16,7 @@ create table if not exists shows (
   title          text not null,
   description    text not null default '',
   voice_id       text,
+  narration_mode text not null default 'auto',        -- auto (app renders TTS) | external (script-only, e.g. Muse)
   cadence        text not null default 'weekly',      -- daily | weekly | manual
   schedule_time  text not null default '09:00',       -- HH:MM local
   timezone       text not null default 'UTC',

@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 import type { Episode, Run } from "@/lib/types";
 
 function fmtDuration(seconds: number | null): string {
@@ -12,6 +14,56 @@ function fmtDuration(seconds: number | null): string {
 function fmtSize(bytes: number | null): string {
   if (!bytes) return "—";
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function UploadAudio({ episodeId }: { episodeId: string }) {
+  const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(`/api/episodes/${episodeId}/audio`, {
+        method: "POST",
+        body: form,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  return (
+    <span>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="audio/*,.mp3,.m4a,.wav"
+        style={{ display: "none" }}
+        onChange={onFile}
+      />
+      <button
+        className="btn secondary"
+        disabled={busy}
+        onClick={() => inputRef.current?.click()}
+      >
+        {busy ? "Uploading…" : "Upload audio"}
+      </button>
+      {error ? <span className="error" style={{ marginLeft: 8 }}>{error}</span> : null}
+    </span>
+  );
 }
 
 export default function EpisodesPanel({
@@ -53,12 +105,26 @@ export default function EpisodesPanel({
                   {new Date(ep.created_at).toLocaleString()}
                 </div>
               </div>
-              {ep.audio_url ? (
-                <a className="btn" href={`${ep.audio_url}?download=1`}>
-                  Download mp3
+              <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+                <a className="btn secondary" href={`/api/episodes/${ep.id}/script`}>
+                  Download script (.md)
                 </a>
-              ) : null}
+                {ep.audio_url ? (
+                  <a className="btn" href={`${ep.audio_url}?download=1`}>
+                    Download mp3
+                  </a>
+                ) : (
+                  <UploadAudio episodeId={ep.id} />
+                )}
+              </div>
             </div>
+
+            {!ep.audio_url ? (
+              <p className="muted" style={{ marginTop: 8 }}>
+                Script-only draft. Narrate it externally (e.g. in Muse), then upload the finished
+                audio to publish this episode.
+              </p>
+            ) : null}
 
             {ep.audio_url ? <audio controls preload="none" src={ep.audio_url} /> : null}
 

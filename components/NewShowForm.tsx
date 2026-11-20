@@ -8,6 +8,7 @@ export default function NewShowForm() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [cadence, setCadence] = useState("weekly");
+  const [narrationMode, setNarrationMode] = useState("auto");
   const [targetMinutes, setTargetMinutes] = useState(5);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +25,7 @@ export default function NewShowForm() {
           title,
           description,
           cadence,
+          narration_mode: narrationMode,
           target_minutes: targetMinutes,
         }),
       });
@@ -59,6 +61,17 @@ export default function NewShowForm() {
               <option value="manual">Manual</option>
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="narration">Narration</label>
+            <select
+              id="narration"
+              value={narrationMode}
+              onChange={(e) => setNarrationMode(e.target.value)}
+            >
+              <option value="auto">Auto (app renders TTS)</option>
+              <option value="external">Script only (e.g. Muse)</option>
             </select>
           </div>
           <div>

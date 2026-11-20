@@ -52,7 +52,11 @@ export default async function ShowPage({ params }: { params: Promise<{ id: strin
 
         <BriefingsPanel showId={id} initialBriefings={briefings} />
 
-        <GeneratePanel showId={id} activeBriefings={activeBriefings} />
+        <GeneratePanel
+          showId={id}
+          activeBriefings={activeBriefings}
+          narrationMode={show.narration_mode === "external" ? "external" : "auto"}
+        />
 
         <EpisodesPanel initialEpisodes={episodes} runs={runs} />
       </div>

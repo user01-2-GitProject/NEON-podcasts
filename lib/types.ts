@@ -1,4 +1,5 @@
 export type Cadence = "daily" | "weekly" | "manual";
+export type NarrationMode = "auto" | "external";
 export type EpisodeStatus = "draft" | "published" | "failed";
 export type RunStatus = "queued" | "running" | "done" | "failed";
 
@@ -8,6 +9,7 @@ export interface Show {
   title: string;
   description: string;
   voice_id: string | null;
+  narration_mode: NarrationMode;
   cadence: Cadence;
   schedule_time: string;
   timezone: string;

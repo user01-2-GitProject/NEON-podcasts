@@ -16,6 +16,7 @@ export async function POST(req: Request) {
 
   const description = (body.description || "").toString();
   const voiceId = body.voice_id ? body.voice_id.toString() : null;
+  const narrationMode = body.narration_mode === "external" ? "external" : "auto";
   const cadence = ["daily", "weekly", "manual"].includes(body.cadence) ? body.cadence : "weekly";
   const scheduleTime = (body.schedule_time || "09:00").toString();
   const timezone = (body.timezone || "UTC").toString();
@@ -24,8 +25,10 @@ export async function POST(req: Request) {
     : 5;
 
   const rows = (await sql`
-    insert into shows (title, description, voice_id, cadence, schedule_time, timezone, target_minutes)
-    values (${title}, ${description}, ${voiceId}, ${cadence}, ${scheduleTime}, ${timezone}, ${targetMinutes})
+    insert into shows
+      (title, description, voice_id, narration_mode, cadence, schedule_time, timezone, target_minutes)
+    values
+      (${title}, ${description}, ${voiceId}, ${narrationMode}, ${cadence}, ${scheduleTime}, ${timezone}, ${targetMinutes})
     returning *
   `) as Show[];
 
