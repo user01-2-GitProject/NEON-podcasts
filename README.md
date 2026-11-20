@@ -12,7 +12,8 @@ See [`docs/PLAN.md`](docs/PLAN.md) for the full plan. This is the first build sl
 
 - **Next.js 15** (App Router, TypeScript) — deploy to Vercel
 - **Neon Postgres** — `@neondatabase/serverless`
-- **Claude API** — `@anthropic-ai/sdk` (script generation)
+- **Script LLM** — Claude via `@anthropic-ai/sdk`, **or OpenRouter** (one key for
+  Claude + OpenAI + more). Pick with `LLM_PROVIDER`.
 - **TTS** — OpenAI, ElevenLabs, or a **local / self-hosted** OpenAI-compatible
   engine (Kokoro, Piper via openedai-speech, LocalAI). See "Local voices" below.
 - Audio is stored in Postgres for the MVP (swap to R2/S3 later)
@@ -28,7 +29,8 @@ See [`docs/PLAN.md`](docs/PLAN.md) for the full plan. This is the first build sl
 2. **Configure env** — copy `.env.example` to `.env.local` and fill in:
    - `DATABASE_URL` — Neon pooled connection string
    - `APP_PASSWORD` + `AUTH_SECRET` — the dashboard login gate
-   - `ANTHROPIC_API_KEY` — for script generation
+   - Script LLM: `LLM_PROVIDER=anthropic` + `ANTHROPIC_API_KEY`, **or**
+     `LLM_PROVIDER=openrouter` + `OPENROUTER_API_KEY` (+ optional `OPENROUTER_MODEL`)
    - TTS: `TTS_PROVIDER` = `openai` (`OPENAI_API_KEY`), `elevenlabs` (`ELEVENLABS_API_KEY`), or `local` (see Local voices)
 
 3. **Create the schema**

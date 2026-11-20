@@ -7,6 +7,9 @@ export interface GeneratedScript {
 }
 
 export const DEFAULT_MODEL = "claude-sonnet-5-5";
+// Default model slug used when routing through OpenRouter. Override with
+// OPENROUTER_MODEL (any slug from https://openrouter.ai/models, e.g. openai/gpt-4o).
+export const DEFAULT_OPENROUTER_MODEL = "anthropic/claude-sonnet-4.5";
 
 interface GenerateArgs {
   showTitle: string;
@@ -15,17 +18,26 @@ interface GenerateArgs {
   briefings: { filename: string; content_md: string }[];
 }
 
-export async function generateScript(args: GenerateArgs): Promise<{
+interface LlmResult {
   result: GeneratedScript;
   model: string;
   inputTokens: number;
   outputTokens: number;
-}> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
-  const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
-  const client = new Anthropic({ apiKey });
+}
 
+// Script generation. Routes to Anthropic (default) or OpenRouter based on
+// LLM_PROVIDER. OpenRouter lets one key reach Claude *and* OpenAI (and others).
+export async function generateScript(args: GenerateArgs): Promise<LlmResult> {
+  const { system, userText } = buildPrompt(args);
+  const provider = (process.env.LLM_PROVIDER || "anthropic").toLowerCase();
+
+  if (provider === "openrouter") {
+    return viaOpenRouter(system, userText);
+  }
+  return viaAnthropic(system, userText);
+}
+
+function buildPrompt(args: GenerateArgs): { system: string; userText: string } {
   const briefingBlock = args.briefings.length
     ? args.briefings
         .map((b) => `--- BRIEFING: ${b.filename} ---\n${b.content_md}`)
@@ -58,6 +70,15 @@ export async function generateScript(args: GenerateArgs): Promise<{
     "Do not wrap it in markdown fences. Do not add any other keys or commentary.",
   ].join("\n");
 
+  return { system, userText };
+}
+
+async function viaAnthropic(system: string, userText: string): Promise<LlmResult> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
+  const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
+  const client = new Anthropic({ apiKey });
+
   const message = await client.messages.create({
     model,
     max_tokens: 8000,
@@ -70,12 +91,60 @@ export async function generateScript(args: GenerateArgs): Promise<{
     .map((b) => b.text)
     .join("");
 
-  const result = parseScriptJson(text);
   return {
-    result,
+    result: parseScriptJson(text),
     model,
     inputTokens: message.usage.input_tokens,
     outputTokens: message.usage.output_tokens,
+  };
+}
+
+async function viaOpenRouter(system: string, userText: string): Promise<LlmResult> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) throw new Error("OPENROUTER_API_KEY is not set");
+  const model = process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL;
+
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      // Optional attribution headers OpenRouter recommends:
+      "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://neon-podcasts.vercel.app",
+      "X-Title": "NEON Podcasts",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 8000,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: userText },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    let detail = "";
+    try {
+      detail = (await res.text()).slice(0, 500);
+    } catch {
+      detail = "<no body>";
+    }
+    throw new Error(`OpenRouter request failed (${res.status}): ${detail}`);
+  }
+
+  const data = (await res.json()) as {
+    choices?: { message?: { content?: string } }[];
+    usage?: { prompt_tokens?: number; completion_tokens?: number };
+  };
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error("OpenRouter returned no content");
+
+  return {
+    result: parseScriptJson(text),
+    model,
+    inputTokens: data.usage?.prompt_tokens ?? 0,
+    outputTokens: data.usage?.completion_tokens ?? 0,
   };
 }
 
@@ -92,7 +161,7 @@ function parseScriptJson(text: string): GeneratedScript {
   }
   const obj = JSON.parse(raw) as Partial<GeneratedScript>;
   if (!obj.script || typeof obj.script !== "string") {
-    throw new Error("Claude did not return a usable script");
+    throw new Error("The model did not return a usable script");
   }
   return {
     title: (obj.title || "Untitled episode").toString(),
@@ -101,7 +170,8 @@ function parseScriptJson(text: string): GeneratedScript {
   };
 }
 
-// Rough Anthropic cost estimate (claude-sonnet pricing, in cents).
+// Rough cost estimate in cents (Claude-sonnet-class pricing). Approximate for
+// OpenRouter, where per-model pricing varies — treat runs.cost_cents as a guide.
 export function estimateCostCents(inputTokens: number, outputTokens: number): number {
   const inputPerMTok = 300; // $3.00 / Mtok
   const outputPerMTok = 1500; // $15.00 / Mtok
