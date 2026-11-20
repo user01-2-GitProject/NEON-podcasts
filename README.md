@@ -29,7 +29,7 @@ See [`docs/PLAN.md`](docs/PLAN.md) for the full plan. This is the first build sl
    - `DATABASE_URL` — Neon pooled connection string
    - `APP_PASSWORD` + `AUTH_SECRET` — the dashboard login gate
    - `ANTHROPIC_API_KEY` — for script generation
-   - TTS: `TTS_PROVIDER` = `openai` (`OPENAI_API_KEY`), `elevenlabs` (`ELEVENLABS_API_KEY`), or `local` (see below)
+   - TTS: `TTS_PROVIDER` = `openai` (`OPENAI_API_KEY`), `elevenlabs` (`ELEVENLABS_API_KEY`), or `local` (see Local voices)
 
 3. **Create the schema**
    ```bash
@@ -51,12 +51,25 @@ Set `TTS_PROVIDER=local` and point `LOCAL_TTS_URL` at any **OpenAI-compatible**
 - **[Kokoro-FastAPI](https://github.com/remsky/Kokoro-FastAPI)** — fast, high-quality local voices
 - **[openedai-speech](https://github.com/matatonic/openedai-speech)** — wraps Piper / Coqui / XTTS
 
+### Quickstart with Kokoro-FastAPI (local, free)
+
 ```bash
-# example: Kokoro-FastAPI running locally
+# 1. Start the local TTS engine (Docker). CPU image shown; GPU image also exists.
+docker run -it --rm -p 8880:8880 ghcr.io/remsky/kokoro-fastapi-cpu:latest
+
+# 2. In .env.local, point the app at it:
 TTS_PROVIDER=local
 LOCAL_TTS_URL=http://localhost:8880/v1/audio/speech
-LOCAL_TTS_VOICE=af_sky
+LOCAL_TTS_VOICE=af_sky        # try: af_bella, am_adam, bf_emma, bm_george ...
+# LOCAL_TTS_MODEL and LOCAL_TTS_API_KEY are optional
+
+# 3. Run the app locally and generate — it will narrate with the local voice.
+npm run dev
 ```
+
+Prefer Piper/Coqui/XTTS voices? Run
+[openedai-speech](https://github.com/matatonic/openedai-speech) instead (same
+OpenAI-compatible API) and set `LOCAL_TTS_URL` to its `/v1/audio/speech` URL.
 
 ⚠️ **Reachability:** when the app is deployed on Vercel it runs in the cloud and
 **cannot reach your machine's `localhost`.** Local voices work when you (a) run the
