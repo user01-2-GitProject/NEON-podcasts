@@ -61,6 +61,15 @@ create table if not exists episode_audio (
   data         bytea not null
 );
 
+-- App-wide settings (single-user). Key/value so it's easy to extend.
+-- Holds the in-app LLM config (provider, OpenRouter key + model) that overrides
+-- the matching env vars when present.
+create table if not exists app_settings (
+  key        text primary key,
+  value      text,
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists runs (
   id                uuid primary key default gen_random_uuid(),
   show_id           uuid not null references shows(id) on delete cascade,

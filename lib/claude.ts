@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { resolveLlmConfig } from "@/lib/settings";
 
 export interface GeneratedScript {
   title: string;
@@ -25,14 +26,15 @@ interface LlmResult {
   outputTokens: number;
 }
 
-// Script generation. Routes to Anthropic (default) or OpenRouter based on
-// LLM_PROVIDER. OpenRouter lets one key reach Claude *and* OpenAI (and others).
+// Script generation. Routes to Anthropic (default) or OpenRouter based on the
+// resolved LLM config. OpenRouter lets one key reach Claude *and* OpenAI (and more).
 export async function generateScript(args: GenerateArgs): Promise<LlmResult> {
   const { system, userText } = buildPrompt(args);
-  const provider = (process.env.LLM_PROVIDER || "anthropic").toLowerCase();
+  // In-app Settings (DB) override the env vars when present.
+  const cfg = await resolveLlmConfig();
 
-  if (provider === "openrouter") {
-    return viaOpenRouter(system, userText);
+  if (cfg.provider === "openrouter") {
+    return viaOpenRouter(system, userText, cfg.openRouterApiKey, cfg.openRouterModel);
   }
   return viaAnthropic(system, userText);
 }
@@ -99,10 +101,17 @@ async function viaAnthropic(system: string, userText: string): Promise<LlmResult
   };
 }
 
-async function viaOpenRouter(system: string, userText: string): Promise<LlmResult> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) throw new Error("OPENROUTER_API_KEY is not set");
-  const model = process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL;
+async function viaOpenRouter(
+  system: string,
+  userText: string,
+  apiKeyIn?: string | null,
+  modelIn?: string | null,
+): Promise<LlmResult> {
+  const apiKey = apiKeyIn || process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error("OpenRouter API key is not set — add it in Settings, or set OPENROUTER_API_KEY");
+  }
+  const model = modelIn || process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL;
 
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",

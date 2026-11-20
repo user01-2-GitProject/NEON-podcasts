@@ -25,11 +25,16 @@ export default async function DashboardPage() {
         <h1>
           <span className="brand">NEON</span> Podcasts
         </h1>
-        <form method="post" action="/api/auth/logout">
-          <button className="secondary" type="submit">
-            Sign out
-          </button>
-        </form>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <Link href="/settings" className="btn secondary">
+            Settings
+          </Link>
+          <form method="post" action="/api/auth/logout">
+            <button className="secondary" type="submit">
+              Sign out
+            </button>
+          </form>
+        </div>
       </header>
 
       <div className="container">
