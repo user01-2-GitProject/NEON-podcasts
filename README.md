@@ -13,7 +13,8 @@ See [`docs/PLAN.md`](docs/PLAN.md) for the full plan. This is the first build sl
 - **Next.js 15** (App Router, TypeScript) — deploy to Vercel
 - **Neon Postgres** — `@neondatabase/serverless`
 - **Claude API** — `@anthropic-ai/sdk` (script generation)
-- **Hosted TTS** — OpenAI or ElevenLabs (audio)
+- **TTS** — OpenAI, ElevenLabs, or a **local / self-hosted** OpenAI-compatible
+  engine (Kokoro, Piper via openedai-speech, LocalAI). See "Local voices" below.
 - Audio is stored in Postgres for the MVP (swap to R2/S3 later)
 - Single-user auth gate via a signed cookie (no external auth service yet)
 
@@ -28,7 +29,7 @@ See [`docs/PLAN.md`](docs/PLAN.md) for the full plan. This is the first build sl
    - `DATABASE_URL` — Neon pooled connection string
    - `APP_PASSWORD` + `AUTH_SECRET` — the dashboard login gate
    - `ANTHROPIC_API_KEY` — for script generation
-   - TTS: `TTS_PROVIDER` = `openai` (`OPENAI_API_KEY`) or `elevenlabs` (`ELEVENLABS_API_KEY`)
+   - TTS: `TTS_PROVIDER` = `openai` (`OPENAI_API_KEY`), `elevenlabs` (`ELEVENLABS_API_KEY`), or `local` (see below)
 
 3. **Create the schema**
    ```bash
@@ -41,6 +42,27 @@ See [`docs/PLAN.md`](docs/PLAN.md) for the full plan. This is the first build sl
    ```
    Open http://localhost:3000, sign in with `APP_PASSWORD`, create a show, upload a
    `.md` briefing, and click **Generate now**.
+
+## Local voices (self-hosted TTS)
+
+Set `TTS_PROVIDER=local` and point `LOCAL_TTS_URL` at any **OpenAI-compatible**
+`/v1/audio/speech` endpoint. Tested shapes:
+
+- **[Kokoro-FastAPI](https://github.com/remsky/Kokoro-FastAPI)** — fast, high-quality local voices
+- **[openedai-speech](https://github.com/matatonic/openedai-speech)** — wraps Piper / Coqui / XTTS
+
+```bash
+# example: Kokoro-FastAPI running locally
+TTS_PROVIDER=local
+LOCAL_TTS_URL=http://localhost:8880/v1/audio/speech
+LOCAL_TTS_VOICE=af_sky
+```
+
+⚠️ **Reachability:** when the app is deployed on Vercel it runs in the cloud and
+**cannot reach your machine's `localhost`.** Local voices work when you (a) run the
+app locally (`npm run dev`), or (b) expose the TTS engine at a URL Vercel can reach
+(a tunnel like cloudflared/ngrok, or a self-hosted box). Hosted providers (OpenAI /
+ElevenLabs) have no such constraint.
 
 ## Deploy (Vercel)
 

@@ -1,4 +1,4 @@
-// Text-to-speech abstraction. Supports OpenAI and ElevenLabs.
+// Text-to-speech abstraction. Supports OpenAI, ElevenLabs, and local/self-hosted.
 // Long scripts are chunked and the resulting mp3 buffers concatenated.
 
 const MAX_CHARS_PER_CHUNK = 3500;
@@ -17,12 +17,40 @@ export async function synthesize(script: string, voiceOverride?: string | null):
   for (const chunk of chunks) {
     if (provider === "elevenlabs") {
       buffers.push(await elevenLabs(chunk, voiceOverride));
+    } else if (provider === "local") {
+      buffers.push(await localOpenAICompatible(chunk, voiceOverride));
     } else {
       buffers.push(await openai(chunk, voiceOverride));
     }
   }
 
   return { audio: Buffer.concat(buffers), contentType: "audio/mpeg", provider };
+}
+
+// Local / self-hosted voices via any OpenAI-compatible speech endpoint.
+// Works with Kokoro-FastAPI, openedai-speech (Piper/Coqui/XTTS), LocalAI, etc.
+// Set LOCAL_TTS_URL to the full endpoint, e.g. http://localhost:8000/v1/audio/speech.
+// NOTE: when the app runs on Vercel it cannot reach your machine's localhost — run
+// the app locally, or give the local engine a reachable URL (tunnel / self-host).
+async function localOpenAICompatible(text: string, voiceOverride?: string | null): Promise<Buffer> {
+  const url = process.env.LOCAL_TTS_URL;
+  if (!url) throw new Error("LOCAL_TTS_URL is not set (point it at your local OpenAI-compatible TTS endpoint)");
+  const model = process.env.LOCAL_TTS_MODEL || "tts-1";
+  const voice = voiceOverride || process.env.LOCAL_TTS_VOICE || "alloy";
+
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const apiKey = process.env.LOCAL_TTS_API_KEY;
+  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ model, voice, input: text, response_format: "mp3" }),
+  });
+  if (!res.ok) {
+    throw new Error(`Local TTS failed (${res.status}): ${await safeText(res)}`);
+  }
+  return Buffer.from(await res.arrayBuffer());
 }
 
 async function openai(text: string, voiceOverride?: string | null): Promise<Buffer> {
