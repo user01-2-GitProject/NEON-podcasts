@@ -89,6 +89,9 @@ repo, and deploy. Run `npm run db:migrate` once against the production
 `DATABASE_URL` (locally with the prod string, or via the Neon SQL editor using
 `db/schema.sql`).
 
+The Hobby plan dispatches scheduled episodes daily at 08:00 UTC. Per-minute
+cron precision requires a Vercel Pro plan.
+
 ## Project layout
 
 ```
