@@ -5,6 +5,7 @@ import type { Show, Briefing, Episode, Run } from "@/lib/types";
 import BriefingsPanel from "@/components/BriefingsPanel";
 import GeneratePanel from "@/components/GeneratePanel";
 import EpisodesPanel from "@/components/EpisodesPanel";
+import DeleteShowButton from "@/components/DeleteShowButton";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,6 +49,7 @@ export default async function ShowPage({ params }: { params: Promise<{ id: strin
           <p className="muted">
             {show.cadence} · ~{show.target_minutes} min · timezone {show.timezone}
           </p>
+          <DeleteShowButton showId={id} showTitle={show.title} />
         </div>
 
         <BriefingsPanel showId={id} initialBriefings={briefings} />

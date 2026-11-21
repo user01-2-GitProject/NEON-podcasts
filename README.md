@@ -4,9 +4,12 @@ Generate podcast episodes from Markdown briefings. A single-user web app: create
 shows, upload `.md` briefings, and generate a downloadable episode (script via
 Claude → audio via hosted TTS → mp3 + show notes).
 
-See [`docs/PLAN.md`](docs/PLAN.md) for the full plan. This is the first build slice:
-**Phase 0 (foundations) + Phase 1 (shows & briefings) + a thin Phase 2
-(generate one episode on demand).** Scheduler and public RSS come later.
+See [`docs/PLAN.md`](docs/PLAN.md) for the full plan. The single-user MVP has
+shipped (multiple shows, `.md` upload, script + TTS generation); the **scheduler**
+is the one remaining MVP piece. `docs/PLAN.md` now also lays out the forward
+**Native App & Product Roadmap** — real accounts, audio on a CDN, a token-based
+JSON API, in-app publishing + players, nudges/steering, a React Native (Expo) app,
+and subscriptions.
 
 ## Stack
 

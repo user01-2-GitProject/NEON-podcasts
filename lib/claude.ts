@@ -26,8 +26,8 @@ interface LlmResult {
   outputTokens: number;
 }
 
-// Script generation. Routes to Anthropic (default) or OpenRouter based on the
-// resolved LLM config. OpenRouter lets one key reach Claude *and* OpenAI (and more).
+// Script generation. Routes to Anthropic (default) or OpenRouter based on
+// LLM_PROVIDER. OpenRouter lets one key reach Claude *and* OpenAI (and others).
 export async function generateScript(args: GenerateArgs): Promise<LlmResult> {
   const { system, userText } = buildPrompt(args);
   // In-app Settings (DB) override the env vars when present.
@@ -185,5 +185,8 @@ export function estimateCostCents(inputTokens: number, outputTokens: number): nu
   const inputPerMTok = 300; // $3.00 / Mtok
   const outputPerMTok = 1500; // $15.00 / Mtok
   const cents = (inputTokens / 1_000_000) * inputPerMTok + (outputTokens / 1_000_000) * outputPerMTok;
-  return Math.round(cents * 100) / 100;
+  // runs.cost_cents is an INTEGER column, so this MUST be a whole number —
+  // returning a fractional value (e.g. 1.07) makes the run INSERT fail with
+  // "invalid input syntax for type integer", which 500s every generation.
+  return Math.round(cents);
 }
