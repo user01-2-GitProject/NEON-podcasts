@@ -7,6 +7,7 @@ const PUBLIC_PREFIXES = [
   "/api/auth/login",
   "/api/cron",
   "/feed",
+  "/listen",
   "/_next",
   "/favicon.ico",
 ];
