@@ -8,11 +8,14 @@ type Params = { params: Promise<{ id: string }> };
 // Streams the stored mp3. ?download=1 forces a file download.
 export async function GET(req: Request, { params }: Params) {
   const { id } = await params;
+  const feedToken = new URL(req.url).searchParams.get("feed");
   const rows = (await sql`
     select ea.content_type, encode(ea.data, 'base64') as data_b64, e.title
     from episode_audio ea
     join episodes e on e.id = ea.episode_id
+    join shows s on s.id = e.show_id
     where ea.episode_id = ${id}
+      and (${feedToken}::text is null or (e.status = 'published' and s.rss_token = ${feedToken}))
   `) as { content_type: string; data_b64: string; title: string }[];
 
   const row = rows[0];
