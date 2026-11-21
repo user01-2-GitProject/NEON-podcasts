@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.cjs",
     "db:migrate": "node --experimental-strip-types scripts/migrate.ts"
   },
   "dependencies": {
