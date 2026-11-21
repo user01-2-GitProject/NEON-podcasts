@@ -1,101 +1,98 @@
-# NEON Podcasts — Build Plan
+# NEON Podcasts — Native App & Product Roadmap
 
-> **TL;DR** — A web app (just you to start) where you run **multiple shows**. Each show has one or more **`.md` briefing docs** you upload; before every episode the app **reads the current briefing(s)**, an LLM writes the script, a hosted text-to-speech (TTS) service renders audio, and you get a finished **downloadable episode file (mp3 + show notes)** to upload to each platform yourself. A public **RSS feed** per show is also generated so most apps (Apple/Spotify/Overcast) can pull episodes automatically; automated pushes to platforms that need a direct upload come later. We lean on managed services so there's almost nothing to run. Default stack: **Next.js on Vercel + Neon Postgres + Vercel Cron + Claude API + a hosted TTS provider + object storage (R2/S3)**.
+> **TL;DR** — The MVP web app works: create multiple shows, upload `.md` briefings, and generate a well-crafted script (and, with a voice server running, a cloned-voice mp3) through OpenRouter, running on the Rig against Neon. The one piece left from the original goal is the **scheduler** — set a time and it generates unattended. This plan is the product layer on top of that: it turns NEON from a personal generator into a product (native app, publishing, subscriptions). **The order matters** — two foundations (always-on hosting + real user accounts) unlock publishing, subscriptions and the native app, while the in-app players and "nudge" controls can land earlier as self-contained wins.
 
----
-
-## Scope decisions (confirmed with jimmy, 2026-11-20)
-- **Single user** (just you) to start — build so multi-user is a later step, no login complexity beyond protecting your own dashboard.
-- **Web only** for now.
-- **Multiple shows**, each independently configured and scheduled.
-- **`.md` briefing docs per show:** you upload Markdown "paperwork" to a show; the generator **reads the show's current briefing(s) before creating each episode** and uses them as the source material for the script.
-- **Publishing:** **manual upload is acceptable** — the app's job is to produce a finished, downloadable episode file (mp3 + show notes) per show; you carry it to each platform. A public **RSS feed** per show is generated too (the universal way Apple/Spotify/Overcast auto-ingest), so that path is automatic where it works. **Automated direct-upload integrations are a later phase, not MVP.**
-- **Billing:** default to the **Anthropic API** for script generation. *Using an existing Claude.ai subscription instead isn't viable for an automated backend — consumer subscriptions can't drive scheduled server-side generation; that needs the API.* For **TTS**, if you already pay for a provider (e.g. ElevenLabs/OpenAI), its API key can reuse that plan's quota, so an existing subscription **can** save money there. Net: Claude = API; TTS = reuse a subscription you have if it offers API access.
+> **Roadmap source:** [NEON Podcasts — Native App & Product Roadmap](https://claude.ai/artifact/E88xUEPnJFzXFxFnvehpcC) (Claude Doc). This file mirrors it. The original single-user MVP build plan is preserved below under [§9 MVP build plan (shipped)](#9-mvp-build-plan-shipped).
 
 ---
 
-## 1. Product scope
-
-### Core user story
-> I create one or more shows. For each, I upload Markdown briefing docs and set a cadence. On schedule, the app reads the briefing, writes a script, narrates it, and gives me a finished episode file to download — and an RSS feed so apps can auto-pull it.
-
-### MVP (v1)
-- Manage **multiple shows**: title, description, voice, cadence (daily/weekly + time), length target.
-- **Upload/replace `.md` briefings** per show (one or many).
-- **Scheduled generation** per show: read briefing(s) → script → audio → stored.
-- **Download the finished episode** (mp3 + show notes) for manual upload to any platform.
-- **Public RSS feed** per show (valid for Apple/Spotify/Overcast auto-ingest).
-- **Listen**: web page per show with episode list + inline player.
-- **Run history/status**: queued / running / done / failed, with length + cost.
-
-### Out of scope for MVP (v2+)
-- **Automated direct-upload** to platforms (YouTube, etc.) — manual export covers v1.
-- Multi-user / teams, billing, public directory.
-- Multi-voice/dialogue, music beds, ad insertion.
-- Native mobile app (web + RSS covers phones).
-- Auto-pulling fresh web/news material into briefings (briefings are user-supplied in v1).
+## Status (2026-11-21)
+- **MVP shipped** — PR #2 (merged): multiple shows, `.md` briefing upload, OpenRouter script generation, `local`/`external` narration modes, in-app Settings for the OpenRouter key.
+- **Fixes ready** — PR #3 (globals.css, cost-log bug fix, delete-show) is ready for review.
+- **Scheduler — NOT BUILT yet.** This is the last piece of the original MVP goal: schema has `cadence` / `schedule_time` / `next_run_at`, but no runner executes them. Today generation is manual ("Generate now") only. **This is the immediate next build**, ahead of the product roadmap below.
 
 ---
 
-## 2. Architecture
-
-```
-                 ┌──────────────┐
-   Scheduler ───▶│  Generate    │   (one run = one episode, per show)
-  (managed cron) │  Episode job │
-                 └──────┬───────┘
-                        │ 0. read show's current .md briefing(s)
-                        │ 1. LLM writes script  ── Claude API
-                        │ 2. TTS renders audio  ── hosted TTS
-                        │ 3. upload mp3         ── object storage (R2/S3)
-                        │ 4. write episode row  ── Neon Postgres
-                        ▼
-   ┌─────────────┐   ┌──────────────┐   ┌─────────────┐
-   │ Web app /   │──▶│ Neon Postgres│   │ RSS feed    │──▶ Apple / Spotify /
-   │ dashboard   │   │ shows,       │   │ /feed/:show │    Overcast (auto-pull)
-   │ upload .md  │   │ briefings,   │   └─────────────┘
-   │ + download  │   │ episodes,    │   ┌─────────────┐
-   │   episode   │   │ runs         │   │ Download     │──▶ you → manual
-   └─────────────┘   └──────────────┘   │ mp3 + notes  │    upload anywhere
-                                        └─────────────┘
-```
-
-### Components
-| Component | Job | Default choice | Managed / external? |
-|---|---|---|---|
-| Web app + API | Dashboard, show config, `.md` upload, player, download, RSS | **Next.js on Vercel** | ✅ Hosted |
-| Scheduler | Fire a job per due show | **Vercel Cron** (dispatcher finds due shows) | ✅ Managed |
-| Briefing store | Hold uploaded `.md` per show | Neon (small) or object storage (large) | ✅ Managed |
-| Script generation | Briefing + prompt → script | **Claude API** (`claude-sonnet-5-5`) | ✅ Managed API |
-| Text-to-speech | Script → mp3 | **Hosted TTS** (ElevenLabs / OpenAI / Play.ht) | ✅ Managed; reuse your plan's API key |
-| Audio storage | Store/serve/download mp3 | **Cloudflare R2** or **S3** | ✅ Managed |
-| Publishing | Downloadable file + public RSS | Download route + RSS route | — (thin code) |
-| Auth | Protect your dashboard | **Neon Auth** / Auth.js | ✅ Managed |
-
-### Publishing — how it works (MVP)
-- **Each episode is a downloadable file** (mp3 + generated show-notes/description) straight from the dashboard. You manually upload it to whichever platforms you like — acceptable for v1, no integrations needed.
-- **A public RSS feed per show is generated in parallel.** Submit that feed URL once to each directory (Apple Podcasts Connect, Spotify for Podcasters, etc.) and they auto-pull every new episode — so the common platforms are hands-off even in MVP.
-- **Automated direct-upload integrations** (e.g. YouTube, or any platform that won't ingest RSS) are a **later phase** via their APIs, tracked per episode. **[external: platform APIs]**
-
-### Generation job flow
-0. Load the show's **current `.md` briefing(s)**.
-1. Build the prompt (show config + briefing) → **Claude** returns a structured script (intro, segments, outro).
-2. Script → **TTS** → mp3.
-3. Upload mp3; capture duration + byte size (needed for valid RSS `enclosure`); generate show notes.
-4. Insert `episode` (status `published`); update show `next_run_at`. Episode is now downloadable and in the RSS feed.
-5. On error: mark run `failed`, store the error, surface it, retry with backoff.
-
-Make the job **idempotent** (one episode per show per scheduled slot) so a retry never double-publishes.
+## 1. Where you are today
+A working web app: create multiple shows, upload `.md` briefings, and generate a well-crafted script — and, with a voice server running, a cloned-voice mp3 — through OpenRouter. It runs on the Rig against a Neon database. The one piece left from the original goal is the **scheduler** (set a time and it generates unattended). Everything below is the product layer that sits on top of that.
 
 ---
 
-## 3. Data model (first cut)
+## 2. Build the foundation first
+Three unglamorous changes underpin almost everything on the wishlist. Publishing, subscriptions, the players and the native app all sit on these, so they come before the flashy work.
+
+1. **Real accounts (multi-user).** Today everyone shares one password. The database already has a `users` table and `shows.user_id`, so the data model is ready — you add an auth provider and scope every query to its owner. Pick one with both web and React Native SDKs (e.g. Clerk or Neon Auth) so web and native share one login.
+2. **Move audio out of Postgres.** Audio is stored as rows in the database today — fine for a demo, wrong for real playback. Move files to object storage + CDN (Cloudflare R2 or S3) and store a URL. This is what makes streaming, scrubbing and video possible at all: they need HTTP range requests, which a CDN gives you for free.
+3. **A token-based API.** The native app can't lean on browser cookies. Expose today's route handlers as a stable JSON API with bearer tokens. Small job, and it unblocks the native client.
+
+---
+
+## 3. The 7 features, mapped
+
+| Feature | What it means | Effort | Depends on | Phase |
+|---|---|---|---|---|
+| **Publish in the app** | A listener surface: browse/subscribe to shows, episode lists, published vs draft. Keep RSS too (`rss_token` already exists) so external podcast apps work. | Medium | Accounts, media on CDN | 1 |
+| **Audio player** | Real play/pause/scrub/speed/queue, streaming from the CDN. | Low–Medium | Media on CDN | 1 |
+| **Nudges / pronunciation** | Per-show lexicon ("zero"→"oh") applied before TTS, plus an editable show style guide injected into every prompt and a learn-from-your-edits loop. | Medium–High | Generation pipeline (have it); ElevenLabs for real pronunciation control | 2 |
+| **Native app** | One iOS + Android codebase (React Native / Expo) reusing your API and types. | High | Token API | 3 |
+| **Video player** | Extend the media model to video (mp4 / HLS on CDN); player via expo-video (native) / hls.js (web). | Medium–High | Media on CDN, native app | 4 |
+| **Take users** | Sign-up, per-user shows, usage limits before you open the doors. | Medium | Accounts | 1–2 |
+| **Subscriptions** | Paid tiers. Apple/Google require their in-app purchase for digital subs (15–30% cut) — not raw Stripe in-app. RevenueCat unifies Apple + Google + Stripe (web). | High | Accounts, native app, billing | 4 |
+
+---
+
+## 4. A suggested sequence
+The order is driven by dependencies, not by what's most fun.
+
+1. **Close the MVP** — the scheduler, so unattended generation works. It's the last piece of the original goal.
+2. **Foundation** — accounts, media on CDN, token API. The single biggest lift, but everything rides on it.
+3. **Phase 1 — Publishing + web audio player.** Your first real "product" surface, still on the web.
+4. **Phase 2 — Steering / nudges.** Can run in parallel with native work once the API is stable.
+5. **Phase 3 — Native app (Expo).** Real native audio: background playback + lock-screen controls — a genuine reason to go native rather than wrap the web app.
+6. **Phase 4 — Video + subscriptions.** Billing comes last; it carries the most compliance baggage.
+
+Foundation + Phase 1 is the heavy lift; Phases 2 and 3 can overlap afterward.
+
+---
+
+## 5. Native app: the path
+Your current Next.js + Neon app becomes the **backend/API and the web client**; the native app is a second client on the same API.
+
+- **Interim: PWA.** You can get an installable, home-screen app from the existing web app with little work — a good bridge while the real native app is built.
+- **Real native: React Native (Expo).** One codebase for iOS and Android, reusing your TypeScript types and the same JSON API. The payoff over a web wrapper is native audio: `react-native-track-player` gives background playback and lock-screen controls.
+- **What carries over:** the whole backend — Neon, the generation pipeline, the API routes, your types. You're adding a client, not rebuilding the engine.
+
+---
+
+## 6. Open decisions (you + Matt)
+A few calls shape everything downstream:
+
+- **Who subscribes to what?** Users subscribing to *NEON* (simpler — start here) vs. listeners subscribing to *creators* (a marketplace — much more complex).
+- **Voice engine for real control.** Serious pronunciation and "nudge" control points toward **ElevenLabs** (pronunciation dictionaries); your local cloned voices are cheaper but harder to steer. You may end up offering both.
+- **Auth provider.** Clerk vs. Neon Auth (both do web + React Native) — pick once, since it touches every screen.
+- **Hosting home.** Your cloned-voice server can't live on Vercel's cloud; decide whether the product runs on your always-on box (with a tunnel) or you move voice to a hosted engine.
+- **Cost guardrails.** Every generation costs LLM + TTS tokens — add per-user usage limits before you take users.
+
+---
+
+## 7. Decisions so far (Nov 21)
+- **Subscribe to NEON**, not a creator marketplace — start simple.
+- **Nudges = editorial first** (steer the show's direction); voice-nudge is a welcome bonus.
+- **Premium voices / voice packs = a revenue line**, bundled with the NEON subscription (investor-friendly).
+- **Auth leaning Neon Auth** (keep user rows in your own Neon DB); confirm its React Native SDK before committing.
+- **Video = post-launch patch** (already Phase 4) — safe to defer if it's too big at launch.
+
+---
+
+## 8. Data model
+The MVP schema already carries most of the product's needs; the foundation work adds auth scoping and swaps audio bytes for storage URLs.
 
 ```sql
-users         (id, email, created_at)              -- just you for now
+users         (id, email, created_at)              -- real multi-user: foundation step 1
 
 shows         (id, user_id, title, description, voice_id,
                cadence, schedule_time, timezone, target_minutes,
+               narration_mode,                      -- auto (app renders TTS) | external (script only, upload mp3)
                rss_token, is_public, next_run_at, is_active, created_at)
 
 show_briefings(id, show_id, filename, content_md,  -- or storage_url for large files
@@ -109,50 +106,30 @@ runs          (id, show_id, episode_id, status,     -- queued|running|done|faile
                briefing_snapshot, model, tts_provider, cost_cents,
                error, started_at, finished_at)
 
--- Later phase, when automated platform pushes are added:
--- publications (id, episode_id, platform, status, external_url, error, published_at)
+-- Foundation step 2 moves audio bytes to object storage + CDN; episodes.audio_url holds the URL.
+-- Later: publications (id, episode_id, platform, status, external_url, error, published_at)
 ```
 
 `runs.briefing_snapshot` records exactly which briefing text produced each episode, so output stays traceable when you edit the `.md` later.
 
 ---
 
-## 4. Phased milestones (small, shippable tasks)
+## 9. MVP build plan (shipped)
+> Kept for reference — this was the original single-user MVP, now shipped in PR #2. The scheduler (Phase 3 below) is the one remaining piece.
 
-> **[external]** = handled by a managed service, not code we maintain.
+### Confirmed scope (jimmy, 2026-11-20)
+- **Single user** to start; built so multi-user is a later step (now the foundation above).
+- **Web only** for the MVP.
+- **Multiple shows**, each independently configured and scheduled.
+- **`.md` briefing docs per show:** the generator reads the show's current briefing(s) before creating each episode.
+- **Publishing:** manual export is acceptable for the MVP — a downloadable mp3 + show notes; plus a public RSS feed per show. Automated direct-upload integrations are a later phase.
+- **Billing:** script generation via API (Anthropic or OpenRouter — a consumer Claude.ai subscription can't drive an automated backend). TTS can reuse an existing provider subscription with API access; the user is leaning on **local cloned voices** almost exclusively.
 
-### Phase 0 — Foundations
-- [ ] Scaffold Next.js, deploy to Vercel **[external: Vercel]**
-- [ ] Provision Neon Postgres **[external: Neon]**
-- [ ] Schema + migrations (`shows`, `show_briefings`, `episodes`, `runs`)
-- [ ] Single-user auth gate **[external: Neon Auth]**
+### Phases (MVP)
+- **Phase 0 — Foundations:** scaffold Next.js on Vercel, provision Neon, schema + migrations, single-user auth gate. ✅
+- **Phase 1 — Shows & briefings:** show CRUD, `.md` upload/replace, compute `next_run_at`. ✅
+- **Phase 2 — Generate one episode on demand:** read briefing → script (Claude/OpenRouter) → audio (hosted or local TTS) → store + download; `auto` / `external` (Muse script-only) narration modes. ✅
+- **Phase 3 — Schedule:** cron dispatcher finds due shows, idempotency guard + retry/backoff, run history. **⬅ next build (the MVP gap).**
+- **Phase 4 — Public RSS:** valid podcast XML per show, submit to Apple/Spotify.
 
-### Phase 1 — Shows & briefings
-- [ ] Show CRUD (prompt, voice, cadence, timezone)
-- [ ] **Upload / replace `.md` briefings** per show; list + activate/deactivate
-- [ ] Compute `next_run_at` from cadence + timezone
-
-### Phase 2 — Generate one episode on demand
-- [ ] "Generate now" → read active briefing(s) → script via **Claude** **[external: Claude API]**
-- [ ] Script → audio via **hosted TTS** **[external: TTS]**
-- [ ] Upload mp3 to storage, capture duration/size, generate show notes **[external: R2/S3]**
-- [ ] Persist `episode` + `run` (with briefing snapshot); player + **download button** in UI
-
-### Phase 3 — Schedule
-- [ ] Cron dispatcher finds due shows **[external: Vercel Cron]**
-- [ ] Idempotency guard + retry/backoff
-- [ ] Run history view
-
-### Phase 4 — Public RSS
-- [ ] Public RSS feed per show (valid podcast XML, `enclosure`, iTunes tags)
-- [ ] Submit feeds to Apple/Spotify; validate in a real app
-
-### Phase 5 — v2 candidates
-- [ ] **Automated direct-upload** integrations (YouTube, etc.) **[external: platform APIs]**
-- [ ] Auto-pull fresh source material into briefings **[external: search/news API]**
-- [ ] Multi-voice/dialogue, intro music; multi-user
-
----
-
-## 5. First concrete step
-Phase 0 + Phase 1 briefing upload + a thin Phase 2 "generate one episode on demand" is the fastest path to something real: one show, one uploaded `.md`, one downloadable playable episode — before wiring the scheduler or RSS. Everything expensive is a managed API, so running cost until you have listeners is near zero.
+The product roadmap in §1–§7 picks up from the end of this MVP.
