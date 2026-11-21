@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
+import { scheduleError } from "@/lib/schedule";
 import type { Show } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -30,11 +31,20 @@ export async function PATCH(req: Request, { params }: Params) {
       : show.cadence;
   const scheduleTime = body.schedule_time !== undefined ? body.schedule_time.toString() : show.schedule_time;
   const timezone = body.timezone !== undefined ? body.timezone.toString() : show.timezone;
+  const invalidSchedule = cadence === "manual" ? null : scheduleError(scheduleTime, timezone);
+  if (invalidSchedule) {
+    return NextResponse.json({ error: invalidSchedule }, { status: 400 });
+  }
   const targetMinutes =
     body.target_minutes !== undefined && Number.isFinite(Number(body.target_minutes))
       ? Math.max(1, Math.min(120, Math.round(Number(body.target_minutes))))
       : show.target_minutes;
   const isActive = body.is_active !== undefined ? Boolean(body.is_active) : show.is_active;
+  const resetSchedule =
+    cadence !== show.cadence ||
+    scheduleTime !== show.schedule_time ||
+    timezone !== show.timezone ||
+    (!show.is_active && isActive);
 
   const rows = (await sql`
     update shows set
@@ -45,7 +55,17 @@ export async function PATCH(req: Request, { params }: Params) {
       schedule_time = ${scheduleTime},
       timezone = ${timezone},
       target_minutes = ${targetMinutes},
-      is_active = ${isActive}
+      is_active = ${isActive},
+      next_run_at = case
+        when ${cadence} = 'manual' then null
+        when next_run_at is not null and not ${resetSchedule} then next_run_at
+        when (((now() at time zone ${timezone})::date + ${scheduleTime}::time)
+              at time zone ${timezone}) > now()
+          then (((now() at time zone ${timezone})::date + ${scheduleTime}::time)
+                at time zone ${timezone})
+        else ((((now() at time zone ${timezone})::date + 1) + ${scheduleTime}::time)
+              at time zone ${timezone})
+      end
     where id = ${id}
     returning *
   `) as Show[];

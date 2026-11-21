@@ -55,6 +55,9 @@ export interface Run {
   tts_provider: string | null;
   cost_cents: number | null;
   error: string | null;
+  scheduled_for: string | null;
+  attempt_count: number;
+  next_attempt_at: string | null;
   started_at: string;
   finished_at: string | null;
 }
