@@ -73,21 +73,9 @@ export default function EpisodesPanel({
   initialEpisodes: Episode[];
   runs: Run[];
 }) {
-  const failedRuns = runs.filter((r) => r.status === "failed");
-
   return (
     <div className="panel">
       <h2>Episodes</h2>
-
-      {failedRuns.length > 0 ? (
-        <div style={{ marginBottom: 12 }}>
-          {failedRuns.slice(0, 2).map((r) => (
-            <p className="error" key={r.id}>
-              Last run failed: {r.error}
-            </p>
-          ))}
-        </div>
-      ) : null}
 
       {initialEpisodes.length === 0 ? (
         <p className="muted">No episodes yet. Generate one above.</p>
@@ -141,6 +129,35 @@ export default function EpisodesPanel({
             </details>
           </div>
         ))
+      )}
+
+      <h3 style={{ marginTop: 24 }}>Run history</h3>
+      {runs.length === 0 ? (
+        <p className="muted">No generation runs yet.</p>
+      ) : (
+        runs.map((run) => {
+          const episode = initialEpisodes.find((item) => item.id === run.episode_id);
+          const cost = run.cost_cents === null ? "—" : `$${(run.cost_cents / 100).toFixed(2)}`;
+          return (
+            <div className="list-item" key={run.id}>
+              <div>
+                <span
+                  className={`tag ${
+                    run.status === "done" ? "active" : run.status === "failed" ? "failed" : ""
+                  }`}
+                >
+                  {run.status}
+                </span>{" "}
+                <span className="muted">
+                  {fmtDuration(episode?.duration_seconds ?? null)} · {cost}
+                  {run.attempt_count > 0 ? ` · attempt ${run.attempt_count}/5` : ""}
+                </span>
+                {run.error ? <div className="error">{run.error}</div> : null}
+              </div>
+              <span className="muted">{new Date(run.started_at).toLocaleString()}</span>
+            </div>
+          );
+        })
       )}
     </div>
   );

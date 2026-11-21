@@ -80,7 +80,16 @@ create table if not exists runs (
   tts_provider      text,
   cost_cents        integer,
   error             text,
+  scheduled_for     timestamptz,
+  attempt_count     integer not null default 0,
+  next_attempt_at   timestamptz,
   started_at        timestamptz not null default now(),
   finished_at       timestamptz
 );
 create index if not exists idx_runs_show_id on runs(show_id);
+create unique index if not exists idx_runs_scheduled_slot
+  on runs(show_id, scheduled_for)
+  where scheduled_for is not null;
+create unique index if not exists idx_episodes_scheduled_slot
+  on episodes(show_id, scheduled_for)
+  where scheduled_for is not null;
