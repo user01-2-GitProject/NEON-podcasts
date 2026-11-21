@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 
 // Public paths that never require a session.
-const PUBLIC_PREFIXES = ["/login", "/api/auth/login", "/feed", "/_next", "/favicon.ico"];
+const PUBLIC_PREFIXES = ["/login", "/api/auth/login", "/feed", "/listen", "/_next", "/favicon.ico"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
