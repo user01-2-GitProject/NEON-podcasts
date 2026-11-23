@@ -66,14 +66,51 @@ function UploadAudio({ episodeId }: { episodeId: string }) {
   );
 }
 
+function PublishButton({ episode }: { episode: Episode }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const publish = episode.status !== "published";
+
+  async function updateStatus() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/episodes/${episode.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: publish ? "published" : "draft" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Update failed");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <span>
+      <button className={publish ? "btn" : "btn secondary"} disabled={busy} onClick={updateStatus}>
+        {busy ? "Updating…" : publish ? "Publish" : "Unpublish"}
+      </button>
+      {error ? <span className="error" style={{ marginLeft: 8 }}>{error}</span> : null}
+    </span>
+  );
+}
+
 export default function EpisodesPanel({
   initialEpisodes,
   runs,
   owner,
+  rssToken,
 }: {
   initialEpisodes: Episode[];
   runs: Run[];
   owner: boolean;
+  rssToken: string;
 }) {
   return (
     <div className="panel">
@@ -106,13 +143,17 @@ export default function EpisodesPanel({
                 ) : owner ? (
                   <UploadAudio episodeId={ep.id} />
                 ) : null}
+                {owner ? <PublishButton episode={ep} /> : null}
+                {ep.status === "published" ? (
+                  <a className="btn secondary" href={`/listen/${rssToken}`}>Public page</a>
+                ) : null}
               </div>
             </div>
 
             {!ep.audio_url ? (
               <p className="muted" style={{ marginTop: 8 }}>
                 Script-only draft. Narrate it externally (e.g. in Muse), then upload the finished
-                audio to publish this episode.
+                audio, then publish the episode.
               </p>
             ) : null}
 

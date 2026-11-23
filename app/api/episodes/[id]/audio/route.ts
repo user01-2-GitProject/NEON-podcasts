@@ -76,7 +76,7 @@ export async function GET(req: Request, { params }: Params) {
 
 // Upload a finished mp3 into this episode (Pattern A: narrate externally, e.g.
 // in Muse, then upload the result here). Accepts a multipart form with a "file"
-// field, or a raw audio body. Stores the bytes and publishes the episode.
+// field, or a raw audio body. Stores the bytes and leaves the episode as a draft.
 export const maxDuration = 120;
 
 export async function POST(req: Request, { params }: Params) {
@@ -122,8 +122,7 @@ export async function POST(req: Request, { params }: Params) {
       set audio_url = ${audioPath},
           byte_size = ${bytes.length},
           audio_content_type = ${contentType},
-          status = 'published',
-          published_at = coalesce(published_at, now())
+          status = 'draft'
     where id = ${id}
     returning *
   `) as unknown[];
