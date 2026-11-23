@@ -170,6 +170,62 @@ audio {
   margin-top: 8px;
 }
 
+.audio-player {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin: 12px 0;
+  padding: 14px;
+}
+.audio-player:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+.audio-player audio {
+  display: none;
+}
+.audio-player-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.audio-player-seek {
+  display: block;
+  width: 100%;
+  accent-color: var(--accent);
+  padding: 0;
+}
+.audio-player-controls,
+.audio-player-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.audio-player-controls {
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.audio-player-buttons {
+  flex-wrap: wrap;
+}
+.audio-player-time {
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  margin-left: 4px;
+}
+.audio-player-speed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  white-space: nowrap;
+}
+.audio-player-speed select {
+  width: auto;
+  padding: 6px 8px;
+}
+
 .error {
   color: var(--danger);
   font-size: 13px;

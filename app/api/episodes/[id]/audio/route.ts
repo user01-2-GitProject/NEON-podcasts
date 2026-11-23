@@ -38,6 +38,39 @@ export async function GET(req: Request, { params }: Params) {
     headers["Content-Disposition"] = `attachment; filename="${safeTitle}.mp3"`;
   }
 
+  const range = req.headers.get("range");
+  if (range) {
+    const match = /^bytes=(\d+)-(\d*)$/.exec(range);
+    if (!match || audio.length === 0) {
+      return new Response(null, {
+        status: 416,
+        headers: { ...headers, "Content-Length": "0", "Content-Range": `bytes */${audio.length}` },
+      });
+    }
+
+    const requestedStart = BigInt(match[1]);
+    const requestedEnd = match[2] ? BigInt(match[2]) : BigInt(audio.length - 1);
+    const lastByte = BigInt(audio.length - 1);
+    if (requestedStart >= BigInt(audio.length) || requestedStart > requestedEnd) {
+      return new Response(null, {
+        status: 416,
+        headers: { ...headers, "Content-Length": "0", "Content-Range": `bytes */${audio.length}` },
+      });
+    }
+
+    const start = Math.max(0, Number(requestedStart));
+    const end = Number(requestedEnd > lastByte ? lastByte : requestedEnd);
+    const partialHeaders = {
+      ...headers,
+      "Content-Length": String(end - start + 1),
+      "Content-Range": `bytes ${start}-${end}/${audio.length}`,
+    };
+    return new Response(new Uint8Array(audio.subarray(start, end + 1)), {
+      status: 206,
+      headers: partialHeaders,
+    });
+  }
+
   return new Response(new Uint8Array(audio), { status: 200, headers });
 }
 
