@@ -115,6 +115,13 @@ export default function EpisodesPanel({
   return (
     <div className="panel">
       <h2>Episodes</h2>
+      {owner ? (
+        <p className="muted" style={{ overflowWrap: "anywhere" }}>
+          RSS feed: <a href={`/feed/${rssToken}`}>{`/feed/${rssToken}`}</a>. Submit this URL once
+          to Apple Podcasts Connect and Spotify for Podcasters; newly published episodes then
+          appear there automatically.
+        </p>
+      ) : null}
 
       {initialEpisodes.length === 0 ? (
         <p className="muted">No episodes yet. Generate one above.</p>
