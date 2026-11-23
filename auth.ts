@@ -1,12 +1,12 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
+import authConfig from "@/auth.config";
 import { sql } from "@/lib/db";
 import { roleForEmail, validOwnerSecret, verifiedGoogleEmail, verifyPassword } from "@/lib/auth";
 
 export const { handlers, auth } = NextAuth({
-  session: { strategy: "jwt" },
-  pages: { signIn: "/login" },
+  ...authConfig,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -31,6 +31,7 @@ export const { handlers, auth } = NextAuth({
     }),
   ],
   callbacks: {
+    ...authConfig.callbacks,
     signIn({ account, profile }) {
       return account?.provider !== "google" || verifiedGoogleEmail(profile) !== null;
     },
@@ -55,10 +56,6 @@ export const { handlers, auth } = NextAuth({
       }
       if (user) token.role = (user as { role: string }).role;
       return token;
-    },
-    session({ session, token }) {
-      session.user = { ...session.user, email: token.email, role: token.role } as typeof session.user;
-      return session;
     },
   },
 });

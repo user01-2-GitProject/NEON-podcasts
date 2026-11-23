@@ -1,11 +1,14 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { NextResponse } from "next/server";
+import NextAuth from "next-auth";
+import authConfig from "@/auth.config";
 import { sql } from "@/lib/db";
 import { bearerToken, scopeAllows, tokenHash, type ApiTokenScope } from "@/lib/api-tokens";
 
 const PUBLIC_PREFIXES = ["/login", "/api/auth", "/api/cron", "/feed", "/listen", "/_next", "/favicon.ico"];
+// Decode the v5 session with Auth.js while keeping Node-only password code out of Edge.
+const { auth } = NextAuth(authConfig);
 
-export async function middleware(req: NextRequest) {
+export default auth(async (req) => {
   const { pathname } = req.nextUrl;
   if (PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) return NextResponse.next();
   if (req.method === "GET" && /^\/api\/episodes\/[^/]+\/audio$/.test(pathname) && req.nextUrl.searchParams.has("feed")) {
@@ -35,20 +38,20 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET });
-  if (!token?.email) {
+  const email = req.auth?.user?.email;
+  if (!email) {
     if (pathname.startsWith("/api/")) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     const loginUrl = req.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
-  const allowedOwner = token.role === "owner" && (process.env.OWNER_EMAILS || "")
-    .split(",").some((email) => email.trim().toLowerCase() === token.email?.toLowerCase());
+  const allowedOwner = (req.auth?.user as { role?: string } | undefined)?.role === "owner" && (process.env.OWNER_EMAILS || "")
+    .split(",").some((owner) => owner.trim().toLowerCase() === email.toLowerCase());
   if (pathname.startsWith("/api/") && !["GET", "HEAD", "OPTIONS"].includes(req.method) && !allowedOwner) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
   return NextResponse.next();
-}
+});
 
 export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"] };
