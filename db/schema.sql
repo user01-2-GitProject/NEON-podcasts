@@ -3,10 +3,12 @@
 
 create extension if not exists "pgcrypto";
 
--- Just you for now; built so multi-user is a later step.
 create table if not exists users (
   id          uuid primary key default gen_random_uuid(),
   email       text unique,
+  password_hash text,
+  role        text not null default 'member' check (role in ('owner', 'member')),
+  owner_approved boolean not null default false,
   created_at  timestamptz not null default now()
 );
 

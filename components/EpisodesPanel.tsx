@@ -69,9 +69,11 @@ function UploadAudio({ episodeId }: { episodeId: string }) {
 export default function EpisodesPanel({
   initialEpisodes,
   runs,
+  owner,
 }: {
   initialEpisodes: Episode[];
   runs: Run[];
+  owner: boolean;
 }) {
   return (
     <div className="panel">
@@ -101,9 +103,9 @@ export default function EpisodesPanel({
                   <a className="btn" href={`${ep.audio_url}?download=1`}>
                     Download mp3
                   </a>
-                ) : (
+                ) : owner ? (
                   <UploadAudio episodeId={ep.id} />
-                )}
+                ) : null}
               </div>
             </div>
 

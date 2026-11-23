@@ -1,6 +1,6 @@
 # NEON Podcasts
 
-Generate podcast episodes from Markdown briefings. A single-user web app: create
+Generate podcast episodes from Markdown briefings. Owners create
 shows, upload `.md` briefings, and generate a downloadable episode (script via
 Claude → audio via hosted TTS → mp3 + show notes).
 
@@ -20,7 +20,7 @@ and subscriptions.
 - **TTS** — OpenAI, ElevenLabs, or a **local / self-hosted** OpenAI-compatible
   engine (Kokoro, Piper via openedai-speech, LocalAI). See "Local voices" below.
 - Audio is stored in Postgres for the MVP (swap to R2/S3 later)
-- Single-user auth gate via a signed cookie (no external auth service yet)
+- Auth.js email/password accounts stored in Neon; owner/member roles share all shows
 
 ## Setup
 
@@ -31,7 +31,9 @@ and subscriptions.
 
 2. **Configure env** — copy `.env.example` to `.env.local` and fill in:
    - `DATABASE_URL` — Neon pooled connection string
-   - `APP_PASSWORD` + `AUTH_SECRET` — the dashboard login gate
+   - `OWNER_EMAILS` — comma-separated owner email addresses; other accounts are read-only
+   - `OWNER_SIGNUP_SECRET` — private one-time owner enrollment secret; keep it from members
+   - `AUTH_SECRET` — a long random Auth.js session secret
    - Script LLM: `LLM_PROVIDER=anthropic` + `ANTHROPIC_API_KEY`, **or**
      `LLM_PROVIDER=openrouter` + `OPENROUTER_API_KEY` (+ optional `OPENROUTER_MODEL`)
    - TTS: `TTS_PROVIDER` = `openai` (`OPENAI_API_KEY`), `elevenlabs` (`ELEVENLABS_API_KEY`), or `local` (see Local voices)
@@ -45,8 +47,21 @@ and subscriptions.
    ```bash
    npm run dev
    ```
-   Open http://localhost:3000, sign in with `APP_PASSWORD`, create a show, upload a
+   Open http://localhost:3000, create an account with an email in `OWNER_EMAILS` and the owner enrollment secret, sign in, create a show, upload a
    `.md` briefing, and click **Generate now**.
+
+Accounts use Auth.js Credentials with scrypt password hashes in `users`; no external
+auth provider keys are needed. On sign-up and sign-in, the role is set from
+`OWNER_EMAILS` after the account has supplied `OWNER_SIGNUP_SECRET` once. This
+prevents public sign-up from claiming an owner address. A newly added owner signs
+in again to get the role; removing an email from `OWNER_EMAILS` blocks writes
+immediately.
+Run `npm run db:migrate` before deploying this change. The old `APP_PASSWORD`
+cookie cannot authenticate to the new app. The cron endpoint still uses
+`CRON_SECRET`, and RSS/listen pages and feed-token audio remain public.
+
+Neon Auth was considered first, but its current SDK requires Next.js 16 while
+this app is on Next.js 15. Auth.js works with the current stack.
 
 ## Local voices (self-hosted TTS)
 
