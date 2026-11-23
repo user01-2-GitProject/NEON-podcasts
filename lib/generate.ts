@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { getSql, sql } from "@/lib/db";
 import { generateScript, estimateCostCents } from "@/lib/claude";
 import { synthesize, estimateDurationSeconds } from "@/lib/tts";
+import { getStorage } from "@/lib/storage";
 import type { Show, Briefing, Episode, NarrationMode } from "@/lib/types";
 
 export const MAX_SCHEDULED_ATTEMPTS = 5;
@@ -49,6 +50,7 @@ export async function generateEpisode(
     runId = runRows[0].id;
   }
 
+  let pendingAudioEpisodeId: string | undefined;
   try {
     if (scheduledRun) {
       await sql`
@@ -129,21 +131,21 @@ export async function generateEpisode(
 
     if (scheduledRun) {
       const episodeId = randomUUID();
-      const audioPath = `/api/episodes/${episodeId}/audio`;
-      const audioB64 = tts.audio.toString("base64");
+      pendingAudioEpisodeId = episodeId;
+      const storage = getStorage();
+      const audioPath = storage.url(episodeId);
+      await sql`
+        insert into episodes
+          (id, show_id, title, script, show_notes, duration_seconds, byte_size, audio_content_type, status, scheduled_for)
+        values
+          (${episodeId}, ${showId}, ${result.title}, ${result.script}, ${result.show_notes},
+           ${duration}, ${byteSize}, ${tts.contentType}, 'draft', ${scheduledRun.scheduledFor})
+      `;
+      await storage.put(episodeId, tts.audio, tts.contentType);
       const results = await getSql().transaction((tx) => [
         tx`
-          insert into episodes
-            (id, show_id, title, script, show_notes, audio_url, duration_seconds,
-             byte_size, status, scheduled_for, published_at)
-          values
-            (${episodeId}, ${showId}, ${result.title}, ${result.script}, ${result.show_notes},
-             ${audioPath}, ${duration}, ${byteSize}, 'published', ${scheduledRun.scheduledFor}, now())
-          returning *
-        `,
-        tx`
-          insert into episode_audio (episode_id, content_type, data)
-          values (${episodeId}, ${tts.contentType}, decode(${audioB64}, 'base64'))
+          update episodes set audio_url = ${audioPath}, status = 'published', published_at = now()
+          where id = ${episodeId} returning *
         `,
         tx`
           update runs set
@@ -164,23 +166,21 @@ export async function generateEpisode(
       return { episode: (results[0] as Episode[])[0], runId };
     }
 
+    const storage = getStorage();
     const episodeRows = (await sql`
       insert into episodes
-        (show_id, title, script, show_notes, duration_seconds, byte_size, status, published_at)
+        (show_id, title, script, show_notes, duration_seconds, byte_size, audio_content_type, status)
       values
         (${showId}, ${result.title}, ${result.script}, ${result.show_notes},
-         ${duration}, ${byteSize}, 'published', now())
+         ${duration}, ${byteSize}, ${tts.contentType}, 'draft')
       returning *
     `) as Episode[];
     const episode = episodeRows[0];
+    pendingAudioEpisodeId = episode.id;
 
-    const audioPath = `/api/episodes/${episode.id}/audio`;
-    const audioB64 = tts.audio.toString("base64");
-    await sql`
-      insert into episode_audio (episode_id, content_type, data)
-      values (${episode.id}, ${tts.contentType}, decode(${audioB64}, 'base64'))
-    `;
-    await sql`update episodes set audio_url = ${audioPath} where id = ${episode.id}`;
+    const audioPath = storage.url(episode.id);
+    await storage.put(episode.id, tts.audio, tts.contentType);
+    await sql`update episodes set audio_url = ${audioPath}, status = 'published', published_at = now() where id = ${episode.id}`;
     episode.audio_url = audioPath;
 
     await sql`
@@ -197,6 +197,9 @@ export async function generateEpisode(
     return { episode, runId };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    if (pendingAudioEpisodeId) {
+      await sql`delete from episodes where id = ${pendingAudioEpisodeId} and status = 'draft'`;
+    }
     if (scheduledRun) {
       await sql`
         with failed as (
