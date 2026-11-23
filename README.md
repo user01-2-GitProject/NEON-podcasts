@@ -63,6 +63,33 @@ cookie cannot authenticate to the new app. The cron endpoint still uses
 Neon Auth was considered first, but its current SDK requires Next.js 16 while
 this app is on Next.js 15. Auth.js works with the current stack.
 
+## API tokens
+
+After signing in as an owner, create a token with `POST /api/tokens` using JSON
+`{"label":"My client","scope":"read_only"}` or `"read_write"`. The response
+contains the raw `token` once; save it securely. For example, in the browser
+console while signed in:
+
+```js
+await fetch("/api/tokens", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ label: "My client", scope: "read_only" }),
+}).then((response) => response.json());
+```
+
+Send the returned token with `Authorization: Bearer <token>` to existing `/api/*`
+show, briefing, episode, and settings routes. `read_only` permits GET requests;
+`read_write` also permits mutations and generation. A bearer header takes
+precedence over a browser cookie. `GET /api/tokens` lists metadata without raw
+tokens; `DELETE /api/tokens/<id>` revokes one. Token management requires an owner
+browser session. Cron still uses `CRON_SECRET`; RSS, listen pages, and feed-token
+audio remain separate public paths. No new environment variable is required.
+
+```bash
+curl -H "Authorization: Bearer $NEON_API_TOKEN" https://your-app.example/api/shows
+```
+
 ## Local voices (self-hosted TTS)
 
 Set `TTS_PROVIDER=local` and point `LOCAL_TTS_URL` at any **OpenAI-compatible**
