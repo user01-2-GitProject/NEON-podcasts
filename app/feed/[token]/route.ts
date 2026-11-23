@@ -28,9 +28,8 @@ export async function GET(req: Request, { params }: Params) {
 
   const episodes = (await sql`
     select e.id, e.title, e.show_notes, e.audio_url, e.byte_size,
-           ea.content_type, e.duration_seconds, e.published_at
+           e.audio_content_type as content_type, e.duration_seconds, e.published_at
     from episodes e
-    join episode_audio ea on ea.episode_id = e.id
     where e.show_id = ${show.id} and e.status = 'published'
       and e.audio_url is not null and e.byte_size > 0 and e.published_at is not null
     order by e.published_at desc, e.created_at desc

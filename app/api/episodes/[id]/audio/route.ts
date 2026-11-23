@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
+import { getStorage } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
@@ -10,23 +11,24 @@ export async function GET(req: Request, { params }: Params) {
   const { id } = await params;
   const feedToken = new URL(req.url).searchParams.get("feed");
   const rows = (await sql`
-    select ea.content_type, encode(ea.data, 'base64') as data_b64, e.title
-    from episode_audio ea
-    join episodes e on e.id = ea.episode_id
+    select e.title
+    from episodes e
     join shows s on s.id = e.show_id
-    where ea.episode_id = ${id}
+    where e.id = ${id}
       and (${feedToken}::text is null or (e.status = 'published' and s.rss_token = ${feedToken}))
-  `) as { content_type: string; data_b64: string; title: string }[];
+  `) as { title: string }[];
 
   const row = rows[0];
   if (!row) return new Response("Not found", { status: 404 });
 
-  const audio = Buffer.from(row.data_b64, "base64");
+  const stored = await getStorage().get(id);
+  if (!stored) return new Response("Not found", { status: 404 });
+  const audio = stored.bytes;
   const download = new URL(req.url).searchParams.get("download");
   const safeTitle = row.title.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "episode";
 
   const headers: Record<string, string> = {
-    "Content-Type": row.content_type || "audio/mpeg",
+    "Content-Type": stored.contentType || "audio/mpeg",
     "Content-Length": String(audio.length),
     "Cache-Control": "private, max-age=3600",
     "Accept-Ranges": "bytes",
@@ -76,20 +78,14 @@ export async function POST(req: Request, { params }: Params) {
     return NextResponse.json({ error: "Empty upload" }, { status: 400 });
   }
 
-  const audioB64 = bytes.toString("base64");
-  // Upsert the audio row, then publish the episode.
-  await sql`
-    insert into episode_audio (episode_id, content_type, data)
-    values (${id}, ${contentType}, decode(${audioB64}, 'base64'))
-    on conflict (episode_id) do update
-      set content_type = excluded.content_type, data = excluded.data
-  `;
-
-  const audioPath = `/api/episodes/${id}/audio`;
+  const storage = getStorage();
+  await storage.put(id, bytes, contentType);
+  const audioPath = storage.url(id);
   const rows = (await sql`
     update episodes
       set audio_url = ${audioPath},
           byte_size = ${bytes.length},
+          audio_content_type = ${contentType},
           status = 'published',
           published_at = coalesce(published_at, now())
     where id = ${id}
