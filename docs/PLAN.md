@@ -9,7 +9,7 @@
 ## Status (2026-11-22)
 - **MVP shipped** — PR #2 (merged): multiple shows, `.md` briefing upload, OpenRouter script generation, `local`/`external` narration modes, in-app Settings for the OpenRouter key. PR #3 (globals.css, cost-log bug fix, delete-show) also merged.
 - **Also shipped and merged to main** — PRs #5–#9: scheduler (cron dispatcher, retries, run history), per-show RSS feeds, public listen page + web player, CI, and the installable PWA. The scheduler is live; generation is no longer manual-only.
-- **Current phase: foundation** — real accounts with owner/member roles over shared shows and data, and moving audio from Postgres `bytea` to object storage. The product roadmap below follows.
+- **Current phase: foundation** — real accounts with owner/member roles over shared shows and data, pluggable audio storage, and the token-based API ✅. Moving existing audio to object storage remains separate work. The product roadmap below follows.
 
 ---
 
@@ -23,7 +23,7 @@ Three unglamorous changes underpin almost everything on the wishlist. Publishing
 
 1. **Real accounts.** Replace the shared password with email identity and owner/member roles. All shows and data remain shared; members can read, owners can manage them. The existing `shows.user_id` is not used for tenant scoping.
 2. **Move audio out of Postgres.** Audio is stored as rows in the database today — fine for a demo, wrong for real playback. Move files to object storage + CDN (Cloudflare R2 or S3) and store a URL. This is what makes streaming, scrubbing and video possible at all: they need HTTP range requests, which a CDN gives you for free.
-3. **A token-based API.** The native app can't lean on browser cookies. Expose today's route handlers as a stable JSON API with bearer tokens. Small job, and it unblocks the native client.
+3. **A token-based API. ✅** The existing JSON route handlers accept revocable bearer tokens with read-only or read+write scope. Owners mint and revoke tokens through session-authenticated `/api/tokens` routes. Native clients can use these without browser cookies.
 
 ---
 
