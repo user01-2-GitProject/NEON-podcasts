@@ -93,9 +93,5 @@ create table if not exists runs (
   finished_at       timestamptz
 );
 create index if not exists idx_runs_show_id on runs(show_id);
-create unique index if not exists idx_runs_scheduled_slot
-  on runs(show_id, scheduled_for)
-  where scheduled_for is not null;
-create unique index if not exists idx_episodes_scheduled_slot
-  on episodes(show_id, scheduled_for)
-  where scheduled_for is not null;
+
+-- Scheduler indexes live in 002_scheduler.sql, after its idempotent ALTERs.
