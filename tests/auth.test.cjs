@@ -35,3 +35,11 @@ test("owner enrollment requires the configured secret", async () => {
     else process.env.OWNER_SIGNUP_SECRET = previous;
   }
 });
+
+test("Google sign-in accepts only a verified email", async () => {
+  const { verifiedGoogleEmail } = await import("../lib/auth.ts");
+  assert.equal(verifiedGoogleEmail({ email: " Owner@Example.com ", email_verified: true }), "owner@example.com");
+  assert.equal(verifiedGoogleEmail({ email: "owner@example.com", email_verified: false }), null);
+  assert.equal(verifiedGoogleEmail({ email: "owner@example.com" }), null);
+  assert.equal(verifiedGoogleEmail({ email: "invalid", email_verified: true }), null);
+});

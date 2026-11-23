@@ -4,7 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 
 export default function LoginForm({ error, registered, next }: { error?: string; registered: boolean; next?: string }) {
-  const [message, setMessage] = useState(error === "owner" ? "Owner enrollment requires the owner secret." : error === "exists" ? "That account already exists. Sign in above." : error ? "Enter a valid email and a password of at least 12 characters." : "");
+  const [message, setMessage] = useState(error === "owner" ? "Owner enrollment requires the owner secret." : error === "exists" ? "That account already exists. Sign in above." : error === "invalid" ? "Enter a valid email and a password of at least 12 characters." : error ? "Sign-in failed. Try again." : "");
   const destination = next?.startsWith("/") && !next.startsWith("//") ? next : "/";
 
   async function login(form: FormData) {
@@ -25,18 +25,23 @@ export default function LoginForm({ error, registered, next }: { error?: string;
         <h2><span style={{ color: "var(--accent)" }}>NEON</span> Podcasts</h2>
         <p className="muted">Sign in to view the shared shows and episodes.</p>
         {registered ? <p className="muted">Account created. Sign in below.</p> : null}
+        {message ? <p className="error">{message}</p> : null}
+        <button type="button" autoFocus onClick={() => signIn("google", { redirectTo: destination })}>
+          Sign in with Google
+        </button>
+        <hr style={{ margin: "24px 0" }} />
+        <h3>Use a password instead</h3>
         <form action={login}>
           <label htmlFor="email">Email</label>
-          <input id="email" name="email" type="email" autoComplete="email" autoFocus required />
+          <input id="email" name="email" type="email" autoComplete="email" required />
           <label htmlFor="password">Password</label>
           <input id="password" name="password" type="password" autoComplete="current-password" required />
           <label htmlFor="owner-login-secret">Owner enrollment secret (first owner sign-in only)</label>
           <input id="owner-login-secret" name="ownerSecret" type="password" autoComplete="off" />
-          {message ? <p className="error">{message}</p> : null}
           <div style={{ marginTop: 14 }}><button type="submit">Sign in</button></div>
         </form>
         <hr style={{ margin: "24px 0" }} />
-        <h3>Create an account</h3>
+        <h3>Create a password account</h3>
         <p className="muted">New accounts can read shows. Owners are set by the site administrator.</p>
         <form method="post" action="/api/auth/register">
           <label htmlFor="register-email">Email</label>

@@ -63,6 +63,24 @@ cookie cannot authenticate to the new app. The cron endpoint still uses
 Neon Auth was considered first, but its current SDK requires Next.js 16 while
 this app is on Next.js 15. Auth.js works with the current stack.
 
+### Google sign-in
+
+Create a Google Cloud OAuth 2.0 **Web application** client. Configure the Google
+Auth Platform branding and audience; if the app is in testing, add intended users
+as test users. Add these exact Authorized redirect URIs:
+
+- `https://neon-podcasts.vercel.app/api/auth/callback/google`
+- `http://localhost:3000/api/auth/callback/google`
+
+Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in Vercel and in `.env.local`
+for local development. Google sign-in requires a verified Google email, creates
+or updates the matching user, and grants owner access only when that email is in
+`OWNER_EMAILS`. It does not use `OWNER_SIGNUP_SECRET`. Signing in with Google
+clears any old password hash on that email account, so the password cannot later
+take over its Google-verified owner role. Password sign-in remains available to
+accounts that have not switched to Google. No schema migration is needed because
+`users.password_hash` is already nullable.
+
 ## API tokens
 
 After signing in as an owner, create a token with `POST /api/tokens` using JSON
