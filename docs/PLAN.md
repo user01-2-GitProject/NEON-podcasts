@@ -1,20 +1,20 @@
 # NEON Podcasts — Native App & Product Roadmap
 
-> **TL;DR** — The MVP web app works: create multiple shows, upload `.md` briefings, and generate a well-crafted script (and, with a voice server running, a cloned-voice mp3) through OpenRouter, running on the Rig against Neon. The one piece left from the original goal is the **scheduler** — set a time and it generates unattended. This plan is the product layer on top of that: it turns NEON from a personal generator into a product (native app, publishing, subscriptions). **The order matters** — two foundations (always-on hosting + real user accounts) unlock publishing, subscriptions and the native app, while the in-app players and "nudge" controls can land earlier as self-contained wins.
+> **TL;DR** — The MVP web app works: create multiple shows, upload `.md` briefings, and generate a well-crafted script (and, with a voice server running, a cloned-voice mp3) through OpenRouter, running on the Rig against Neon. The MVP is **done**: scheduled unattended generation, RSS feeds, a public listen page + web player, CI, and an installable PWA are all shipped and merged to main (PRs #5–#9). This plan is the product layer on top of that: it turns NEON from a personal generator into a product (native app, publishing, subscriptions). **Current phase: foundation** — real multi-user auth, ownership scoping, and audio → object storage. **The order matters** — two foundations (always-on hosting + real user accounts) unlock publishing, subscriptions and the native app, while the in-app players and "nudge" controls can land earlier as self-contained wins.
 
 > **Roadmap source:** [NEON Podcasts — Native App & Product Roadmap](https://claude.ai/artifact/E88xUEPnJFzXFxFnvehpcC) (Claude Doc). This file mirrors it. The original single-user MVP build plan is preserved below under [§9 MVP build plan (shipped)](#9-mvp-build-plan-shipped).
 
 ---
 
-## Status (2026-11-21)
-- **MVP shipped** — PR #2 (merged): multiple shows, `.md` briefing upload, OpenRouter script generation, `local`/`external` narration modes, in-app Settings for the OpenRouter key.
-- **Fixes ready** — PR #3 (globals.css, cost-log bug fix, delete-show) is ready for review.
-- **Scheduler — NOT BUILT yet.** This is the last piece of the original MVP goal: schema has `cadence` / `schedule_time` / `next_run_at`, but no runner executes them. Today generation is manual ("Generate now") only. **This is the immediate next build**, ahead of the product roadmap below.
+## Status (2026-11-22)
+- **MVP shipped** — PR #2 (merged): multiple shows, `.md` briefing upload, OpenRouter script generation, `local`/`external` narration modes, in-app Settings for the OpenRouter key. PR #3 (globals.css, cost-log bug fix, delete-show) also merged.
+- **Also shipped and merged to main** — PRs #5–#9: scheduler (cron dispatcher, retries, run history), per-show RSS feeds, public listen page + web player, CI, and the installable PWA. The scheduler is live; generation is no longer manual-only.
+- **Current phase: foundation** — real multi-user auth, ownership scoping on every record/path, and moving audio from Postgres `bytea` to object storage. The product roadmap below follows.
 
 ---
 
 ## 1. Where you are today
-A working web app: create multiple shows, upload `.md` briefings, and generate a well-crafted script — and, with a voice server running, a cloned-voice mp3 — through OpenRouter. It runs on the Rig against a Neon database. The one piece left from the original goal is the **scheduler** (set a time and it generates unattended). Everything below is the product layer that sits on top of that.
+A working web app: create multiple shows, upload `.md` briefings, and generate a well-crafted script — and, with a voice server running, a cloned-voice mp3 — through OpenRouter. It runs on the Rig against a Neon database. The original MVP goal is complete, including the **scheduler** (set a time and it generates unattended), per-show RSS feeds, and a public listen page with web player. Everything below is the product layer that sits on top of that.
 
 ---
 
@@ -44,8 +44,8 @@ Three unglamorous changes underpin almost everything on the wishlist. Publishing
 ## 4. A suggested sequence
 The order is driven by dependencies, not by what's most fun.
 
-1. **Close the MVP** — the scheduler, so unattended generation works. It's the last piece of the original goal.
-2. **Foundation** — accounts, media on CDN, token API. The single biggest lift, but everything rides on it.
+1. **MVP ✅** — scheduler, RSS feeds, listen page/web player, CI and PWA shipped in PRs #5–#9.
+2. **Foundation (current phase)** — real multi-user auth, ownership scoping, audio → object storage, plus the token API. The single biggest lift, but everything rides on it.
 3. **Phase 1 — Publishing + web audio player.** Your first real "product" surface, still on the web.
 4. **Phase 2 — Steering / nudges.** Can run in parallel with native work once the API is stable.
 5. **Phase 3 — Native app (Expo).** Real native audio: background playback + lock-screen controls — a genuine reason to go native rather than wrap the web app.
@@ -58,7 +58,7 @@ Foundation + Phase 1 is the heavy lift; Phases 2 and 3 can overlap afterward.
 ## 5. Native app: the path
 Your current Next.js + Neon app becomes the **backend/API and the web client**; the native app is a second client on the same API.
 
-- **Interim: PWA.** You can get an installable, home-screen app from the existing web app with little work — a good bridge while the real native app is built.
+- **Interim: PWA (shipped, PR #9).** The web app is installable on the home screen — a bridge while the real native app is built.
 - **Real native: React Native (Expo).** One codebase for iOS and Android, reusing your TypeScript types and the same JSON API. The payoff over a web wrapper is native audio: `react-native-track-player` gives background playback and lock-screen controls.
 - **What carries over:** the whole backend — Neon, the generation pipeline, the API routes, your types. You're adding a client, not rebuilding the engine.
 
@@ -115,7 +115,7 @@ runs          (id, show_id, episode_id, status,     -- queued|running|done|faile
 ---
 
 ## 9. MVP build plan (shipped)
-> Kept for reference — this was the original single-user MVP, now shipped in PR #2. The scheduler (Phase 3 below) is the one remaining piece.
+> Kept for reference — this was the original single-user MVP, now shipped: PR #2 built the core, and PRs #5 and #6 added the scheduler (Phase 3) and public RSS (Phase 4). The MVP is done.
 
 ### Confirmed scope (jimmy, 2026-11-20)
 - **Single user** to start; built so multi-user is a later step (now the foundation above).
@@ -129,7 +129,7 @@ runs          (id, show_id, episode_id, status,     -- queued|running|done|faile
 - **Phase 0 — Foundations:** scaffold Next.js on Vercel, provision Neon, schema + migrations, single-user auth gate. ✅
 - **Phase 1 — Shows & briefings:** show CRUD, `.md` upload/replace, compute `next_run_at`. ✅
 - **Phase 2 — Generate one episode on demand:** read briefing → script (Claude/OpenRouter) → audio (hosted or local TTS) → store + download; `auto` / `external` (Muse script-only) narration modes. ✅
-- **Phase 3 — Schedule:** cron dispatcher finds due shows, idempotency guard + retry/backoff, run history. **⬅ next build (the MVP gap).**
-- **Phase 4 — Public RSS:** valid podcast XML per show, submit to Apple/Spotify.
+- **Phase 3 — Schedule:** cron dispatcher finds due shows, idempotency guard + retry/backoff, run history. ✅ (PR #5)
+- **Phase 4 — Public RSS:** valid podcast XML per show ✅ (PR #6); submitting feeds to Apple/Spotify is an external step.
 
 The product roadmap in §1–§7 picks up from the end of this MVP.
