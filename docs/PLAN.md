@@ -1,6 +1,6 @@
 # NEON Podcasts — Native App & Product Roadmap
 
-> **TL;DR** — The MVP web app works: create multiple shows, upload `.md` briefings, and generate a well-crafted script (and, with a voice server running, a cloned-voice mp3) through OpenRouter, running on the Rig against Neon. The MVP is **done**: scheduled unattended generation, RSS feeds, a public listen page + web player, CI, and an installable PWA are all shipped and merged to main (PRs #5–#9). This plan is the product layer on top of that: it turns NEON from a personal generator into a product (native app, publishing, subscriptions). **Current phase: foundation** — real multi-user auth, ownership scoping, and audio → object storage. **The order matters** — two foundations (always-on hosting + real user accounts) unlock publishing, subscriptions and the native app, while the in-app players and "nudge" controls can land earlier as self-contained wins.
+> **TL;DR** — The MVP web app works: create multiple shows, upload `.md` briefings, and generate a well-crafted script (and, with a voice server running, a cloned-voice mp3) through OpenRouter, running on the Rig against Neon. The MVP is **done**: scheduled unattended generation, RSS feeds, a public listen page + web player, CI, and an installable PWA are all shipped and merged to main (PRs #5–#9). This plan is the product layer on top of that: it turns NEON from a personal generator into a product (native app, publishing, subscriptions). **Current phase: foundation** — real accounts with owner/member roles over shared data, and audio → object storage. **The order matters** — two foundations (always-on hosting + real user accounts) unlock publishing, subscriptions and the native app, while the in-app players and "nudge" controls can land earlier as self-contained wins.
 
 > **Roadmap source:** [NEON Podcasts — Native App & Product Roadmap](https://claude.ai/artifact/E88xUEPnJFzXFxFnvehpcC) (Claude Doc). This file mirrors it. The original single-user MVP build plan is preserved below under [§9 MVP build plan (shipped)](#9-mvp-build-plan-shipped).
 
@@ -9,7 +9,7 @@
 ## Status (2026-11-22)
 - **MVP shipped** — PR #2 (merged): multiple shows, `.md` briefing upload, OpenRouter script generation, `local`/`external` narration modes, in-app Settings for the OpenRouter key. PR #3 (globals.css, cost-log bug fix, delete-show) also merged.
 - **Also shipped and merged to main** — PRs #5–#9: scheduler (cron dispatcher, retries, run history), per-show RSS feeds, public listen page + web player, CI, and the installable PWA. The scheduler is live; generation is no longer manual-only.
-- **Current phase: foundation** — real multi-user auth, ownership scoping on every record/path, and moving audio from Postgres `bytea` to object storage. The product roadmap below follows.
+- **Current phase: foundation** — real accounts with owner/member roles over shared shows and data, and moving audio from Postgres `bytea` to object storage. The product roadmap below follows.
 
 ---
 
@@ -21,7 +21,7 @@ A working web app: create multiple shows, upload `.md` briefings, and generate a
 ## 2. Build the foundation first
 Three unglamorous changes underpin almost everything on the wishlist. Publishing, subscriptions, the players and the native app all sit on these, so they come before the flashy work.
 
-1. **Real accounts (multi-user).** Today everyone shares one password. The database already has a `users` table and `shows.user_id`, so the data model is ready — you add an auth provider and scope every query to its owner. Pick one with both web and React Native SDKs (e.g. Clerk or Neon Auth) so web and native share one login.
+1. **Real accounts.** Replace the shared password with email identity and owner/member roles. All shows and data remain shared; members can read, owners can manage them. The existing `shows.user_id` is not used for tenant scoping.
 2. **Move audio out of Postgres.** Audio is stored as rows in the database today — fine for a demo, wrong for real playback. Move files to object storage + CDN (Cloudflare R2 or S3) and store a URL. This is what makes streaming, scrubbing and video possible at all: they need HTTP range requests, which a CDN gives you for free.
 3. **A token-based API.** The native app can't lean on browser cookies. Expose today's route handlers as a stable JSON API with bearer tokens. Small job, and it unblocks the native client.
 
@@ -45,7 +45,7 @@ Three unglamorous changes underpin almost everything on the wishlist. Publishing
 The order is driven by dependencies, not by what's most fun.
 
 1. **MVP ✅** — scheduler, RSS feeds, listen page/web player, CI and PWA shipped in PRs #5–#9.
-2. **Foundation (current phase)** — real multi-user auth, ownership scoping, audio → object storage, plus the token API. The single biggest lift, but everything rides on it.
+2. **Foundation (current phase)** — real accounts with shared-data roles, audio → object storage, plus the token API. The single biggest lift, but everything rides on it.
 3. **Phase 1 — Publishing + web audio player.** Your first real "product" surface, still on the web.
 4. **Phase 2 — Steering / nudges.** Can run in parallel with native work once the API is stable.
 5. **Phase 3 — Native app (Expo).** Real native audio: background playback + lock-screen controls — a genuine reason to go native rather than wrap the web app.

@@ -7,9 +7,11 @@ import type { Briefing } from "@/lib/types";
 export default function BriefingsPanel({
   showId,
   initialBriefings,
+  owner,
 }: {
   showId: string;
   initialBriefings: Briefing[];
+  owner: boolean;
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -59,7 +61,7 @@ export default function BriefingsPanel({
         script.
       </p>
 
-      <form onSubmit={upload}>
+      {owner ? <form onSubmit={upload}>
         <label htmlFor="briefing">Upload a Markdown file</label>
         <input id="briefing" ref={fileRef} type="file" accept=".md,.markdown,text/markdown,text/plain" />
         {error ? <p className="error">{error}</p> : null}
@@ -68,7 +70,7 @@ export default function BriefingsPanel({
             {busy ? "Uploading…" : "Upload briefing"}
           </button>
         </div>
-      </form>
+      </form> : null}
 
       <div style={{ marginTop: 16 }}>
         {initialBriefings.length === 0 ? (
@@ -83,14 +85,14 @@ export default function BriefingsPanel({
                 </span>
                 <div className="muted">{b.content_md.length} chars</div>
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
+              {owner ? <div style={{ display: "flex", gap: 8 }}>
                 <button className="secondary" onClick={() => toggle(b)}>
                   {b.is_active ? "Deactivate" : "Activate"}
                 </button>
                 <button className="danger" onClick={() => remove(b)}>
                   Delete
                 </button>
-              </div>
+              </div> : null}
             </div>
           ))
         )}

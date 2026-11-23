@@ -2,11 +2,15 @@ import Link from "next/link";
 import { sql } from "@/lib/db";
 import type { Show } from "@/lib/types";
 import NewShowForm from "@/components/NewShowForm";
+import SignOutButton from "@/components/SignOutButton";
+import { auth } from "@/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+  const session = await auth();
+  const owner = (session?.user as { role?: string } | undefined)?.role === "owner";
   let shows: Show[] = [];
   let dbError: string | null = null;
   try {
@@ -26,14 +30,8 @@ export default async function DashboardPage() {
           <span className="brand">NEON</span> Podcasts
         </h1>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <Link href="/settings" className="btn secondary">
-            Settings
-          </Link>
-          <form method="post" action="/api/auth/logout">
-            <button className="secondary" type="submit">
-              Sign out
-            </button>
-          </form>
+          {owner ? <Link href="/settings" className="btn secondary">Settings</Link> : null}
+          <SignOutButton />
         </div>
       </header>
 
@@ -49,9 +47,9 @@ export default async function DashboardPage() {
         ) : null}
 
         <div className="panel">
-          <h2>Your shows</h2>
+          <h2>Shows</h2>
           {shows.length === 0 ? (
-            <p className="muted">No shows yet. Create your first one below.</p>
+            <p className="muted">No shows yet.</p>
           ) : (
             <div>
               {shows.map((s) => {
@@ -78,7 +76,7 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        <NewShowForm />
+        {owner ? <NewShowForm /> : null}
       </div>
     </>
   );

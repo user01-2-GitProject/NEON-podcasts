@@ -6,11 +6,14 @@ import BriefingsPanel from "@/components/BriefingsPanel";
 import GeneratePanel from "@/components/GeneratePanel";
 import EpisodesPanel from "@/components/EpisodesPanel";
 import DeleteShowButton from "@/components/DeleteShowButton";
+import { auth } from "@/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export default async function ShowPage({ params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  const owner = (session?.user as { role?: string } | undefined)?.role === "owner";
   const { id } = await params;
 
   const shows = (await sql`select * from shows where id = ${id}`) as Show[];
@@ -49,18 +52,18 @@ export default async function ShowPage({ params }: { params: Promise<{ id: strin
           <p className="muted">
             {show.cadence} · ~{show.target_minutes} min · timezone {show.timezone}
           </p>
-          <DeleteShowButton showId={id} showTitle={show.title} />
+          {owner ? <DeleteShowButton showId={id} showTitle={show.title} /> : null}
         </div>
 
-        <BriefingsPanel showId={id} initialBriefings={briefings} />
+        <BriefingsPanel showId={id} initialBriefings={briefings} owner={owner} />
 
-        <GeneratePanel
+        {owner ? <GeneratePanel
           showId={id}
           activeBriefings={activeBriefings}
           narrationMode={show.narration_mode === "external" ? "external" : "auto"}
-        />
+        /> : null}
 
-        <EpisodesPanel initialEpisodes={episodes} runs={runs} />
+        <EpisodesPanel initialEpisodes={episodes} runs={runs} owner={owner} />
       </div>
     </>
   );
