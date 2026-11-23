@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateEpisode } from "@/lib/generate";
+import { sanitizeError } from "@/lib/errors";
 import type { NarrationMode } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -20,7 +21,9 @@ export async function POST(req: Request, { params }: Params) {
     const { episode, runId } = await generateEpisode(id, mode);
     return NextResponse.json({ episode, runId }, { status: 201 });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: sanitizeError(err, "generateEpisode") },
+      { status: 500 }
+    );
   }
 }

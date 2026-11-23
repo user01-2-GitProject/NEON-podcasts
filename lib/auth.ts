@@ -10,8 +10,16 @@ export function roleForEmail(email: string): "owner" | "member" {
 
 export function validOwnerSecret(input: string): boolean {
   const expected = process.env.OWNER_SIGNUP_SECRET;
-  if (!expected || !input || input.length !== expected.length) return false;
-  return timingSafeEqual(Buffer.from(input), Buffer.from(expected));
+  if (!expected || !input) return false;
+
+  // Prevent timing attacks that could reveal the secret length by always
+  // comparing buffers of the same length (the expected secret's length).
+  // This ensures constant-time comparison regardless of input length.
+  const expectedBuf = Buffer.from(expected);
+  const inputBuf = Buffer.from(input);
+  const compareBuf = Buffer.alloc(expectedBuf.length);
+  inputBuf.copy(compareBuf, 0, 0, Math.min(inputBuf.length, expectedBuf.length));
+  return timingSafeEqual(compareBuf, expectedBuf);
 }
 
 export async function hashPassword(password: string): Promise<string> {
