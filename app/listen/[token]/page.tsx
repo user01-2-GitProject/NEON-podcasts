@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import AudioPlayer from "@/components/AudioPlayer";
 import { sql } from "@/lib/db";
 import type { Show, Episode } from "@/lib/types";
 
@@ -94,9 +95,7 @@ export default async function ListenPage({ params }: Params) {
                     {duration ? ` · ${duration}` : ""}
                   </p>
                   {src ? (
-                    <audio controls preload="metadata" src={src}>
-                      Your browser does not support audio playback.
-                    </audio>
+                    <AudioPlayer src={src} title={episode.title} />
                   ) : (
                     <p className="muted">Audio is not available for this episode yet.</p>
                   )}
