@@ -1,12 +1,17 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 import { sql } from "@/lib/db";
-import { roleForEmail, validOwnerSecret, verifyPassword } from "@/lib/auth";
+import { roleForEmail, validOwnerSecret, verifiedGoogleEmail, verifyPassword } from "@/lib/auth";
 
 export const { handlers, auth } = NextAuth({
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    }),
     Credentials({
       credentials: { email: {}, password: {}, ownerSecret: {} },
       async authorize(credentials) {
@@ -26,12 +31,33 @@ export const { handlers, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    signIn({ account, profile }) {
+      return account?.provider !== "google" || verifiedGoogleEmail(profile) !== null;
+    },
+    async jwt({ token, user, account, profile }) {
+      if (account?.provider === "google") {
+        const email = verifiedGoogleEmail(profile);
+        if (!email) throw new Error("Google email was not verified");
+        const role = roleForEmail(email);
+        const rows = (await sql`
+          insert into users (email, password_hash, role, owner_approved)
+          values (${email}, null, ${role}, true)
+          on conflict (email) do update set
+            password_hash = null,
+            role = excluded.role,
+            owner_approved = true
+          returning id
+        `) as { id: string }[];
+        token.sub = rows[0].id;
+        token.email = email;
+        token.role = role;
+        return token;
+      }
       if (user) token.role = (user as { role: string }).role;
       return token;
     },
     session({ session, token }) {
-      session.user = { ...session.user, role: token.role } as typeof session.user;
+      session.user = { ...session.user, email: token.email, role: token.role } as typeof session.user;
       return session;
     },
   },

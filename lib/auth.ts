@@ -8,6 +8,14 @@ export function roleForEmail(email: string): "owner" | "member" {
   return owners.includes(email.trim().toLowerCase()) ? "owner" : "member";
 }
 
+export function verifiedGoogleEmail(profile: unknown): string | null {
+  if (!profile || typeof profile !== "object") return null;
+  const { email, email_verified } = profile as { email?: unknown; email_verified?: unknown };
+  if (email_verified !== true || typeof email !== "string") return null;
+  const normalized = email.trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized) ? normalized : null;
+}
+
 export function validOwnerSecret(input: string): boolean {
   const expected = process.env.OWNER_SIGNUP_SECRET;
   if (!expected || !input) return false;
