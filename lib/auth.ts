@@ -1,4 +1,4 @@
-import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
+import { randomBytes, scrypt as scryptCallback, timingSafeEqual, createHash } from "node:crypto";
 import { promisify } from "node:util";
 
 const scrypt = promisify(scryptCallback);
@@ -12,14 +12,12 @@ export function validOwnerSecret(input: string): boolean {
   const expected = process.env.OWNER_SIGNUP_SECRET;
   if (!expected || !input) return false;
 
-  // Prevent timing attacks that could reveal the secret length by always
-  // comparing buffers of the same length (the expected secret's length).
-  // This ensures constant-time comparison regardless of input length.
-  const expectedBuf = Buffer.from(expected);
-  const inputBuf = Buffer.from(input);
-  const compareBuf = Buffer.alloc(expectedBuf.length);
-  inputBuf.copy(compareBuf, 0, 0, Math.min(inputBuf.length, expectedBuf.length));
-  return timingSafeEqual(compareBuf, expectedBuf);
+  // Prevent timing attacks by comparing SHA-256 hashes of both values.
+  // This ensures constant-time comparison regardless of input length
+  // and prevents leaking the secret length via timing side-channels.
+  const expectedHash = createHash("sha256").update(expected).digest();
+  const inputHash = createHash("sha256").update(input).digest();
+  return timingSafeEqual(expectedHash, inputHash);
 }
 
 export async function hashPassword(password: string): Promise<string> {
