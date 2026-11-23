@@ -49,7 +49,7 @@ export default async function DashboardPage() {
         <div className="panel">
           <h2>Shows</h2>
           {shows.length === 0 ? (
-            <p className="muted">No shows yet.</p>
+            <p className="muted">No shows yet. Create your first show to get started.</p>
           ) : (
             <div>
               {shows.map((s) => {
