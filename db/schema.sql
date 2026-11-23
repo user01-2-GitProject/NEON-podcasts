@@ -49,6 +49,7 @@ create table if not exists episodes (
   audio_url        text,                               -- download/stream path
   duration_seconds integer,
   byte_size        integer,
+  audio_content_type text not null default 'audio/mpeg',
   status           text not null default 'draft',      -- draft | published | failed
   scheduled_for    timestamptz,
   published_at     timestamptz,
@@ -56,12 +57,15 @@ create table if not exists episodes (
 );
 create index if not exists idx_episodes_show_id on episodes(show_id);
 
--- Audio bytes live in their own table for the MVP (swap to R2/S3 later).
+-- The default storage provider keeps audio bytes here; S3-compatible storage is optional.
 create table if not exists episode_audio (
   episode_id   uuid primary key references episodes(id) on delete cascade,
   content_type text not null default 'audio/mpeg',
   data         bytea not null
 );
+alter table episodes add column if not exists audio_content_type text not null default 'audio/mpeg';
+update episodes e set audio_content_type = ea.content_type
+from episode_audio ea where ea.episode_id = e.id and e.audio_content_type = 'audio/mpeg';
 
 -- App-wide settings (single-user). Key/value so it's easy to extend.
 -- Holds the in-app LLM config (provider, OpenRouter key + model) that overrides
