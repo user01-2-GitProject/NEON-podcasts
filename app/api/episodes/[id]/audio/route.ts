@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getStorage } from "@/lib/storage";
+import { sanitizeError } from "@/lib/errors";
 
 export const runtime = "nodejs";
 
@@ -70,8 +71,10 @@ export async function POST(req: Request, { params }: Params) {
       bytes = Buffer.from(await req.arrayBuffer());
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: `Could not read upload: ${message}` }, { status: 400 });
+    return NextResponse.json(
+      { error: sanitizeError(err, "audio upload read") },
+      { status: 400 }
+    );
   }
 
   if (bytes.length === 0) {
