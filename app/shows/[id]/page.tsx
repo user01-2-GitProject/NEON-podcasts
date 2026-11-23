@@ -63,7 +63,7 @@ export default async function ShowPage({ params }: { params: Promise<{ id: strin
           narrationMode={show.narration_mode === "external" ? "external" : "auto"}
         /> : null}
 
-        <EpisodesPanel initialEpisodes={episodes} runs={runs} owner={owner} />
+        <EpisodesPanel initialEpisodes={episodes} runs={runs} owner={owner} rssToken={show.rss_token} />
       </div>
     </>
   );
