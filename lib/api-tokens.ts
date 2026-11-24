@@ -33,6 +33,7 @@ export function isSelfServicePath(pathname: string): boolean {
     pathname.startsWith("/api/subscriptions/") ||
     pathname === "/api/me/tokens" ||
     pathname.startsWith("/api/me/tokens/") ||
+    pathname === "/api/me" ||
     LIVE_SELF_SERVICE.test(pathname)
   );
 }
