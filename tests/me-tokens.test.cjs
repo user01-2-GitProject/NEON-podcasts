@@ -46,3 +46,21 @@ test("revokeAllMyTokens revokes only the caller's active tokens and counts them"
   assert.match(db.calls[0].text, /revoked_at is null/);
   assert.deepEqual(db.calls[0].values, [USER]);
 });
+
+test("browser sign-in only hands tokens to Expo Go or the NEON app scheme", async () => {
+  const { allowedAppRedirect, withToken } = await import("../lib/me-tokens.ts");
+  assert.equal(allowedAppRedirect("exp://192.168.1.5:8081/--/auth"), "exp://192.168.1.5:8081/--/auth");
+  assert.equal(allowedAppRedirect("neonpodcasts://auth"), "neonpodcasts://auth");
+  assert.equal(allowedAppRedirect("https://evil.example/steal"), null);
+  assert.equal(allowedAppRedirect("javascript:alert(1)"), null);
+  assert.equal(allowedAppRedirect(undefined), null);
+  assert.equal(allowedAppRedirect("not a url"), null);
+  assert.match(withToken("exp://h:8081/--/auth", "npt_abc"), /^exp:\/\/h:8081\/--\/auth\?token=npt_abc$/);
+});
+
+test("device token is minted for the caller as read_write", async () => {
+  const { createMyDeviceToken } = await import("../lib/me-tokens.ts");
+  const db = fakeSql();
+  await createMyDeviceToken(db, USER, "a@x.com", "npt_x", "hash");
+  assert.deepEqual(db.calls[0].values, ["hash", "mobile:a@x.com", "read_write", USER]);
+});

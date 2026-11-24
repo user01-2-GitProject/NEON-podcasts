@@ -8,6 +8,7 @@ type AuthState = {
   token: string | null;
   loading: boolean;
   signInWithGoogleIdToken: (idToken: string) => Promise<void>;
+  signInWithToken: (token: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -36,13 +37,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(body.token);
   }, []);
 
+  // Stores a token handed back by the browser sign-in (/mobile-connect).
+  const signInWithToken = useCallback(async (raw: string) => {
+    if (!/^npt_[0-9a-f]{64}$/i.test(raw)) throw new Error("Sign-in returned an invalid token");
+    await SecureStore.setItemAsync(TOKEN_KEY, raw);
+    setToken(raw);
+  }, []);
+
   const signOut = useCallback(async () => {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     setToken(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ token, loading, signInWithGoogleIdToken, signOut }}>
+    <AuthContext.Provider value={{ token, loading, signInWithGoogleIdToken, signInWithToken, signOut }}>
       {children}
     </AuthContext.Provider>
   );

@@ -43,3 +43,37 @@ export async function revokeAllMyTokens(db: SqlFn, userId: string): Promise<numb
   `) as { id: string }[];
   return rows.length;
 }
+
+// Deep-link targets the browser sign-in may hand a token to: Expo Go (exp/exps)
+// and the NEON app's own scheme. Anything else (http, other apps) is refused so
+// a crafted link can't ship a token to a third party.
+export function allowedAppRedirect(raw: unknown): string | null {
+  if (typeof raw !== "string" || raw.length > 500) return null;
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return null;
+  }
+  return ["exp:", "exps:", "neonpodcasts:"].includes(url.protocol) ? raw : null;
+}
+
+export function withToken(redirect: string, token: string): string {
+  const url = new URL(redirect);
+  url.searchParams.set("token", token);
+  return url.toString();
+}
+
+// Mint a read_write token for the caller's own device ("Sign in with browser").
+export async function createMyDeviceToken(
+  db: SqlFn,
+  userId: string,
+  email: string,
+  token: string,
+  hash: string,
+): Promise<void> {
+  await db`
+    insert into api_tokens (token_hash, label, scope, created_by)
+    values (${hash}, ${"mobile:" + email}, ${"read_write"}, ${userId})
+  `;
+}
