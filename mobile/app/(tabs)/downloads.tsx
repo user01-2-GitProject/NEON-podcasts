@@ -1,4 +1,5 @@
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { ListMessage } from "../../components";
 import { useDownloads, type DownloadedEpisode } from "../../lib/downloads";
 import { usePlayer } from "../../lib/player";
 import { colors } from "../../lib/theme";
@@ -13,7 +14,9 @@ export default function Downloads() {
       contentContainerStyle={{ padding: 12, gap: 8 }}
       data={downloads}
       keyExtractor={(d) => d.episode.id}
-      ListEmptyComponent={<Text style={styles.empty}>Download an episode to listen offline.</Text>}
+      ListEmptyComponent={
+        <ListMessage message="Nothing downloaded yet." detail="Download an episode to listen offline." />
+      }
       renderItem={({ item: { episode } }) => (
         <View style={[styles.card, current?.id === episode.id && { borderColor: colors.accent }]}>
           <Pressable onPress={() => play(episode)} style={{ flex: 1 }}>
@@ -50,7 +53,6 @@ const styles = StyleSheet.create({
   },
   title: { color: colors.text, fontWeight: "600", fontSize: 16 },
   sub: { color: colors.muted, marginTop: 4 },
-  empty: { color: colors.muted, textAlign: "center", marginTop: 48 },
   btn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: colors.danger },
   btnText: { color: colors.danger, fontWeight: "700", fontSize: 13 },
 });
