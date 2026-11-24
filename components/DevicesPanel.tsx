@@ -21,6 +21,9 @@ export default function DevicesPanel() {
   const [tokens, setTokens] = useState<MeToken[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [label, setLabel] = useState("");
+  const [scope, setScope] = useState<"read_only" | "read_write">("read_only");
+  const [created, setCreated] = useState<string | null>(null);
 
   async function load() {
     setError(null);
@@ -72,6 +75,29 @@ export default function DevicesPanel() {
     }
   }
 
+  async function createAgentToken(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    setCreated(null);
+    try {
+      const res = await fetch("/api/me/tokens", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: label.trim(), scope }),
+      });
+      const data = (await res.json()) as { token?: string; error?: string };
+      if (!res.ok) throw new Error(data.error || "Failed to create agent token");
+      setCreated(data.token || null);
+      setLabel("");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const active = (tokens || []).filter((t) => !t.revoked_at);
 
   return (
@@ -79,6 +105,37 @@ export default function DevicesPanel() {
       <h2>Devices &amp; tokens</h2>
       <p className="muted">Access tokens issued to your signed-in devices and apps.</p>
       {error ? <p className="error">{error}</p> : null}
+      <form action="#" onSubmit={createAgentToken}>
+        <label htmlFor="agent-token-label">Agent label</label>
+        <input
+          id="agent-token-label"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          maxLength={40}
+          required
+        />
+        <label htmlFor="agent-token-scope">Scope</label>
+        <select
+          id="agent-token-scope"
+          value={scope}
+          onChange={(e) => setScope(e.target.value as "read_only" | "read_write")}
+        >
+          <option value="read_only">read_only</option>
+          <option value="read_write">read_write</option>
+        </select>
+        <div style={{ marginTop: 14 }}>
+          <button type="submit" disabled={busy || label.trim() === ""}>
+            Create agent token
+          </button>
+        </div>
+      </form>
+      {created ? (
+        <p className="muted" style={{ marginTop: 12 }}>
+          Copy this token now — it is shown only once:
+          <br />
+          <code>{created}</code>
+        </p>
+      ) : null}
       {tokens === null ? (
         <p className="muted">Loading…</p>
       ) : tokens.length === 0 ? (

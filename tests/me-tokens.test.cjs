@@ -64,3 +64,26 @@ test("device token is minted for the caller as read_write", async () => {
   await createMyDeviceToken(db, USER, "a@x.com", "npt_x", "hash");
   assert.deepEqual(db.calls[0].values, ["hash", "mobile:a@x.com", "read_write", USER]);
 });
+
+test("agent token is caller-scoped, labeled, and stores the token hash", async () => {
+  const { createAgentToken } = await import("../lib/me-tokens.ts");
+  const { tokenHash } = await import("../lib/api-tokens.ts");
+  const db = fakeSql([{ id: TOKEN, label: "agent:research", scope: "read_only" }]);
+  const raw = "npt_" + "a".repeat(64);
+
+  const created = await createAgentToken(db, USER, "research", "read_only", () => raw);
+
+  assert.deepEqual(created, { id: TOKEN, label: "agent:research", scope: "read_only", token: raw });
+  assert.deepEqual(db.calls[0].values, [await tokenHash(raw), "agent:research", "read_only", USER]);
+});
+
+test("agent token input rejects invalid labels and scopes", async () => {
+  const { parseAgentTokenInput } = await import("../lib/me-tokens.ts");
+  assert.deepEqual(parseAgentTokenInput({ label: " research ", scope: "read_only" }), {
+    label: "research",
+    scope: "read_only",
+  });
+  assert.equal(parseAgentTokenInput({ label: "", scope: "read_only" }), null);
+  assert.equal(parseAgentTokenInput({ label: "a".repeat(41), scope: "read_only" }), null);
+  assert.equal(parseAgentTokenInput({ label: "research", scope: "admin" }), null);
+});
