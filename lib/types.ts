@@ -8,6 +8,7 @@ export interface Show {
   user_id: string | null;
   title: string;
   description: string;
+  style_guide: string;
   voice_id: string | null;
   narration_mode: NarrationMode;
   cadence: Cadence;
@@ -18,6 +19,17 @@ export interface Show {
   is_public: boolean;
   next_run_at: string | null;
   is_active: boolean;
+  created_at: string;
+}
+
+export type PronunciationMatchMode = "word" | "substring";
+
+export interface Pronunciation {
+  id: string;
+  show_id: string;
+  term: string;
+  say_as: string;
+  match_mode: PronunciationMatchMode;
   created_at: string;
 }
 

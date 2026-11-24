@@ -24,6 +24,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
   const title = body.title !== undefined ? body.title.toString().trim() || show.title : show.title;
   const description = body.description !== undefined ? body.description.toString() : show.description;
+  const styleGuide = body.style_guide !== undefined ? body.style_guide.toString() : show.style_guide;
   const voiceId = body.voice_id !== undefined ? (body.voice_id ? body.voice_id.toString() : null) : show.voice_id;
   const cadence =
     body.cadence !== undefined && ["daily", "weekly", "manual"].includes(body.cadence)
@@ -50,6 +51,7 @@ export async function PATCH(req: Request, { params }: Params) {
     update shows set
       title = ${title},
       description = ${description},
+      style_guide = ${styleGuide},
       voice_id = ${voiceId},
       cadence = ${cadence},
       schedule_time = ${scheduleTime},

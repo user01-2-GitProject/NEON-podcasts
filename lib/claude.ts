@@ -17,6 +17,7 @@ interface GenerateArgs {
   showDescription: string;
   targetMinutes: number;
   briefings: { filename: string; content_md: string }[];
+  styleGuide?: string;
 }
 
 interface LlmResult {
@@ -39,14 +40,14 @@ export async function generateScript(args: GenerateArgs): Promise<LlmResult> {
   return viaAnthropic(system, userText);
 }
 
-function buildPrompt(args: GenerateArgs): { system: string; userText: string } {
+export function buildPrompt(args: GenerateArgs): { system: string; userText: string } {
   const briefingBlock = args.briefings.length
     ? args.briefings
         .map((b) => `--- BRIEFING: ${b.filename} ---\n${b.content_md}`)
         .join("\n\n")
     : "(No briefing documents were provided. Write a short general episode for the show.)";
 
-  const system = [
+  const systemLines = [
     "You are a podcast scriptwriter and producer.",
     "You write a single-host, natural-sounding spoken-word script that will be read aloud by a text-to-speech engine.",
     "Rules for the script field:",
@@ -58,7 +59,11 @@ function buildPrompt(args: GenerateArgs): { system: string; userText: string } {
     )} words).`,
     "Rules for show_notes: concise markdown summary with a one-line hook and 3-6 bullet takeaways.",
     "Rules for title: a specific, engaging episode title (no date unless relevant).",
-  ].join("\n");
+  ];
+  const styleGuide = args.styleGuide?.trim();
+  const system = styleGuide
+    ? `${systemLines.join("\n")}\n\nSHOW STYLE GUIDANCE (follow this closely):\n${styleGuide}`
+    : systemLines.join("\n");
 
   const userText = [
     `SHOW TITLE: ${args.showTitle}`,
