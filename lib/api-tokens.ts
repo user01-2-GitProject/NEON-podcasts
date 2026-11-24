@@ -18,3 +18,22 @@ export async function tokenHash(token: string): Promise<string> {
 export function scopeAllows(scope: ApiTokenScope, method: string): boolean {
   return scope === "read_write" || ["GET", "HEAD", "OPTIONS"].includes(method);
 }
+
+// Whether a bearer-token request is allowed, mirroring the cookie-session policy:
+// reads need only read-capable scope; mutations need read_write AND are owner-only,
+// except the community carve-out for /api/subscriptions* (so a member's mobile
+// token can follow/unfollow but cannot drive owner-only APIs).
+export function bearerRequestAllowed(opts: {
+  scope: ApiTokenScope;
+  role: string;
+  ownerApproved: boolean;
+  method: string;
+  pathname: string;
+}): boolean {
+  if (!scopeAllows(opts.scope, opts.method)) return false;
+  if (["GET", "HEAD", "OPTIONS"].includes(opts.method)) return true;
+  const isSubscriptions =
+    opts.pathname === "/api/subscriptions" || opts.pathname.startsWith("/api/subscriptions/");
+  if (isSubscriptions) return true;
+  return opts.role === "owner" && opts.ownerApproved === true;
+}
