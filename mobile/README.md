@@ -41,10 +41,16 @@ Audio URLs come back with `?feed=<rss_token>` attached, so playback needs no aut
 
 - `app/_layout.tsx`: providers + auth gate (redirects to `/login` without a token)
 - `app/login.tsx`: Google sign-in
-- `app/(tabs)/`: Following, Browse, Settings
+- `app/(tabs)/`: Following, Browse, Downloads, Settings
 - `app/show/[token].tsx`: show episodes
-- `lib/`: API client, auth context, player (expo-audio with background playback)
+- `lib/`: API client, auth context, player (expo-audio with background playback), downloads
+
+## Offline downloads
+
+Episode rows have a Download button. `lib/downloads.tsx` saves the mp3 (via `expo-file-system`) to
+`<documents>/downloads/<episodeId>.mp3` and keeps `downloads/index.json` so the Downloads tab survives restarts.
+The player plays the local file when one exists, otherwise it streams `audio_url`.
 
 ## Not yet (later phases)
 
-Lock-screen controls and queue (react-native-track-player, 3c), offline downloads and push (3d), EAS builds to TestFlight / Play internal (3e).
+Lock-screen controls and queue (react-native-track-player, 3c), push (3d), EAS builds to TestFlight / Play internal (3e).
