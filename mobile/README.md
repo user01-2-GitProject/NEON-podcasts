@@ -45,7 +45,23 @@ Required environment variables are placeholders set via EAS secrets (`eas secret
 - `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`
 - `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`
 
-Set real values for these secrets before building or submitting a release.
+Set real values for these secrets before building or submitting a release. `EXPO_PUBLIC_WEB_URL` is optional; it overrides `extra.webUrl` in `app.json` (which falls back to `extra.apiUrl`) for the Settings/About Privacy Policy and Terms links.
+
+## Before store submission
+
+- `app.json` uses `com.needlesslyengineeredonlinenetwork.neon` for both the iOS bundle identifier and Android package. Confirm this is the identifier registered in the Apple and Google consoles.
+- Replace the placeholder `assets/icon.png`, `assets/adaptive-icon.png` and `assets/splash.png` with final artwork.
+- Fill real Apple/Google IDs and the Play service-account key path in `eas.json` via EAS credentials/secrets, never in committed files.
+- Set the real `EXPO_PUBLIC_*` secrets and confirm `https://neon-podcasts.vercel.app/privacy` and `/terms` are live.
+- Exercise Settings → Delete account against the deployed account-deletion API before release.
+
+## Try it on your iPhone (free, Expo Go)
+
+1. Install **Expo Go** from the App Store.
+2. On the Rig: `cd mobile && npm install && npx expo start --tunnel`
+3. Scan the QR code with the iPhone camera. Tap **Sign in with Google**: it opens the NEON website, you sign in as usual and tap **Connect app**, and you're back in the app.
+
+No Apple Developer account or Google Cloud client IDs needed for this path.
 
 ## Try it on your iPhone (free, Expo Go)
 
@@ -84,7 +100,8 @@ Audio URLs come back with `?feed=<rss_token>` attached, so playback needs no aut
 
 - `app/_layout.tsx`: providers + auth gate (redirects to `/login` without a token)
 - `app/login.tsx`: Google sign-in
-- `app/(tabs)/`: Following, Browse, Downloads, Settings
+- `app/(tabs)/`: Following, Browse, Live, Downloads, Settings
+- `app/about.tsx`: app name, version, Privacy/Terms links (linked from Settings)
 - `app/show/[token].tsx`: show episodes
 - `lib/`: API client, auth context, player (expo-audio with background playback), downloads
 

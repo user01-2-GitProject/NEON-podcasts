@@ -7,6 +7,7 @@ import GeneratePanel from "@/components/GeneratePanel";
 import SteeringPanel from "@/components/SteeringPanel";
 import EpisodesPanel from "@/components/EpisodesPanel";
 import DeleteShowButton from "@/components/DeleteShowButton";
+import ShowArtworkForm from "@/components/ShowArtworkForm";
 import { auth } from "@/auth";
 
 export const runtime = "nodejs";
@@ -52,11 +53,13 @@ export default async function ShowPage({ params }: { params: Promise<{ id: strin
 
       <div className="container">
         <div className="panel">
+          {show.image_url ? <img className="show-art" src={show.image_url} alt={`${show.title} artwork`} /> : null}
           <h2>{show.title}</h2>
           <p className="muted">{show.description || "No description."}</p>
           <p className="muted">
             {show.cadence} · ~{show.target_minutes} min · timezone {show.timezone}
           </p>
+          {owner ? <ShowArtworkForm showId={id} initialImageUrl={show.image_url ?? null} /> : null}
           {owner ? <DeleteShowButton showId={id} showTitle={show.title} /> : null}
         </div>
 

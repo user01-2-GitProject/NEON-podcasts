@@ -1,5 +1,6 @@
 import { Link } from "expo-router";
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { ErrorBanner, ListMessage } from "../../components";
 import { api, type BrowseShow } from "../../lib/api";
 import { colors } from "../../lib/theme";
 import { useApi } from "../../lib/useApi";
@@ -26,7 +27,18 @@ export default function Browse() {
       data={data ?? []}
       keyExtractor={(s) => s.id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.accent} />}
-      ListEmptyComponent={<Text style={styles.empty}>{error ?? (data ? "No published shows yet." : "")}</Text>}
+      ListHeaderComponent={
+        error && data && data.length > 0 ? (
+          <ErrorBanner message="Couldn't refresh. Showing the last load." onRetry={() => void refresh()} />
+        ) : undefined
+      }
+      ListEmptyComponent={
+        <ListMessage
+          message={error ? "Couldn't load shows." : data ? "No shows yet." : "Loading shows…"}
+          detail={error ?? (data ? "Check back soon." : undefined)}
+          onRetry={error ? () => void refresh() : undefined}
+        />
+      }
       renderItem={({ item }) => (
         <View style={styles.card}>
           <Link href={{ pathname: "/show/[token]", params: { token: item.rss_token, title: item.title } }} asChild>
@@ -55,5 +67,4 @@ const styles = StyleSheet.create({
   follow: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.accent },
   following: { backgroundColor: "transparent", borderWidth: 1, borderColor: colors.accent },
   followText: { color: "#000", fontWeight: "700" },
-  empty: { color: colors.muted, textAlign: "center", marginTop: 48 },
 });

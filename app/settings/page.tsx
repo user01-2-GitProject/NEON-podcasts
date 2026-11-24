@@ -2,6 +2,7 @@ import Link from "next/link";
 import SettingsForm from "@/components/SettingsForm";
 import DevicesPanel from "@/components/DevicesPanel";
 import TokenAdmin from "@/components/TokenAdmin";
+import DeleteAccountPanel from "@/components/DeleteAccountPanel";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
@@ -25,6 +26,7 @@ export default async function SettingsPage() {
 
       <div className="container">
         <DevicesPanel />
+        <DeleteAccountPanel />
         {isOwner ? <SettingsForm /> : null}
         {isOwner ? <TokenAdmin /> : null}
       </div>

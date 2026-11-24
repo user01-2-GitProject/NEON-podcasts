@@ -1,3 +1,5 @@
+import { newApiToken, tokenHash, type ApiTokenScope } from "@/lib/api-tokens";
+
 type SqlFn = (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>;
 
 export type MeToken = {
@@ -8,6 +10,33 @@ export type MeToken = {
   last_used_at: string | null;
   revoked_at: string | null;
 };
+
+export function parseAgentTokenInput(body: unknown): { label: string; scope: ApiTokenScope } | null {
+  if (!body || typeof body !== "object") return null;
+  const input = body as { label?: unknown; scope?: unknown };
+  if (typeof input.label !== "string" || typeof input.scope !== "string") return null;
+  const label = input.label.trim();
+  if (label.length < 1 || label.length > 40) return null;
+  if (input.scope !== "read_only" && input.scope !== "read_write") return null;
+  return { label, scope: input.scope };
+}
+
+export async function createAgentToken(
+  db: SqlFn,
+  userId: string,
+  label: string,
+  scope: ApiTokenScope,
+  genToken: () => string = newApiToken,
+): Promise<{ id: string; label: string; scope: ApiTokenScope; token: string }> {
+  const token = genToken();
+  const storedLabel = "agent:" + label;
+  const rows = (await db`
+    insert into api_tokens (token_hash, label, scope, created_by)
+    values (${await tokenHash(token)}, ${storedLabel}, ${scope}, ${userId})
+    returning id, label, scope
+  `) as { id: string; label: string; scope: ApiTokenScope }[];
+  return { ...rows[0], token };
+}
 
 // List the caller's own API tokens. Always scoped to created_by = userId so a
 // caller can never see another user's tokens.

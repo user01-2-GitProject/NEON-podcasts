@@ -236,3 +236,13 @@ audio {
   max-width: 360px;
   margin: 12vh auto 0;
 }
+
+.show-art {
+  display: block;
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+}

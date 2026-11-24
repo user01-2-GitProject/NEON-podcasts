@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { scheduleError } from "@/lib/schedule";
+import { parseImageUrl } from "@/lib/show-image";
 import { getStorage } from "@/lib/storage";
 import type { Show } from "@/lib/types";
 
@@ -42,6 +43,13 @@ export async function PATCH(req: Request, { params }: Params) {
       ? Math.max(1, Math.min(120, Math.round(Number(body.target_minutes))))
       : show.target_minutes;
   const isActive = body.is_active !== undefined ? Boolean(body.is_active) : show.is_active;
+  // Artwork is written only when the request sets it, so other edits keep
+  // working before migration 009 adds the column.
+  if (body.image_url !== undefined) {
+    const image = parseImageUrl(body.image_url);
+    if ("error" in image) return NextResponse.json({ error: image.error }, { status: 400 });
+    await sql`update shows set image_url = ${image.value} where id = ${id}`;
+  }
   const resetSchedule =
     cadence !== show.cadence ||
     scheduleTime !== show.schedule_time ||

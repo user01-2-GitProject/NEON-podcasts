@@ -19,14 +19,32 @@ export function scopeAllows(scope: ApiTokenScope, method: string): boolean {
   return scope === "read_write" || ["GET", "HEAD", "OPTIONS"].includes(method);
 }
 
+// Live-session participation a member (or a member's agent token) performs for
+// itself. Exact match on purpose: session creation, status changes and
+// participant moderation under /api/live stay owner-only.
+const LIVE_SELF_SERVICE = /^\/api\/live\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/(join|leave|heartbeat|turns)$/i;
+
 // Paths any signed-in user (member or owner) may mutate without being an owner:
-// the community subscriptions and a user's own device/token management.
+// the community subscriptions, a user's own device/token management, and
+// their own participation in live sessions.
 export function isSelfServicePath(pathname: string): boolean {
   return (
     pathname === "/api/subscriptions" ||
     pathname.startsWith("/api/subscriptions/") ||
     pathname === "/api/me/tokens" ||
-    pathname.startsWith("/api/me/tokens/")
+    pathname.startsWith("/api/me/tokens/") ||
+    pathname === "/api/me" ||
+    LIVE_SELF_SERVICE.test(pathname)
+  );
+}
+
+// Minting tokens needs a browser session: a bearer token may never create
+// another token (owner token admin, agent tokens, or the app's browser sign-in).
+export function bearerForbiddenPath(pathname: string, method: string): boolean {
+  return (
+    pathname === "/api/tokens" ||
+    pathname.startsWith("/api/tokens/") ||
+    (method === "POST" && (pathname === "/api/me/tokens" || pathname === "/api/me/tokens/connect"))
   );
 }
 

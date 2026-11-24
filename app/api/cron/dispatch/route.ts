@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { generateEpisode, MAX_SCHEDULED_ATTEMPTS } from "@/lib/generate";
+import { decideScheduledBatch, skipScheduledRun } from "@/lib/limits";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -99,17 +100,28 @@ export async function GET(req: Request) {
     returning runs.id, runs.show_id, runs.scheduled_for
   `) as ScheduledRun[];
 
+  // Cost guardrail: runs whose show owner is over the daily cap are recorded as
+  // skipped (with the reason) and the show moves to its next slot.
+  const plan = await decideScheduledBatch(sql, claimed);
+  for (const skip of plan.skipped) {
+    await skipScheduledRun(sql, skip.runId, skip.reason);
+  }
+  const allowed = new Set(plan.allowed);
+
   const settled = await Promise.allSettled(
-    claimed.map((run) =>
-      generateEpisode(run.show_id, undefined, {
-        id: run.id,
-        scheduledFor: run.scheduled_for,
-      }),
-    ),
+    claimed
+      .filter((run) => allowed.has(run.id))
+      .map((run) =>
+        generateEpisode(run.show_id, undefined, {
+          id: run.id,
+          scheduledFor: run.scheduled_for,
+        }),
+      ),
   );
 
   return NextResponse.json({
     dispatched: claimed.length,
+    skipped: plan.skipped.length,
     done: settled.filter((result) => result.status === "fulfilled").length,
     failed: settled.filter((result) => result.status === "rejected").length,
   });

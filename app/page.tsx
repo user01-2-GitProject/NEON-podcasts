@@ -3,6 +3,7 @@ import { sql } from "@/lib/db";
 import type { Show } from "@/lib/types";
 import NewShowForm from "@/components/NewShowForm";
 import SignOutButton from "@/components/SignOutButton";
+import UsageMeter from "@/components/UsageMeter";
 import { auth } from "@/auth";
 
 export const runtime = "nodejs";
@@ -30,6 +31,7 @@ export default async function DashboardPage() {
           <span className="brand">NEON</span> Podcasts
         </h1>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <Link href="/live" className="btn secondary">Live</Link>
           <Link href="/browse" className="btn secondary">Browse</Link>
           <Link href="/subscriptions" className="btn secondary">Following</Link>
           {owner ? <Link href="/settings" className="btn secondary">Settings</Link> : null}
@@ -38,6 +40,7 @@ export default async function DashboardPage() {
       </header>
 
       <div className="container">
+        <UsageMeter />
         {dbError ? (
           <div className="panel">
             <h2>Database not reachable</h2>
