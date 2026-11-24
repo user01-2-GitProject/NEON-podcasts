@@ -8,6 +8,7 @@ export type BrowseShow = {
   published_count: number;
   latest_at: string | null;
   following: boolean;
+  image_url?: string | null;
 };
 
 export type FeedEpisode = {
@@ -18,6 +19,9 @@ export type FeedEpisode = {
   show_title: string;
   rss_token: string;
   audio_url: string | null;
+  // Show artwork (lock-screen art). Optional: older servers and episodes saved
+  // in the downloads index before this field existed don't carry it.
+  show_image_url?: string | null;
 };
 
 // Live API shapes mirror lib/live.ts on the server (snake_case on the wire).
@@ -117,7 +121,7 @@ export const api = {
 };
 
 export type ShowDetail = {
-  show: { id: string; title: string; description: string | null; rss_token: string };
+  show: { id: string; title: string; description: string | null; rss_token: string; image_url?: string | null };
   episodes: FeedEpisode[];
 };
 

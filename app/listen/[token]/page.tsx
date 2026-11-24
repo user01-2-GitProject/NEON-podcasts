@@ -73,6 +73,7 @@ export default async function ListenPage({ params }: Params) {
 
       <div className="container">
         <div className="panel">
+          {show.image_url ? <img className="show-art" src={show.image_url} alt={`${show.title} artwork`} /> : null}
           <h2>{show.title}</h2>
           <p className="muted" style={{ whiteSpace: "pre-wrap" }}>
             {show.description || "No description."}

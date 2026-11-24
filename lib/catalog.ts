@@ -11,6 +11,7 @@ export type BrowseShow = {
   published_count: number;
   latest_at: string | null;
   following: boolean;
+  image_url: string | null;
 };
 
 export type FeedEpisode = {
@@ -21,6 +22,8 @@ export type FeedEpisode = {
   show_title: string;
   rss_token: string;
   audio_url: string | null;
+  // The show's artwork, for players' lock-screen art.
+  show_image_url: string | null;
 };
 
 // Audio stored behind our own stream route is public only with the show's
@@ -38,9 +41,13 @@ export function publicAudioPath(audioUrl: string | null, rssToken: string): stri
   }
 }
 
+// shows.image_url arrives with migration 009. The catalog reads it through
+// to_jsonb(), which yields null while the column doesn't exist yet, so these
+// queries work whether the code or the migration ships first.
 export async function listBrowse(db: SqlFn, email: string): Promise<BrowseShow[]> {
   const rows = (await db`
     select s.id, s.title, s.description, s.rss_token,
+           (select to_jsonb(x) ->> 'image_url' from shows x where x.id = s.id) as image_url,
            count(e.*) filter (where e.status = 'published')::int as published_count,
            max(e.published_at) as latest_at,
            exists (
@@ -60,7 +67,8 @@ export async function listFollowingFeed(db: SqlFn, email: string, limit = 100): 
   const capped = Math.max(1, Math.min(200, Math.floor(limit) || 100));
   const rows = (await db`
     select e.id, e.title, e.published_at, e.audio_url,
-           s.id as show_id, s.title as show_title, s.rss_token
+           s.id as show_id, s.title as show_title, s.rss_token,
+           to_jsonb(s) ->> 'image_url' as show_image_url
     from episodes e
     join shows s on s.id = e.show_id
     join subscriptions sub on sub.show_id = s.id
@@ -72,14 +80,15 @@ export async function listFollowingFeed(db: SqlFn, email: string, limit = 100): 
 }
 
 export type ShowDetail = {
-  show: { id: string; title: string; description: string | null; rss_token: string };
+  show: { id: string; title: string; description: string | null; rss_token: string; image_url: string | null };
   episodes: FeedEpisode[];
 };
 
 // One show's published episodes, looked up by its rss_token (the same handle /listen uses).
 export async function getShowByToken(db: SqlFn, rssToken: string): Promise<ShowDetail | null> {
   const shows = (await db`
-    select id, title, description, rss_token from shows where rss_token = ${rssToken} limit 1
+    select id, title, description, rss_token, to_jsonb(shows) ->> 'image_url' as image_url
+    from shows where rss_token = ${rssToken} limit 1
   `) as ShowDetail["show"][];
   const show = shows[0];
   if (!show) return null;
@@ -97,6 +106,7 @@ export async function getShowByToken(db: SqlFn, rssToken: string): Promise<ShowD
       show_id: show.id,
       show_title: show.title,
       rss_token: show.rss_token,
+      show_image_url: show.image_url,
       audio_url: publicAudioPath(r.audio_url, show.rss_token),
     })),
   };
