@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "NEON",
+    "slug": "neon-podcasts",
+    "scheme": "neonpodcasts",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "bundleIdentifier": "app.neonpodcasts",
+      "infoPlist": { "UIBackgroundModes": ["audio"] }
+    },
+    "android": { "package": "app.neonpodcasts" },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      ["expo-audio", { "enableBackgroundPlayback": true }]
+    ],
+    "experiments": { "typedRoutes": false },
+    "extra": { "apiUrl": "https://neon-podcasts.vercel.app" }
+  }
+}
