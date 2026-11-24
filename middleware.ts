@@ -53,7 +53,7 @@ export default auth(async (req) => {
     if (pathname.startsWith("/api/")) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     const loginUrl = req.nextUrl.clone();
     loginUrl.pathname = "/login";
-    loginUrl.searchParams.set("next", pathname);
+    loginUrl.searchParams.set("next", pathname + req.nextUrl.search);
     return NextResponse.redirect(loginUrl);
   }
   // Any signed-in user (member or owner) may manage their own subscriptions
