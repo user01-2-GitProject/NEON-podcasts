@@ -1,6 +1,7 @@
 import { Link } from "expo-router";
 import { useCallback } from "react";
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { ErrorBanner, ListMessage } from "../../components";
 import { api, type LiveSession } from "../../lib/api";
 import { colors } from "../../lib/theme";
 import { useApi } from "../../lib/useApi";
@@ -32,7 +33,11 @@ export default function LiveSessions() {
   const { data, error, refreshing, refresh, token } = useApi(load);
 
   if (!token) {
-    return <CenteredMessage text="Sign in to see live sessions." />;
+    return (
+      <View style={styles.screen}>
+        <ListMessage message="Sign in to see live sessions." />
+      </View>
+    );
   }
 
   return (
@@ -45,12 +50,16 @@ export default function LiveSessions() {
       ListHeaderComponent={
         <View style={styles.header}>
           <Text style={styles.intro}>Scheduled and live podcasts. Open one to join the room.</Text>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error && data && data.length > 0 ? (
+            <ErrorBanner message="Couldn't refresh. Showing the last load." onRetry={() => void refresh()} />
+          ) : null}
         </View>
       }
       ListEmptyComponent={
-        <CenteredMessage
-          text={error ?? (data ? "No live sessions yet. Check back soon." : "Loading sessions…")}
+        <ListMessage
+          message={error ? "Couldn't load live sessions." : data ? "No live sessions right now." : "Loading sessions…"}
+          detail={error ?? (data ? "Check back soon." : undefined)}
+          onRetry={error ? () => void refresh() : undefined}
         />
       }
       renderItem={({ item: session }) => (
@@ -81,24 +90,14 @@ function participantLabel(count: number | null): string {
   return `${count} participant${count === 1 ? "" : "s"}`;
 }
 
-function CenteredMessage({ text }: { text: string }) {
-  return (
-    <View style={styles.center}>
-      <Text style={styles.empty}>{text}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.bg },
   header: { gap: 6, marginBottom: 4 },
   intro: { color: colors.muted },
-  error: { color: colors.danger },
   card: { backgroundColor: colors.card, padding: 14, borderRadius: 10 },
   title: { color: colors.text, fontWeight: "600", fontSize: 16 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" },
   tag: { color: colors.muted, fontSize: 12, fontWeight: "700" },
   liveTag: { color: colors.accent },
   meta: { color: colors.muted, fontSize: 12 },
-  center: { alignItems: "center", justifyContent: "center", paddingTop: 48 },
-  empty: { color: colors.muted, textAlign: "center" },
 });

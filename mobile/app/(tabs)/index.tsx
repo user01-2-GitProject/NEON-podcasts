@@ -1,5 +1,5 @@
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
-import { DownloadButton } from "../../components";
+import { DownloadButton, ErrorBanner, ListMessage } from "../../components";
 import { api, type FeedEpisode } from "../../lib/api";
 import { usePlayer } from "../../lib/player";
 import { colors } from "../../lib/theme";
@@ -16,8 +16,17 @@ export default function Following() {
       data={data ?? []}
       keyExtractor={(e) => e.id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.accent} />}
+      ListHeaderComponent={
+        error && data && data.length > 0 ? (
+          <ErrorBanner message="Couldn't refresh. Showing the last load." onRetry={() => void refresh()} />
+        ) : undefined
+      }
       ListEmptyComponent={
-        <Text style={styles.empty}>{error ?? (data ? "Follow a show in Browse to see episodes here." : "")}</Text>
+        <ListMessage
+          message={error ? "Couldn't load your feed." : data ? "Nothing to play yet." : "Loading your feed…"}
+          detail={error ?? (data ? "Follow a show in Browse to see episodes here." : undefined)}
+          onRetry={error ? () => void refresh() : undefined}
+        />
       }
       renderItem={({ item }) => (
         <View style={[styles.card, current?.id === item.id && { borderColor: colors.accent }]}>
@@ -48,6 +57,5 @@ const styles = StyleSheet.create({
   },
   title: { color: colors.text, fontWeight: "600", fontSize: 16 },
   sub: { color: colors.muted, marginTop: 4 },
-  empty: { color: colors.muted, textAlign: "center", marginTop: 48 },
 });
 
