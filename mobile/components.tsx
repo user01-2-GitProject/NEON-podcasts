@@ -31,7 +31,7 @@ export function DownloadButton({ episode }: { episode: FeedEpisode }) {
 }
 
 export function MiniPlayer() {
-  const { current, playing, toggle } = usePlayer();
+  const { current, playing, toggle, seekBy } = usePlayer();
   if (!current) return null;
   return (
     <View style={styles.bar}>
@@ -39,8 +39,14 @@ export function MiniPlayer() {
         <Text style={styles.title} numberOfLines={1}>{current.title}</Text>
         <Text style={styles.sub} numberOfLines={1}>{current.show_title}</Text>
       </View>
+      <Pressable onPress={() => seekBy(-15)} style={styles.skip} accessibilityRole="button" accessibilityLabel="Back 15 seconds">
+        <Text style={styles.skipText}>⟲15</Text>
+      </Pressable>
       <Pressable onPress={toggle} style={styles.btn} accessibilityRole="button" accessibilityLabel={playing ? "Pause" : "Play"}>
         <Text style={styles.btnText}>{playing ? "Pause" : "Play"}</Text>
+      </Pressable>
+      <Pressable onPress={() => seekBy(15)} style={styles.skip} accessibilityRole="button" accessibilityLabel="Forward 15 seconds">
+        <Text style={styles.skipText}>15⟳</Text>
       </Pressable>
     </View>
   );
@@ -52,6 +58,8 @@ const styles = StyleSheet.create({
   sub: { color: colors.muted, fontSize: 12 },
   btn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.accent },
   btnText: { color: "#000", fontWeight: "700" },
+  skip: { paddingHorizontal: 8, paddingVertical: 8 },
+  skipText: { color: colors.text, fontWeight: "600", fontSize: 13 },
   dl: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: colors.muted, minWidth: 84, alignItems: "center" },
   dlText: { color: colors.text, fontWeight: "600", fontSize: 13 },
 });
