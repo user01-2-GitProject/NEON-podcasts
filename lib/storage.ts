@@ -1,16 +1,18 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { sql } from "@/lib/db";
 
 export interface StorageProvider {
   put(key: string, bytes: Buffer, contentType: string): Promise<void>;
   get(key: string): Promise<{ bytes: Buffer; contentType: string } | null>;
+  delete(key: string): Promise<void>;
   url(key: string): string;
 }
 
-class DatabaseStorage implements StorageProvider {
+export class DatabaseStorage implements StorageProvider {
+  constructor(private readonly db: typeof sql = sql) {}
   async put(key: string, bytes: Buffer, contentType: string) {
     const audioB64 = bytes.toString("base64");
-    await sql`
+    await this.db`
       insert into episode_audio (episode_id, content_type, data)
       values (${key}, ${contentType}, decode(${audioB64}, 'base64'))
       on conflict (episode_id) do update
@@ -19,7 +21,7 @@ class DatabaseStorage implements StorageProvider {
   }
 
   async get(key: string) {
-    const rows = (await sql`
+    const rows = (await this.db`
       select content_type, data from episode_audio where episode_id = ${key}
     `) as { content_type: string; data: Buffer }[];
     return rows[0] ? { bytes: Buffer.from(rows[0].data), contentType: rows[0].content_type } : null;
@@ -28,20 +30,24 @@ class DatabaseStorage implements StorageProvider {
   url(key: string) {
     return `/api/episodes/${key}/audio`;
   }
+
+  async delete(key: string) {
+    await this.db`delete from episode_audio where episode_id = ${key}`;
+  }
 }
 
-class S3Storage implements StorageProvider {
+export class S3Storage implements StorageProvider {
   private readonly client: S3Client;
   private readonly bucket = process.env.S3_BUCKET!;
 
-  constructor() {
+  constructor(client?: S3Client) {
     const endpoint = process.env.S3_ENDPOINT;
     const accessKeyId = process.env.S3_ACCESS_KEY_ID;
     const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
     if (!endpoint || !this.bucket || !accessKeyId || !secretAccessKey) {
       throw new Error("S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY are required when STORAGE_PROVIDER=s3");
     }
-    this.client = new S3Client({
+    this.client = client || new S3Client({
       endpoint,
       region: process.env.S3_REGION || (endpoint.includes("r2.cloudflarestorage.com") ? "auto" : "us-east-1"),
       credentials: { accessKeyId, secretAccessKey },
@@ -60,6 +66,10 @@ class S3Storage implements StorageProvider {
       bytes: Buffer.from(await result.Body.transformToByteArray()),
       contentType: result.ContentType || "audio/mpeg",
     };
+  }
+
+  async delete(key: string) {
+    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }
 
   url(key: string) {
