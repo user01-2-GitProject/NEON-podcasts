@@ -18,3 +18,31 @@ export async function tokenHash(token: string): Promise<string> {
 export function scopeAllows(scope: ApiTokenScope, method: string): boolean {
   return scope === "read_write" || ["GET", "HEAD", "OPTIONS"].includes(method);
 }
+
+// Paths any signed-in user (member or owner) may mutate without being an owner:
+// the community subscriptions and a user's own device/token management.
+export function isSelfServicePath(pathname: string): boolean {
+  return (
+    pathname === "/api/subscriptions" ||
+    pathname.startsWith("/api/subscriptions/") ||
+    pathname === "/api/me/tokens" ||
+    pathname.startsWith("/api/me/tokens/")
+  );
+}
+
+// Whether a bearer-token request is allowed, mirroring the cookie-session policy:
+// reads need only read-capable scope; mutations need read_write AND are owner-only,
+// except the self-service carve-out (so a member's mobile token can follow/unfollow
+// and manage its own tokens but cannot drive owner-only APIs).
+export function bearerRequestAllowed(opts: {
+  scope: ApiTokenScope;
+  role: string;
+  ownerApproved: boolean;
+  method: string;
+  pathname: string;
+}): boolean {
+  if (!scopeAllows(opts.scope, opts.method)) return false;
+  if (["GET", "HEAD", "OPTIONS"].includes(opts.method)) return true;
+  if (isSelfServicePath(opts.pathname)) return true;
+  return opts.role === "owner" && opts.ownerApproved === true;
+}

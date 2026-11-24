@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "../lib/auth";
+import { DownloadsProvider } from "../lib/downloads";
 import { PlayerProvider } from "../lib/player";
 import { colors } from "../lib/theme";
 
@@ -45,10 +46,12 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <PlayerProvider>
-          <StatusBar style="light" />
-          <AuthGate />
-        </PlayerProvider>
+        <DownloadsProvider>
+          <PlayerProvider>
+            <StatusBar style="light" />
+            <AuthGate />
+          </PlayerProvider>
+        </DownloadsProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

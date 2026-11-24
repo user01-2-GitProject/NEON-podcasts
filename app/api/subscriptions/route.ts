@@ -1,18 +1,27 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
-import { follow, listFollows, showExists, subscriberEmail } from "@/lib/subscriptions";
+import { follow, listFollows, showExists } from "@/lib/subscriptions";
+import { currentUserEmail } from "@/lib/current-user";
 
 export const runtime = "nodejs";
 
-export async function GET() {
-  const email = subscriberEmail(await auth());
+export async function GET(req: Request) {
+  const email = await currentUserEmail({
+    session: await auth(),
+    authHeader: req.headers.get("authorization"),
+    db: sql,
+  });
   if (!email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   return NextResponse.json({ show_ids: await listFollows(sql, email) });
 }
 
 export async function POST(req: Request) {
-  const email = subscriberEmail(await auth());
+  const email = await currentUserEmail({
+    session: await auth(),
+    authHeader: req.headers.get("authorization"),
+    db: sql,
+  });
   if (!email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = await req.json().catch(() => null);
   const showId = body?.show_id;

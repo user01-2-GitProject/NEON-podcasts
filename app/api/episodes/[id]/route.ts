@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { safeErrorMessage, sanitizeError } from "@/lib/errors";
+import { getStorage } from "@/lib/storage";
 import type { Episode } from "@/lib/types";
 
 export const runtime = "nodejs";
 
 type Params = { params: Promise<{ id: string }> };
+
+export async function DELETE(_req: Request, { params }: Params) {
+  const { id } = await params;
+  await getStorage().delete(id);
+  await sql`delete from episodes where id = ${id}`;
+  return NextResponse.json({ ok: true });
+}
 
 export async function PATCH(req: Request, { params }: Params) {
   const { id } = await params;

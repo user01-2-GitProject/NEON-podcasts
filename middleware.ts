@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import NextAuth from "next-auth";
 import authConfig from "@/auth.config";
 import { sql } from "@/lib/db";
-import { bearerToken, scopeAllows, tokenHash, type ApiTokenScope } from "@/lib/api-tokens";
+import { bearerToken, bearerRequestAllowed, isSelfServicePath, tokenHash, type ApiTokenScope } from "@/lib/api-tokens";
 
 const PUBLIC_PREFIXES = ["/login", "/api/auth", "/api/cron", "/feed", "/listen", "/_next", "/favicon.ico"];
 // Decode the v5 session with Auth.js while keeping Node-only password code out of Edge.
@@ -24,12 +24,22 @@ export default auth(async (req) => {
     if (!raw) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     try {
       const rows = (await sql`
-        update api_tokens set last_used_at = now()
-        where token_hash = ${await tokenHash(raw)} and revoked_at is null
-        returning scope
-      `) as { scope: ApiTokenScope }[];
-      if (!rows[0]) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-      if (!scopeAllows(rows[0].scope, req.method)) {
+        update api_tokens t set last_used_at = now()
+        from users u
+        where t.token_hash = ${await tokenHash(raw)} and t.revoked_at is null and u.id = t.created_by
+        returning t.scope as scope, u.role as role, u.owner_approved as owner_approved
+      `) as { scope: ApiTokenScope; role: string; owner_approved: boolean }[];
+      const row = rows[0];
+      if (!row) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+      if (
+        !bearerRequestAllowed({
+          scope: row.scope,
+          role: row.role,
+          ownerApproved: row.owner_approved,
+          method: req.method,
+          pathname,
+        })
+      ) {
         return NextResponse.json({ error: "forbidden" }, { status: 403 });
       }
       return NextResponse.next();
@@ -46,8 +56,9 @@ export default auth(async (req) => {
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
-  // Any signed-in user (member or owner) may manage their own subscriptions.
-  if (pathname === "/api/subscriptions" || pathname.startsWith("/api/subscriptions/")) {
+  // Any signed-in user (member or owner) may manage their own subscriptions
+  // and their own devices/tokens.
+  if (isSelfServicePath(pathname)) {
     return NextResponse.next();
   }
   const allowedOwner = (req.auth?.user as { role?: string } | undefined)?.role === "owner" && (process.env.OWNER_EMAILS || "")

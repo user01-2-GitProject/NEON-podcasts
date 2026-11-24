@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { scheduleError } from "@/lib/schedule";
+import { getStorage } from "@/lib/storage";
 import type { Show } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -77,6 +78,11 @@ export async function PATCH(req: Request, { params }: Params) {
 
 export async function DELETE(_req: Request, { params }: Params) {
   const { id } = await params;
+  const episodes = (await sql`select id from episodes where show_id = ${id}`) as { id: string }[];
+  const storage = getStorage();
+  for (const episode of episodes) {
+    await storage.delete(episode.id);
+  }
   await sql`delete from shows where id = ${id}`;
   return NextResponse.json({ ok: true });
 }
