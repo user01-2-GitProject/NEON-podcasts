@@ -37,6 +37,7 @@ function AuthGate() {
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="about" options={{ title: "About NEON" }} />
       <Stack.Screen name="show/[token]" options={{ title: "Show" }} />
       <Stack.Screen name="live/[id]" options={{ title: "Live session" }} />
     </Stack>
