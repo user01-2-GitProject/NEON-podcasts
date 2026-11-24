@@ -33,6 +33,13 @@ test("Auth.js v5 session advances through middleware", async () => {
   assert.equal((await request("/api/shows", { email: "member@example.com", role: "member", method: "POST" })).status, 403);
 });
 
+test("members may manage subscriptions but cannot mutate other APIs", async () => {
+  const subscriptions = await request("/api/subscriptions", { email: "member@example.com", role: "member", method: "POST" });
+  assert.equal(subscriptions.status, 200);
+  assert.equal(subscriptions.headers.get("x-middleware-next"), "1");
+  assert.equal((await request("/api/shows", { email: "member@example.com", role: "member", method: "POST" })).status, 403);
+});
+
 test("anonymous, public, and bearer routes keep their policy", async () => {
   assert.equal((await request("/api/shows")).status, 401);
   const page = await request("/shows/example");

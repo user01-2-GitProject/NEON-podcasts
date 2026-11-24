@@ -46,6 +46,10 @@ export default auth(async (req) => {
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
+  // Any signed-in user (member or owner) may manage their own subscriptions.
+  if (pathname === "/api/subscriptions" || pathname.startsWith("/api/subscriptions/")) {
+    return NextResponse.next();
+  }
   const allowedOwner = (req.auth?.user as { role?: string } | undefined)?.role === "owner" && (process.env.OWNER_EMAILS || "")
     .split(",").some((owner) => owner.trim().toLowerCase() === email.toLowerCase());
   if (pathname.startsWith("/api/") && !["GET", "HEAD", "OPTIONS"].includes(req.method) && !allowedOwner) {
