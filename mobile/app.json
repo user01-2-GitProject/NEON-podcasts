@@ -6,11 +6,23 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0b0b0f"
+    },
     "ios": {
       "bundleIdentifier": "app.neonpodcasts",
       "infoPlist": { "UIBackgroundModes": ["audio"] }
     },
-    "android": { "package": "app.neonpodcasts" },
+    "android": {
+      "package": "app.neonpodcasts",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0b0b0f"
+      }
+    },
     "plugins": [
       "expo-router",
       "expo-secure-store",

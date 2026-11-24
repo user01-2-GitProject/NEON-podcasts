@@ -17,6 +17,36 @@ npx expo start
 
 Point `EXPO_PUBLIC_API_URL` at `http://<rig-lan-ip>:3000` to test against the Rig.
 
+## Release (EAS build + submit)
+
+`eas.json` defines three build profiles: `development` (dev client, internal), `preview` (internal distribution — Android APK, iOS ad-hoc), and `production` (store builds — iOS TestFlight/App Store, Android app bundle for the internal track). The icon/splash files in `assets/` are solid-color placeholders; replace them with real artwork before a public release.
+
+Build with EAS:
+
+```bash
+cd mobile
+eas build --profile preview --platform ios        # or android
+eas build --profile production --platform ios      # or android
+```
+
+Submit production builds:
+
+```bash
+eas submit --profile production --platform ios     # TestFlight
+eas submit --profile production --platform android # Play internal track
+```
+
+The submit section in `eas.json` uses `REPLACE_ME` placeholders for Apple ID, App Store Connect app ID, Apple team ID, and the Play service account key path. Fill those in with EAS credentials/dashboard settings, never in committed files.
+
+Required environment variables are placeholders set via EAS secrets (`eas secret:create` or the EAS dashboard), **not committed**:
+
+- `EXPO_PUBLIC_API_URL` — API base URL used by `lib/config.ts` (falls back to `app.json` `extra.apiUrl`).
+- `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
+- `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`
+- `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`
+
+Set real values for these secrets before building or submitting a release.
+
 ## How auth works
 
 1. `expo-auth-session` gets a Google **ID token** on the device.
