@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import NextAuth from "next-auth";
 import authConfig from "@/auth.config";
 import { sql } from "@/lib/db";
-import { bearerToken, bearerRequestAllowed, isSelfServicePath, tokenHash, type ApiTokenScope } from "@/lib/api-tokens";
+import { bearerForbiddenPath, bearerToken, bearerRequestAllowed, isSelfServicePath, tokenHash, type ApiTokenScope } from "@/lib/api-tokens";
 
 const PUBLIC_PREFIXES = ["/login", "/api/auth", "/api/cron", "/feed", "/listen", "/_next", "/favicon.ico"];
 // Decode the v5 session with Auth.js while keeping Node-only password code out of Edge.
@@ -17,7 +17,7 @@ export default auth(async (req) => {
 
   const authorization = req.headers.get("authorization");
   if (pathname.startsWith("/api/") && authorization) {
-    if (pathname === "/api/tokens" || pathname.startsWith("/api/tokens/")) {
+    if (bearerForbiddenPath(pathname, req.method)) {
       return NextResponse.json({ error: "session required" }, { status: 403 });
     }
     const raw = bearerToken(authorization);

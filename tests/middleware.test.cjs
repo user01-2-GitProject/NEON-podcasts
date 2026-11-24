@@ -50,3 +50,30 @@ test("anonymous, public, and bearer routes keep their policy", async () => {
   assert.equal((await request("/api/shows", { email: "owner@example.com", role: "owner", authorization: "Bearer invalid" })).status, 401);
   assert.equal((await request("/api/tokens", { email: "owner@example.com", role: "owner", authorization: "Bearer invalid" })).status, 403);
 });
+
+const LIVE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+
+test("live sessions: members participate, only owners create and moderate", async () => {
+  const member = { email: "member@example.com", role: "member" };
+  for (const action of ["join", "leave", "heartbeat", "turns"]) {
+    const res = await request(`/api/live/${LIVE}/${action}`, { ...member, method: "POST" });
+    assert.equal(res.headers.get("x-middleware-next"), "1", action);
+  }
+  assert.equal((await request("/api/live/sessions", { ...member, method: "POST" })).status, 403);
+  assert.equal((await request(`/api/live/${LIVE}`, { ...member, method: "PATCH" })).status, 403);
+  assert.equal((await request(`/api/live/${LIVE}/participants/${LIVE}`, { ...member, method: "PATCH" })).status, 403);
+  assert.equal((await request(`/api/live/${LIVE}/turns/x`, { ...member, method: "POST" })).status, 403);
+  assert.equal((await request("/api/live/sessions", { ...member })).headers.get("x-middleware-next"), "1");
+  const owner = await request("/api/live/sessions", { email: "owner@example.com", role: "owner", method: "POST" });
+  assert.equal(owner.headers.get("x-middleware-next"), "1");
+  assert.equal((await request(`/api/live/${LIVE}/join`, { method: "POST" })).status, 401);
+});
+
+test("a bearer token cannot mint tokens, even on the member mint route", async () => {
+  const res = await request("/api/me/tokens", { method: "POST", authorization: "Bearer npt_" + "e".repeat(64) });
+  assert.equal(res.status, 403);
+  assert.equal((await res.json()).error, "session required");
+  // a cookie session may mint
+  const cookie = await request("/api/me/tokens", { email: "member@example.com", role: "member", method: "POST" });
+  assert.equal(cookie.headers.get("x-middleware-next"), "1");
+});
