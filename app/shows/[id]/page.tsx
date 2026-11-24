@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
-import type { Show, Briefing, Episode, Run } from "@/lib/types";
+import type { Show, Briefing, Episode, Run, Pronunciation } from "@/lib/types";
 import BriefingsPanel from "@/components/BriefingsPanel";
 import GeneratePanel from "@/components/GeneratePanel";
+import SteeringPanel from "@/components/SteeringPanel";
 import EpisodesPanel from "@/components/EpisodesPanel";
 import DeleteShowButton from "@/components/DeleteShowButton";
 import { auth } from "@/auth";
@@ -23,6 +24,10 @@ export default async function ShowPage({ params }: { params: Promise<{ id: strin
   const briefings = (await sql`
     select * from show_briefings where show_id = ${id} order by uploaded_at desc
   `) as Briefing[];
+
+  const pronunciations = (await sql`
+    select * from show_pronunciations where show_id = ${id} order by created_at asc
+  `) as Pronunciation[];
 
   const episodes = (await sql`
     select * from episodes where show_id = ${id} order by created_at desc
@@ -62,6 +67,8 @@ export default async function ShowPage({ params }: { params: Promise<{ id: strin
           activeBriefings={activeBriefings}
           narrationMode={show.narration_mode === "external" ? "external" : "auto"}
         /> : null}
+
+        {owner ? <SteeringPanel showId={id} initialStyleGuide={show.style_guide} initialRules={pronunciations} /> : null}
 
         <EpisodesPanel initialEpisodes={episodes} runs={runs} owner={owner} rssToken={show.rss_token} />
       </div>

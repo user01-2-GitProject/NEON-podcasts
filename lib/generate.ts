@@ -2,8 +2,9 @@ import { randomUUID } from "node:crypto";
 import { getSql, sql } from "@/lib/db";
 import { generateScript, estimateCostCents } from "@/lib/claude";
 import { synthesize, estimateDurationSeconds } from "@/lib/tts";
+import { applyPronunciations } from "@/lib/pronounce";
 import { getStorage } from "@/lib/storage";
-import type { Show, Briefing, Episode, NarrationMode } from "@/lib/types";
+import type { Show, Briefing, Episode, NarrationMode, Pronunciation } from "@/lib/types";
 
 export const MAX_SCHEDULED_ATTEMPTS = 5;
 
@@ -36,6 +37,10 @@ export async function generateEpisode(
     order by uploaded_at asc
   `) as Briefing[];
 
+  const pronunciations = (await sql`
+    select * from show_pronunciations where show_id = ${showId} order by created_at asc
+  `) as Pronunciation[];
+
   const briefingSnapshot = briefings
     .map((b) => `### ${b.filename}\n${b.content_md}`)
     .join("\n\n");
@@ -64,6 +69,7 @@ export async function generateEpisode(
       showDescription: show.description,
       targetMinutes: show.target_minutes,
       briefings: briefings.map((b) => ({ filename: b.filename, content_md: b.content_md })),
+      styleGuide: show.style_guide,
     });
 
     const duration = estimateDurationSeconds(result.script);
@@ -125,8 +131,9 @@ export async function generateEpisode(
       return { episode, runId };
     }
 
-    // "auto": render audio and publish.
-    const tts = await synthesize(result.script, show.voice_id);
+    // "auto": render audio and publish. Pronunciations affect only the text
+    // handed to TTS; the episode row below still stores the original script.
+    const tts = await synthesize(applyPronunciations(result.script, pronunciations), show.voice_id);
     const byteSize = tts.audio.length;
 
     if (scheduledRun) {
