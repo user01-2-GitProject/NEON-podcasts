@@ -19,9 +19,14 @@ type PlayerState = {
 const PlayerContext = createContext<PlayerState | null>(null);
 
 // Metadata shown on the lock screen / Now Playing. Album carries the network
-// name; artwork is omitted until the feed exposes a per-show image URL.
+// name; artwork is the show's image when the server provides one.
 function lockMetadata(episode: FeedEpisode) {
-  return { title: episode.title, artist: episode.show_title, albumTitle: "NEON" };
+  return {
+    title: episode.title,
+    artist: episode.show_title,
+    albumTitle: "NEON",
+    ...(episode.show_image_url ? { artworkUrl: episode.show_image_url } : {}),
+  };
 }
 
 export function PlayerProvider({ children }: { children: ReactNode }) {

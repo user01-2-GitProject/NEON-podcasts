@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useCallback } from "react";
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { DownloadButton } from "../../components";
 import { showByToken, type FeedEpisode } from "../../lib/api";
 import { usePlayer } from "../../lib/player";
@@ -22,7 +22,16 @@ export default function ShowScreen() {
         data={data?.episodes ?? []}
         keyExtractor={(e) => e.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.accent} />}
-        ListHeaderComponent={data?.show.description ? <Text style={styles.desc}>{data.show.description}</Text> : undefined}
+        ListHeaderComponent={
+          data?.show.image_url || data?.show.description ? (
+            <View style={styles.header}>
+              {data.show.image_url ? (
+                <Image source={{ uri: data.show.image_url }} style={styles.art} accessibilityLabel={`${data.show.title} artwork`} />
+              ) : null}
+              {data.show.description ? <Text style={styles.desc}>{data.show.description}</Text> : null}
+            </View>
+          ) : undefined
+        }
         ListEmptyComponent={<Text style={styles.empty}>{error ?? (data ? "No episodes yet." : "")}</Text>}
         renderItem={({ item }) => (
           <View style={[styles.card, current?.id === item.id && { borderColor: colors.accent }]}>
@@ -39,7 +48,9 @@ export default function ShowScreen() {
 }
 
 const styles = StyleSheet.create({
-  desc: { color: colors.muted, marginBottom: 8 },
+  header: { alignItems: "center", gap: 12, marginBottom: 8 },
+  art: { width: 180, height: 180, borderRadius: 12, backgroundColor: colors.card },
+  desc: { color: colors.muted, alignSelf: "stretch" },
   card: {
     flexDirection: "row",
     alignItems: "center",

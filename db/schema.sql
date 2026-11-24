@@ -36,12 +36,14 @@ create table if not exists shows (
   target_minutes integer not null default 5,
   rss_token      text not null default encode(gen_random_bytes(16), 'hex'),
   is_public      boolean not null default false,
+  image_url      text,                                -- show artwork (http(s) URL)
   next_run_at    timestamptz,
   is_active      boolean not null default true,
   created_at     timestamptz not null default now()
 );
 
 alter table shows add column if not exists style_guide text not null default '';
+alter table shows add column if not exists image_url text;
 
 create table if not exists show_briefings (
   id          uuid primary key default gen_random_uuid(),

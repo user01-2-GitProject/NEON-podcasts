@@ -17,6 +17,7 @@ export interface Show {
   target_minutes: number;
   rss_token: string;
   is_public: boolean;
+  image_url: string | null;
   next_run_at: string | null;
   is_active: boolean;
   created_at: string;
