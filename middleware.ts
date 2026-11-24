@@ -4,7 +4,7 @@ import authConfig from "@/auth.config";
 import { sql } from "@/lib/db";
 import { bearerForbiddenPath, bearerToken, bearerRequestAllowed, isSelfServicePath, tokenHash, type ApiTokenScope } from "@/lib/api-tokens";
 
-const PUBLIC_PREFIXES = ["/login", "/api/auth", "/api/cron", "/feed", "/listen", "/_next", "/favicon.ico"];
+const PUBLIC_PREFIXES = ["/login", "/privacy", "/terms", "/api/auth", "/api/cron", "/feed", "/listen", "/_next", "/favicon.ico"];
 // Decode the v5 session with Auth.js while keeping Node-only password code out of Edge.
 const { auth } = NextAuth(authConfig);
 
@@ -56,8 +56,8 @@ export default auth(async (req) => {
     loginUrl.searchParams.set("next", pathname + req.nextUrl.search);
     return NextResponse.redirect(loginUrl);
   }
-  // Any signed-in user (member or owner) may manage their own subscriptions
-  // and their own devices/tokens.
+  // Any signed-in user (member or owner) may manage their own subscriptions,
+  // devices/tokens, and account deletion.
   if (isSelfServicePath(pathname)) {
     return NextResponse.next();
   }
