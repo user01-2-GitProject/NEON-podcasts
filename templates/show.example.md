@@ -7,7 +7,7 @@ category: "Business > Investing"
 language: "en-us"
 explicit: false
 image_url: "https://www.needlesslyengineeredonlinenetwork.com/shows/501-diamond-hands/cover.png"
-cadence: "weekdays"
+cadence: "daily"
 schedule_time: "17:01"
 timezone: "America/New_York"
 target_minutes: 12
