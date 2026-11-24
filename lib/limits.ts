@@ -43,6 +43,39 @@ export async function getLimits(db: SqlFn): Promise<Limits> {
   return parseLimits(Object.fromEntries(rows.map((row) => [row.key, row.value])));
 }
 
+// Upper bound for an owner-entered cap: generous, but rules out typos like 1e12.
+export const LIMIT_INPUT_MAX = 1_000_000;
+
+function capInput(value: unknown, field: string): { value: number } | { error: string } {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+    return { error: `${field} must be a non-negative integer` };
+  }
+  if (value > LIMIT_INPUT_MAX) return { error: `${field} must be at most ${LIMIT_INPUT_MAX}` };
+  return { value };
+}
+
+// Validates POST /api/limits { episodes_per_day, cost_cents_per_day }. Both are
+// required; 0 is allowed (it blocks non-owner generation entirely).
+export function parseLimitsInput(body: unknown): { limits: Limits } | { error: string } {
+  const input: Record<string, unknown> =
+    body !== null && typeof body === "object" ? Object.fromEntries(Object.entries(body)) : {};
+  const episodes = capInput(input.episodes_per_day, "episodes_per_day");
+  if ("error" in episodes) return episodes;
+  const cost = capInput(input.cost_cents_per_day, "cost_cents_per_day");
+  if ("error" in cost) return cost;
+  return { limits: { episodesPerDay: episodes.value, costCentsPerDay: cost.value } };
+}
+
+// Upserts both caps into app_settings (only these two keys).
+export async function saveLimits(db: SqlFn, limits: Limits): Promise<void> {
+  await db`
+    insert into app_settings (key, value, updated_at)
+    values (${LIMIT_KEYS.episodesPerDay}, ${String(limits.episodesPerDay)}, now()),
+           (${LIMIT_KEYS.costCentsPerDay}, ${String(limits.costCentsPerDay)}, now())
+    on conflict (key) do update set value = excluded.value, updated_at = now()
+  `;
+}
+
 // Generations in the last 24 hours on shows the user owns. Finished runs and
 // ones still in flight both count, so parallel requests can't slip past the
 // cap; `excludeRunIds` leaves out runs the caller is about to decide on.

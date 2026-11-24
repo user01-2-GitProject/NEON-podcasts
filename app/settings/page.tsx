@@ -1,5 +1,6 @@
 import Link from "next/link";
 import SettingsForm from "@/components/SettingsForm";
+import LimitsPanel from "@/components/LimitsPanel";
 import DevicesPanel from "@/components/DevicesPanel";
 import TokenAdmin from "@/components/TokenAdmin";
 import DeleteAccountPanel from "@/components/DeleteAccountPanel";
@@ -28,6 +29,7 @@ export default async function SettingsPage() {
         <DevicesPanel />
         <DeleteAccountPanel />
         {isOwner ? <SettingsForm /> : null}
+        {isOwner ? <LimitsPanel /> : null}
         {isOwner ? <TokenAdmin /> : null}
       </div>
     </>

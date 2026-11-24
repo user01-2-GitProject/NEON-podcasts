@@ -126,6 +126,10 @@ the scheduler marks that slot's run `skipped` (reason in `runs.error`) and moves
 the show to its next slot. `GET /api/me/usage` returns the caller's usage and caps;
 the dashboard shows it.
 
+Owners edit both caps under **Settings → Generation limits**, which uses
+`GET /api/limits` and `POST /api/limits {"episodes_per_day": 5, "cost_cents_per_day": 100}`
+(non-negative integers; owner browser session only).
+
 ## Local voices (self-hosted TTS)
 
 Set `TTS_PROVIDER=local` and point `LOCAL_TTS_URL` at any **OpenAI-compatible**
