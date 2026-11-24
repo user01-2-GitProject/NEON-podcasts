@@ -246,3 +246,13 @@ audio {
   border: 1px solid var(--border);
   margin-bottom: 12px;
 }
+
+button.linklike {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}

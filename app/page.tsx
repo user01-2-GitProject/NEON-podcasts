@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { sql } from "@/lib/db";
 import type { Show } from "@/lib/types";
-import NewShowForm from "@/components/NewShowForm";
+import ShowSpecForm from "@/components/ShowSpecForm";
 import SignOutButton from "@/components/SignOutButton";
 import UsageMeter from "@/components/UsageMeter";
 import { auth } from "@/auth";
@@ -81,7 +81,7 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        {owner ? <NewShowForm /> : null}
+        {owner ? <ShowSpecForm /> : null}
       </div>
     </>
   );

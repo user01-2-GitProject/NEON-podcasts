@@ -373,3 +373,50 @@ export function specToShowFields(spec: ShowSpec) {
     image_url: spec.image_url || null,
   };
 }
+
+/**
+ * Coerce untrusted JSON (the form's POST body) into a ShowSpec shape. Types
+ * are forced, nothing is guessed; run validateShowSpec on the result.
+ */
+export function coerceShowSpec(input: unknown): ShowSpec {
+  const spec = emptyShowSpec();
+  if (input === null || typeof input !== "object" || Array.isArray(input)) return spec;
+  const o = input as Record<string, unknown>;
+  const s = (v: unknown, fallback: string) => (typeof v === "string" ? v.trim() : fallback);
+  spec.title = s(o.title, "");
+  spec.tagline = s(o.tagline, "");
+  spec.category = s(o.category, "");
+  spec.language = s(o.language, spec.language) || spec.language;
+  spec.image_url = s(o.image_url, "");
+  spec.cadence = s(o.cadence, spec.cadence) as SpecCadence;
+  spec.schedule_time = s(o.schedule_time, spec.schedule_time);
+  spec.timezone = s(o.timezone, spec.timezone);
+  spec.narration_mode = s(o.narration_mode, spec.narration_mode) as SpecNarrationMode;
+  if (typeof o.explicit === "boolean") spec.explicit = o.explicit;
+  if (typeof o.target_minutes === "number") spec.target_minutes = o.target_minutes;
+  else if (o.target_minutes !== undefined) spec.target_minutes = NaN;
+  const arr = (v: unknown) => (Array.isArray(v) ? v.slice(0, MAX_LIST * 4) : []);
+  const obj = (v: unknown) => (v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
+  spec.hosts = arr(o.hosts).map((h) => ({ name: s(obj(h).name, ""), voice: s(obj(h).voice, "") }));
+  spec.pronunciations = arr(o.pronunciations).map((p) => ({
+    term: s(obj(p).term, ""),
+    say_as: s(obj(p).say_as, ""),
+    match: (s(obj(p).match, "word") || "word") as SpecMatchMode,
+  }));
+  spec.tags = arr(o.tags).filter((t): t is string => typeof t === "string").map((t) => t.trim()).filter(Boolean);
+  spec.body = typeof o.body === "string" ? o.body.trim() : "";
+  return spec;
+}
+
+/** Starter body for the form, matching templates/show.example.md sections. */
+export const BODY_TEMPLATE = [
+  "## Voice & style",
+  "Tone, pacing, do's and don'ts, recurring bits (e.g. the NEON PLUG open and close).",
+  "",
+  "## Segments",
+  "### Segment 1 - <name> (<host>)",
+  "What it covers. Frame it: who / what / when / where / why / how. Questions to answer.",
+  "",
+  "## Sources & guardrails",
+  "Where facts come from, what to avoid, accuracy rules.",
+].join("\n");
