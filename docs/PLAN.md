@@ -6,10 +6,12 @@
 
 ---
 
-## Status (2026-11-22)
+## Status (2026-11-24)
 - **MVP shipped** — PR #2 (merged): multiple shows, `.md` briefing upload, OpenRouter script generation, `local`/`external` narration modes, in-app Settings for the OpenRouter key. PR #3 (globals.css, cost-log bug fix, delete-show) also merged.
 - **Also shipped and merged to main** — PRs #5–#9: scheduler (cron dispatcher, retries, run history), per-show RSS feeds, public listen page + web player, CI, and the installable PWA. The scheduler is live; generation is no longer manual-only.
-- **Current phase: foundation** — real accounts with owner/member roles over shared shows and data, pluggable audio storage, and the token-based API ✅. Moving existing audio to object storage remains separate work. The product roadmap below follows.
+- **Foundation + Phase 1 shipped ✅** — the token-based API, plus Phase 1 publishing + web player: an HTTP Range streaming audio player (#19), owner-only draft/Publish/Unpublish controls (#20), and the Apple/Spotify feed hint (#21), all merged to main.
+- **Phase 2 — Steering shipped ✅** — a per-show style guide injected into the script prompt, and a per-show pronunciation lexicon applied right before TTS, surfaced in a Steering panel on the show page (PR #22, migration 006). Still open in this area: the learn-from-your-edits loop and ElevenLabs-grade pronunciation control.
+- **Next** — in-app community (browse/subscribe) and the native app (Phase 3). Moving existing audio out of Postgres to object storage remains separate foundation work.
 
 ---
 
@@ -31,9 +33,9 @@ Three unglamorous changes underpin almost everything on the wishlist. Publishing
 
 | Feature | What it means | Effort | Depends on | Phase |
 |---|---|---|---|---|
-| **Publish in the app** | A listener surface: browse/subscribe to shows, episode lists, published vs draft. Keep RSS too (`rss_token` already exists) so external podcast apps work. | Medium | Accounts, media on CDN | 1 |
-| **Audio player** | Real play/pause/scrub/speed/queue, streaming from the CDN. | Low–Medium | Media on CDN | 1 |
-| **Nudges / pronunciation** | Per-show lexicon ("zero"→"oh") applied before TTS, plus an editable show style guide injected into every prompt and a learn-from-your-edits loop. | Medium–High | Generation pipeline (have it); ElevenLabs for real pronunciation control | 2 |
+| **Publish in the app** | A listener surface: browse/subscribe to shows, episode lists, published vs draft. Keep RSS too (`rss_token` already exists) so external podcast apps work. | Medium | Accounts, media on CDN | 1 (web publish ✅; community browse/subscribe next) |
+| **Audio player** | Real play/pause/scrub/speed/queue, streaming from the CDN. | Low–Medium | Media on CDN | 1 ✅ |
+| **Nudges / pronunciation** | Per-show lexicon ("zero"→"oh") applied before TTS, plus an editable show style guide injected into every prompt and a learn-from-your-edits loop. | Medium–High | Generation pipeline (have it); ElevenLabs for real pronunciation control | 2 ✅ (style guide + lexicon shipped; learn-from-edits still to do) |
 | **Native app** | One iOS + Android codebase (React Native / Expo) reusing your API and types. | High | Token API | 3 |
 | **Video player** | Extend the media model to video (mp4 / HLS on CDN); player via expo-video (native) / hls.js (web). | Medium–High | Media on CDN, native app | 4 |
 | **Take users** | Sign-up, per-user shows, usage limits before you open the doors. | Medium | Accounts | 1–2 |
@@ -45,9 +47,9 @@ Three unglamorous changes underpin almost everything on the wishlist. Publishing
 The order is driven by dependencies, not by what's most fun.
 
 1. **MVP ✅** — scheduler, RSS feeds, listen page/web player, CI and PWA shipped in PRs #5–#9.
-2. **Foundation (current phase)** — real accounts with shared-data roles, audio → object storage, plus the token API. The single biggest lift, but everything rides on it.
-3. **Phase 1 — Publishing + web audio player.** Your first real "product" surface, still on the web.
-4. **Phase 2 — Steering / nudges.** Can run in parallel with native work once the API is stable.
+2. **Foundation (current phase)** — real accounts with shared-data roles, audio → object storage, plus the token API ✅. The single biggest lift, but everything rides on it.
+3. **Phase 1 — Publishing + web audio player. ✅** Shipped (#19–#21): streaming web player, owner publish controls, feed hint.
+4. **Phase 2 — Steering / nudges. ✅** Style guide + per-show pronunciation lexicon shipped (#22). Can run in parallel with native work once the API is stable.
 5. **Phase 3 — Native app (Expo).** Real native audio: background playback + lock-screen controls — a genuine reason to go native rather than wrap the web app.
 6. **Phase 4 — Video + subscriptions.** Billing comes last; it carries the most compliance baggage.
 
@@ -93,10 +95,14 @@ users         (id, email, created_at)              -- real multi-user: foundatio
 shows         (id, user_id, title, description, voice_id,
                cadence, schedule_time, timezone, target_minutes,
                narration_mode,                      -- auto (app renders TTS) | external (script only, upload mp3)
+               style_guide,                         -- Phase 2: free-text steering injected into the script prompt
                rss_token, is_public, next_run_at, is_active, created_at)
 
 show_briefings(id, show_id, filename, content_md,  -- or storage_url for large files
                is_active, uploaded_at)             -- multiple .md docs per show
+
+show_pronunciations(id, show_id, term, say_as,      -- Phase 2: lexicon applied to narration before TTS
+               match_mode)                          -- word | substring
 
 episodes      (id, show_id, title, script, show_notes, audio_url,
                duration_seconds, byte_size, status, -- draft|published|failed
