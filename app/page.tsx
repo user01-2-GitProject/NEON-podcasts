@@ -3,6 +3,7 @@ import { sql } from "@/lib/db";
 import type { Show } from "@/lib/types";
 import NewShowForm from "@/components/NewShowForm";
 import SignOutButton from "@/components/SignOutButton";
+import UsageMeter from "@/components/UsageMeter";
 import { auth } from "@/auth";
 
 export const runtime = "nodejs";
@@ -39,6 +40,7 @@ export default async function DashboardPage() {
       </header>
 
       <div className="container">
+        <UsageMeter />
         {dbError ? (
           <div className="panel">
             <h2>Database not reachable</h2>

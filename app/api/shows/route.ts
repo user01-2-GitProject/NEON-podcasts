@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
+import { currentUserId } from "@/lib/me";
 import { scheduleError } from "@/lib/schedule";
 import type { Show } from "@/lib/types";
 
@@ -28,13 +29,15 @@ export async function POST(req: Request) {
   const targetMinutes = Number.isFinite(Number(body.target_minutes))
     ? Math.max(1, Math.min(120, Math.round(Number(body.target_minutes))))
     : 5;
+  // The creator owns the show; generation usage and limits are charged to them.
+  const userId = await currentUserId(req);
 
   const rows = (await sql`
     insert into shows
-      (title, description, voice_id, narration_mode, cadence, schedule_time, timezone,
+      (user_id, title, description, voice_id, narration_mode, cadence, schedule_time, timezone,
        target_minutes, next_run_at)
     values
-      (${title}, ${description}, ${voiceId}, ${narrationMode}, ${cadence}, ${scheduleTime},
+      (${userId}, ${title}, ${description}, ${voiceId}, ${narrationMode}, ${cadence}, ${scheduleTime},
        ${timezone}, ${targetMinutes},
        case when ${cadence} = 'manual' then null else
          case
