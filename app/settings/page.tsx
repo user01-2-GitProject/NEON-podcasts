@@ -1,5 +1,7 @@
 import Link from "next/link";
 import SettingsForm from "@/components/SettingsForm";
+import DevicesPanel from "@/components/DevicesPanel";
+import TokenAdmin from "@/components/TokenAdmin";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
@@ -8,7 +10,8 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const session = await auth();
-  if ((session?.user as { role?: string } | undefined)?.role !== "owner") redirect("/");
+  if (!session?.user) redirect("/login?next=/settings");
+  const isOwner = (session.user as { role?: string } | undefined)?.role === "owner";
   return (
     <>
       <header className="topbar">
@@ -21,7 +24,9 @@ export default async function SettingsPage() {
       </header>
 
       <div className="container">
-        <SettingsForm />
+        <DevicesPanel />
+        {isOwner ? <SettingsForm /> : null}
+        {isOwner ? <TokenAdmin /> : null}
       </div>
     </>
   );

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import NextAuth from "next-auth";
 import authConfig from "@/auth.config";
 import { sql } from "@/lib/db";
-import { bearerToken, bearerRequestAllowed, tokenHash, type ApiTokenScope } from "@/lib/api-tokens";
+import { bearerToken, bearerRequestAllowed, isSelfServicePath, tokenHash, type ApiTokenScope } from "@/lib/api-tokens";
 
 const PUBLIC_PREFIXES = ["/login", "/api/auth", "/api/cron", "/feed", "/listen", "/_next", "/favicon.ico"];
 // Decode the v5 session with Auth.js while keeping Node-only password code out of Edge.
@@ -56,8 +56,9 @@ export default auth(async (req) => {
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
-  // Any signed-in user (member or owner) may manage their own subscriptions.
-  if (pathname === "/api/subscriptions" || pathname.startsWith("/api/subscriptions/")) {
+  // Any signed-in user (member or owner) may manage their own subscriptions
+  // and their own devices/tokens.
+  if (isSelfServicePath(pathname)) {
     return NextResponse.next();
   }
   const allowedOwner = (req.auth?.user as { role?: string } | undefined)?.role === "owner" && (process.env.OWNER_EMAILS || "")

@@ -43,3 +43,19 @@ test("bearer policy: reads allowed by scope; mutations owner-only except subscri
   // owner not yet approved is treated as non-owner for mutations
   assert.equal(bearerRequestAllowed({ scope: "read_write", role: "owner", ownerApproved: false, method: "POST", pathname: "/api/shows" }), false);
 });
+
+test("bearer policy: self-service carve-out covers /api/me/tokens* for members", async () => {
+  const { bearerRequestAllowed, isSelfServicePath } = await import("../lib/api-tokens.ts");
+  const member = { scope: "read_write", role: "member", ownerApproved: false };
+
+  assert.equal(isSelfServicePath("/api/me/tokens"), true);
+  assert.equal(isSelfServicePath("/api/me/tokens/abc"), true);
+  assert.equal(isSelfServicePath("/api/shows"), false);
+
+  // member read_write may mutate its own tokens...
+  assert.equal(bearerRequestAllowed({ ...member, method: "GET", pathname: "/api/me/tokens" }), true);
+  assert.equal(bearerRequestAllowed({ ...member, method: "DELETE", pathname: "/api/me/tokens" }), true);
+  assert.equal(bearerRequestAllowed({ ...member, method: "DELETE", pathname: "/api/me/tokens/abc" }), true);
+  // ...but still cannot mutate owner-only APIs
+  assert.equal(bearerRequestAllowed({ ...member, method: "POST", pathname: "/api/shows" }), false);
+});
