@@ -31,7 +31,19 @@ test("deleteAccount removes subscriptions by email and the caller user row in on
 });
 
 test("owner account deletion is blocked to protect shared shows", async () => {
-  const { accountDeletionError } = await import("../lib/account.ts");
-  assert.equal(accountDeletionError("owner"), "owners must transfer or delete shows first");
-  assert.equal(accountDeletionError("member"), null);
+  const { accountDeletionBlock } = await import("../lib/account.ts");
+  assert.deepEqual(accountDeletionBlock("owner", null), {
+    status: 409,
+    error: "owners must transfer or delete shows first",
+  });
+});
+
+test("agent token deletion is forbidden while mobile and cookie callers may proceed", async () => {
+  const { accountDeletionBlock } = await import("../lib/account.ts");
+  assert.deepEqual(accountDeletionBlock("member", "agent:research"), {
+    status: 403,
+    error: "agents can't delete the account",
+  });
+  assert.equal(accountDeletionBlock("member", "mobile:phone"), null);
+  assert.equal(accountDeletionBlock("member", null), null);
 });

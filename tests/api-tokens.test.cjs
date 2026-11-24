@@ -50,12 +50,16 @@ test("bearer policy: self-service carve-out covers /api/me/tokens* for members",
 
   assert.equal(isSelfServicePath("/api/me/tokens"), true);
   assert.equal(isSelfServicePath("/api/me/tokens/abc"), true);
+  assert.equal(isSelfServicePath("/api/me"), true);
+  assert.equal(isSelfServicePath("/api/me/anything"), false);
   assert.equal(isSelfServicePath("/api/shows"), false);
 
   // member read_write may mutate its own tokens...
   assert.equal(bearerRequestAllowed({ ...member, method: "GET", pathname: "/api/me/tokens" }), true);
   assert.equal(bearerRequestAllowed({ ...member, method: "DELETE", pathname: "/api/me/tokens" }), true);
   assert.equal(bearerRequestAllowed({ ...member, method: "DELETE", pathname: "/api/me/tokens/abc" }), true);
+  assert.equal(bearerRequestAllowed({ ...member, method: "DELETE", pathname: "/api/me" }), true);
+  assert.equal(bearerRequestAllowed({ ...member, method: "POST", pathname: "/api/me/anything" }), false);
   // ...but still cannot mutate owner-only APIs
   assert.equal(bearerRequestAllowed({ ...member, method: "POST", pathname: "/api/shows" }), false);
 });
