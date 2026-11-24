@@ -59,3 +59,68 @@ test("bearer policy: self-service carve-out covers /api/me/tokens* for members",
   // ...but still cannot mutate owner-only APIs
   assert.equal(bearerRequestAllowed({ ...member, method: "POST", pathname: "/api/shows" }), false);
 });
+
+const LIVE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const PID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+
+test("self-service covers exactly the four live participation paths", async () => {
+  const { isSelfServicePath } = await import("../lib/api-tokens.ts");
+  for (const action of ["join", "leave", "heartbeat", "turns"]) {
+    assert.equal(isSelfServicePath(`/api/live/${LIVE}/${action}`), true, action);
+  }
+  for (const path of [
+    "/api/live/sessions",
+    `/api/live/${LIVE}`,
+    `/api/live/${LIVE}/participants/${PID}`,
+    `/api/live/${LIVE}/turns/x`,
+    `/api/live/${LIVE}/join/`,
+    "/api/live/not-a-uuid/join",
+    "/api/live/sessions/join",
+    `/api/live/${LIVE}/speak`,
+    `/api/live/x/${LIVE}/join`,
+  ]) {
+    assert.equal(isSelfServicePath(path), false, path);
+  }
+});
+
+test("bearer policy for live sessions: members participate, owners moderate", async () => {
+  const { bearerRequestAllowed } = await import("../lib/api-tokens.ts");
+  const member = { scope: "read_write", role: "member", ownerApproved: false };
+  const listener = { scope: "read_only", role: "member", ownerApproved: false };
+  const owner = { scope: "read_write", role: "owner", ownerApproved: true };
+
+  for (const action of ["join", "leave", "heartbeat", "turns"]) {
+    const pathname = `/api/live/${LIVE}/${action}`;
+    assert.equal(bearerRequestAllowed({ ...member, method: "POST", pathname }), true, action);
+    assert.equal(bearerRequestAllowed({ ...listener, method: "POST", pathname }), false, action);
+  }
+  // read_only agents can still listen
+  assert.equal(bearerRequestAllowed({ ...listener, method: "GET", pathname: `/api/live/${LIVE}/turns` }), true);
+  assert.equal(bearerRequestAllowed({ ...listener, method: "GET", pathname: "/api/live/sessions" }), true);
+
+  const ownerOnly = [
+    ["POST", "/api/live/sessions"],
+    ["PATCH", `/api/live/${LIVE}`],
+    ["PATCH", `/api/live/${LIVE}/participants/${PID}`],
+    ["POST", `/api/live/${LIVE}/turns/x`],
+    ["POST", "/api/live/sessions/join"],
+  ];
+  for (const [method, pathname] of ownerOnly) {
+    assert.equal(bearerRequestAllowed({ ...member, method, pathname }), false, `${method} ${pathname}`);
+  }
+  for (const [method, pathname] of ownerOnly.slice(0, 3)) {
+    assert.equal(bearerRequestAllowed({ ...owner, method, pathname }), true, `${method} ${pathname}`);
+  }
+});
+
+test("bearer tokens can never mint tokens", async () => {
+  const { bearerForbiddenPath } = await import("../lib/api-tokens.ts");
+  assert.equal(bearerForbiddenPath("/api/me/tokens", "POST"), true);
+  assert.equal(bearerForbiddenPath("/api/me/tokens/connect", "POST"), true);
+  assert.equal(bearerForbiddenPath("/api/tokens", "GET"), true);
+  assert.equal(bearerForbiddenPath("/api/tokens/abc", "DELETE"), true);
+  // listing and revoking your own tokens with a bearer token still works
+  assert.equal(bearerForbiddenPath("/api/me/tokens", "GET"), false);
+  assert.equal(bearerForbiddenPath("/api/me/tokens", "DELETE"), false);
+  assert.equal(bearerForbiddenPath("/api/me/tokens/abc", "DELETE"), false);
+});
