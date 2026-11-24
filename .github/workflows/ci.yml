@@ -33,3 +33,20 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
+
+  web-smoke:
+    runs-on: ubuntu-latest
+    env:
+      # The smoke paths are unauthenticated; these only let Next.js boot in CI.
+      AUTH_SECRET: smoke-test-dummy-secret-not-for-production-0123456789
+      AUTH_TRUST_HOST: "true"
+      DATABASE_URL: postgresql://dummy:dummy@127.0.0.1:5432/dummy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e -- --trace off
