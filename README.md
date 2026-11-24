@@ -108,6 +108,24 @@ audio remain separate public paths. No new environment variable is required.
 curl -H "Authorization: Bearer $NEON_API_TOKEN" https://your-app.example/api/shows
 ```
 
+## Generation limits
+
+Generation is capped per user over a rolling 24 hours. Usage is the runs on shows
+the user owns (`shows.user_id`, set when a show is created). An on-demand generate
+checks the caller; the scheduler checks the show's owner. Approved owners are
+unlimited, as are shows created before ownership was recorded. Everyone else gets
+the caps from `app_settings`:
+
+| Key | Default | Meaning |
+|---|---|---|
+| `gen_limit_episodes_per_day` | `5` | finished or in-flight runs per 24 h (`0` blocks generation) |
+| `gen_limit_cost_cents_per_day` | `100` | summed `runs.cost_cents` per 24 h |
+
+Over a cap, `POST /api/shows/<id>/generate` returns **429** with the reason, and
+the scheduler marks that slot's run `skipped` (reason in `runs.error`) and moves
+the show to its next slot. `GET /api/me/usage` returns the caller's usage and caps;
+the dashboard shows it.
+
 ## Local voices (self-hosted TTS)
 
 Set `TTS_PROVIDER=local` and point `LOCAL_TTS_URL` at any **OpenAI-compatible**
