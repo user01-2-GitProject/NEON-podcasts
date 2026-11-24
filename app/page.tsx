@@ -30,6 +30,8 @@ export default async function DashboardPage() {
           <span className="brand">NEON</span> Podcasts
         </h1>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <Link href="/browse" className="btn secondary">Browse</Link>
+          <Link href="/subscriptions" className="btn secondary">Following</Link>
           {owner ? <Link href="/settings" className="btn secondary">Settings</Link> : null}
           <SignOutButton />
         </div>

@@ -22,6 +22,13 @@ export interface Show {
   created_at: string;
 }
 
+export interface Subscription {
+  id: string;
+  subscriber_email: string;
+  show_id: string;
+  created_at: string;
+}
+
 export type PronunciationMatchMode = "word" | "substring";
 
 export interface Pronunciation {
