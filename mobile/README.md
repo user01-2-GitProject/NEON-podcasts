@@ -63,14 +63,6 @@ Set real values for these secrets before building or submitting a release. `EXPO
 
 No Apple Developer account or Google Cloud client IDs needed for this path.
 
-## Try it on your iPhone (free, Expo Go)
-
-1. Install **Expo Go** from the App Store.
-2. On the Rig: `cd mobile && npm install && npx expo start --tunnel`
-3. Scan the QR code with the iPhone camera. Tap **Sign in with Google**: it opens the NEON website, you sign in as usual and tap **Connect app**, and you're back in the app.
-
-No Apple Developer account or Google Cloud client IDs needed for this path.
-
 ## How auth works
 
 **Browser sign-in (default, works in Expo Go):** the app opens `/mobile-connect?redirect=<app deep link>`; after Google sign-in on the website the user taps Connect, `POST /api/me/tokens/connect` mints a per-user token and redirects to the deep link (only `exp://`, `exps://`, `neonpodcasts://` are allowed). Revoke it under Settings, Devices.
