@@ -7,18 +7,18 @@ test("visibleSteps: format branches hide questions for other formats", async () 
   const allIds = w.WIZARD_STEPS.map((s) => s.id);
 
   const newsIds = w.visibleSteps({ ...base, format: "news" }).map((s) => s.id);
-  assert.ok(newsIds.includes("news_which"));
+  assert.ok(newsIds.includes("news_count"));
   assert.ok(!newsIds.includes("markets_which"));
   assert.ok(!newsIds.includes("crime_which"));
 
   const crimeIds = w.visibleSteps({ ...base, format: "truecrime" }).map((s) => s.id);
   assert.ok(crimeIds.includes("crime_which"));
   assert.ok(crimeIds.includes("graphic"));
-  assert.ok(!crimeIds.includes("news_which"));
+  assert.ok(!crimeIds.includes("news_count"));
 
   // Base (no format picked) hides every format branch.
   const baseIds = w.visibleSteps(base).map((s) => s.id);
-  for (const id of ["news_which","markets_which","history_era","crime_which","fiction_genre","talk_age"]) {
+  for (const id of ["news_count","markets_which","history_era","crime_which","fiction_genre","talk_bits"]) {
     assert.ok(!baseIds.includes(id), `expected ${id} hidden with no format`);
   }
 
@@ -46,24 +46,19 @@ test("composeWizardBody: groups by section and uses the special headings", async
       audience: "Casual readers",
       tone: "Calm",
       serious: "4",
-      cite_sources: "yes",
-      news_which: "US national news",
+      cite_sources: "Sometimes",
       news_count: "5",
-      length: "About 10 minutes",
       important: "Never take a side.",
       rules: "Never share listener names.",
-      lookup: "Today's top US stories",
     },
   };
   const body = w.composeWizardBody(draft);
   assert.ok(body.includes("## Format\nNews"), "format in body");
   assert.ok(body.includes("## About the show\nA daily rundown."));
   assert.ok(body.includes("## News\n"));
-  assert.ok(body.includes("US national news"));
   assert.ok(body.includes("5/10"));
   assert.ok(body.includes("## What matters most\nNever take a side."));
   assert.ok(body.includes("## Hard rules\nNever share listener names."));
-  assert.ok(body.includes("## Look up before each episode\nToday's top US stories"));
 });
 
 test("cadence and minutes helpers map wizard answers back to stored values", async () => {
@@ -76,6 +71,28 @@ test("cadence and minutes helpers map wizard answers back to stored values", asy
   assert.equal(w.minutesFromLengthAnswer(undefined), 10);
   assert.equal(w.formatIdFromLabel("News"), "news");
   assert.equal(w.formatIdFromLabel("not a thing"), "");
+});
+
+test("grayedChoices: conflicts gray the fighting choices; maxPicks grays the rest once reached", async () => {
+  const w = await import("../lib/wizard-steps.ts");
+  const takeaway = w.WIZARD_STEPS.find((s) => s.id === "takeaway");
+  // With "Laugh" picked, "Stay informed" and "A good story" gray out
+  // (per the conflicts), the others stay pickable until maxPicks hits.
+  let gray = w.grayedChoices(takeaway, ["Laugh"]);
+  assert.ok(gray.includes("Stay informed"));
+  assert.ok(gray.includes("A good story"));
+  assert.ok(!gray.includes("Relax"));
+  // Picking a second choice reaches maxPicks (2); everything unpicked grays.
+  gray = w.grayedChoices(takeaway, ["Laugh", "Relax"]);
+  assert.ok(gray.includes("Get fired up"));
+  assert.ok(gray.includes("Learn something"));
+});
+
+test("readMulti/writeMulti round-trip picks", async () => {
+  const w = await import("../lib/wizard-steps.ts");
+  assert.deepEqual(w.readMulti(w.writeMulti(["Politics", "Tech"])), ["Politics", "Tech"]);
+  assert.deepEqual(w.readMulti(""), []);
+  assert.deepEqual(w.readMulti(undefined), []);
 });
 
 test("composeWizardBody includes the format header even with no content answers", async () => {

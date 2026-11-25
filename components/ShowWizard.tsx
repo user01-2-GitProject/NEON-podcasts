@@ -18,8 +18,11 @@ import {
   cadenceFromAnswer,
   composeWizardBody,
   formatIdFromLabel,
+  grayedChoices,
   minutesFromLengthAnswer,
+  readMulti,
   visibleSteps,
+  writeMulti,
   type WizardDraft,
   type WizardStep,
 } from "@/lib/wizard-steps";
@@ -244,6 +247,33 @@ function StepView({ step, value, onChange, firstRef }: {
               <span className="wizard-choice-title">{c === "yes" ? "Yes" : "No"}</span>
             </button>
           ))}
+        </div>
+      ) : step.type === "multi" ? (
+        <div className="wizard-choices">
+          {(() => {
+            const picked = readMulti(value);
+            const gray = new Set(grayedChoices(step, picked));
+            return (step.choices || []).map((c, i) => {
+              const isPicked = picked.includes(c);
+              const isGray = !isPicked && gray.has(c);
+              return (
+                <button
+                  key={c}
+                  ref={i === 0 ? ((el) => { firstRef.current = el; }) : undefined}
+                  type="button"
+                  disabled={isGray}
+                  className={`wizard-choice${isPicked ? " wizard-choice-selected" : ""}${isGray ? " wizard-choice-gray" : ""}`}
+                  aria-pressed={isPicked}
+                  onClick={() => {
+                    const next = isPicked ? picked.filter((p) => p !== c) : [...picked, c];
+                    onChange(writeMulti(next));
+                  }}
+                >
+                  <span className="wizard-choice-title">{c}</span>
+                </button>
+              );
+            });
+          })()}
         </div>
       ) : step.type === "scale" ? (
         <div className="wizard-scale">
