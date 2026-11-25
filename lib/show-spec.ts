@@ -150,7 +150,7 @@ function parseScalarOrInline(raw: string): Value {
   return s;
 }
 
-function parseFrontmatter(src: string): { data: Record<string, Value>; errors: string[] } {
+export function parseFrontmatter(src: string): { data: Record<string, Value>; errors: string[] } {
   const data: Record<string, Value> = {};
   const errors: string[] = [];
   let listKey: string | null = null;

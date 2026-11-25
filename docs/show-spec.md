@@ -82,3 +82,17 @@ Deterministic and CI-safe: given a canonical `show.md`, assert the **assembled g
 5. Episodes: each episode fills the show's segment scaffold (jimmy's `Episode-Template.md` standardized — see `templates/episode.example.md`).
 
 See `templates/show.example.md` for a filled example and `templates/episode.example.md` for the per-episode template (derived from `Episode-Template.md`).
+
+---
+
+## 5. Episode plans (`episode.md`)
+
+An episode plan is a briefing doc with episode frontmatter (`title`, `episode`, `status`, `air_date`, `hosts`, `notes`; see `templates/episode.example.md`, from jimmy's `Episode-Template.md`). Upload it with the show's briefings like any other `.md`.
+
+At generation time (`lib/episode-spec.ts`, `selectBriefings`):
+
+- **Status:** `🟢 Ready` (or no status) is usable; `🟡 Not Ready` and `🔴 Completed - DO NOT USE` are held back.
+- **Air date:** `MM-DD-YYYY` or `YYYY-MM-DD`. A plan isn't used before its air date (in the show's timezone). The `MM-DD-YYYY` placeholder counts as undated.
+- **One plan per episode:** the ready plan with the earliest due air date wins (undated ones after dated ones). Other plans wait for a later run.
+- The chosen plan's body (frontmatter stripped, with episode number, hosts and notes on top) goes to the writer alongside the regular briefings, and **its title is used as the episode title**.
+- After a successful run the plan is switched off (made inactive) so it isn't reused. A failed run leaves it on for the retry.
