@@ -1,8 +1,9 @@
 // Free, generated cover art: every show gets one made from its name, so no
-// borrowed images and nothing to upload. Pure helpers; the PNG is drawn by
+// borrowed images. Owners can upload their own (lib/cover-upload.ts). Pure helpers; the PNG is drawn by
 // app/art/[id]/route.tsx.
 
 import { isTrustedArtworkUrl } from "@/lib/show-image";
+import { isUploadedCoverPath } from "@/lib/cover-upload";
 
 export interface CoverPalette {
   from: string;
@@ -49,7 +50,8 @@ export function coverFontSize(title: string): number {
 // cover. The version changes with the title so caches pick up renames.
 // Only links on NEON's own sites are used; anything else stored earlier falls
 // back to the free cover, so no outside picture reaches a public feed.
+// A cover an owner uploaded is served by /art/[id] itself.
 export function artworkPath(show: { id: string; title: string; image_url?: string | null }): string {
-  if (isTrustedArtworkUrl(show.image_url)) return show.image_url as string;
+  if (isTrustedArtworkUrl(show.image_url) || isUploadedCoverPath(show.id, show.image_url)) return show.image_url as string;
   return `/art/${show.id}?v=${hashString(show.title).toString(36)}`;
 }

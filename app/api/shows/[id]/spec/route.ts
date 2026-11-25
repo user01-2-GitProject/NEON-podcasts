@@ -86,7 +86,10 @@ export async function PUT(req: Request, { params }: Params) {
         schedule_time = ${f.schedule_time},
         timezone = ${f.timezone},
         target_minutes = ${f.target_minutes},
-        image_url = ${f.image_url},
+        image_url = case
+          when ${f.image_url}::text is null and image_url like '/art/%' then image_url
+          else ${f.image_url}
+        end,
         next_run_at = case
           when ${f.cadence} = 'manual' then null
           when next_run_at is not null and cadence = ${f.cadence}

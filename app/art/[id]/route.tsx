@@ -8,13 +8,31 @@ const SIZE = 1400; // Apple Podcasts wants a square between 1400 and 3000 px.
 
 type Params = { params: Promise<{ id: string }> };
 
-// Generated cover art for a show (public, like the feed that points at it).
+// A show's cover (public, like the feed that points at it): the picture an
+// owner uploaded, or else one drawn from the show's name.
 export async function GET(_req: Request, { params }: Params) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return new Response("Not found", { status: 404 });
   const rows = (await sql`select id, title from shows where id = ${id}`) as { id: string; title: string }[];
   const show = rows[0];
   if (!show) return new Response("Not found", { status: 404 });
+
+  // A cover an owner uploaded wins. Before migration 010 the table is missing,
+  // so fall through to the generated cover.
+  const uploaded = (await sql`
+    select content_type, data from show_artwork where show_id = ${id}
+  `.catch(() => [])) as { content_type: string; data: Buffer }[];
+  if (uploaded[0]) {
+    const bytes = Buffer.from(uploaded[0].data);
+    return new Response(new Uint8Array(bytes), {
+      headers: {
+        "Content-Type": uploaded[0].content_type,
+        "Content-Length": String(bytes.length),
+        "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
+  }
 
   const p = coverPalette(show.id);
   const title = show.title.trim() || "Untitled show";
