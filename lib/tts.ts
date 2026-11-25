@@ -1,6 +1,8 @@
 // Text-to-speech abstraction. Supports OpenAI, ElevenLabs, and local/self-hosted.
 // Long scripts are chunked and the resulting mp3 buffers concatenated.
 
+import { pickOpenAiVoice, resolveTtsConfig, type TtsConfig } from "@/lib/settings";
+
 const MAX_CHARS_PER_CHUNK = 3500;
 
 export interface TtsResult {
@@ -10,7 +12,8 @@ export interface TtsResult {
 }
 
 export async function synthesize(script: string, voiceOverride?: string | null): Promise<TtsResult> {
-  const provider = (process.env.TTS_PROVIDER || "openai").toLowerCase();
+  const config = await resolveTtsConfig();
+  const provider = config.provider;
   const chunks = chunkText(script, MAX_CHARS_PER_CHUNK);
   const buffers: Buffer[] = [];
 
@@ -20,7 +23,7 @@ export async function synthesize(script: string, voiceOverride?: string | null):
     } else if (provider === "local") {
       buffers.push(await localOpenAICompatible(chunk, voiceOverride));
     } else {
-      buffers.push(await openai(chunk, voiceOverride));
+      buffers.push(await openai(chunk, voiceOverride, config));
     }
   }
 
@@ -53,11 +56,13 @@ async function localOpenAICompatible(text: string, voiceOverride?: string | null
   return Buffer.from(await res.arrayBuffer());
 }
 
-async function openai(text: string, voiceOverride?: string | null): Promise<Buffer> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not set");
-  const model = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
-  const voice = voiceOverride || process.env.OPENAI_TTS_VOICE || "alloy";
+async function openai(text: string, voiceOverride: string | null | undefined, config: TtsConfig): Promise<Buffer> {
+  const apiKey = config.openAiApiKey;
+  if (!apiKey) {
+    throw new Error("No OpenAI voice key: paste one under Settings → Voice, or use Script only narration");
+  }
+  const model = config.openAiModel;
+  const voice = pickOpenAiVoice(voiceOverride, config.openAiVoice);
 
   const res = await fetch("https://api.openai.com/v1/audio/speech", {
     method: "POST",
