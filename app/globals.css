@@ -256,3 +256,30 @@ button.linklike {
   cursor: pointer;
   font: inherit;
 }
+
+/* ---- New-show wizard (mobile first) ---- */
+.wizard { max-width: 480px; margin: 0 auto; padding: 16px; }
+.wizard-progress { position: relative; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; margin-bottom: 20px; }
+.wizard-progress-bar { position: absolute; left: 0; top: 0; bottom: 0; background: var(--brand, #c8a2ff); border-radius: 3px; transition: width 200ms ease; }
+.wizard-progress-label { position: absolute; right: 0; top: 10px; font-size: 12px; color: rgba(255,255,255,0.5); }
+.wizard-card { min-height: 220px; padding: 24px 0; }
+.wizard-card h2 { font-size: 24px; margin: 0 0 8px; }
+.wizard-input { display: block; width: 100%; margin-top: 16px; padding: 14px 16px; font-size: 18px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: inherit; }
+.wizard-input:focus { outline: none; border-color: var(--brand, #c8a2ff); }
+.wizard-choices { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.wizard-choice { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.03); color: inherit; text-align: left; cursor: pointer; font-family: inherit; }
+.wizard-choice:hover { background: rgba(255,255,255,0.06); }
+.wizard-choice-selected { border-color: var(--brand, #c8a2ff); background: rgba(200,162,255,0.1); }
+.wizard-choice-title { font-size: 16px; font-weight: 600; }
+.wizard-choice-sub { font-size: 13px; color: rgba(255,255,255,0.55); }
+.wizard-nav { display: flex; gap: 8px; margin-top: 16px; }
+.wizard-nav .btn { flex: 1; padding: 12px 16px; font-size: 16px; }
+.wizard-nav .btn.primary { flex: 2; }
+.wizard-choices-row { flex-direction: row; }
+.wizard-scale { margin-top: 16px; }
+.wizard-scale-labels { display: flex; justify-content: space-between; font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 8px; }
+.wizard-scale-dots { display: flex; gap: 6px; justify-content: space-between; }
+.wizard-scale-dot { flex: 1; padding: 14px 0; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.03); color: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+.wizard-scale-dot:hover { background: rgba(255,255,255,0.08); }
+.wizard-scale-dot-selected { border-color: var(--brand, #c8a2ff); background: rgba(200,162,255,0.14); }
+.linklike { background: none; border: none; color: var(--brand, #c8a2ff); cursor: pointer; padding: 0; text-decoration: underline; font: inherit; }
