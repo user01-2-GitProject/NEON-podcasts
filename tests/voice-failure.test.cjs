@@ -39,6 +39,7 @@ function generate(db, synthesize, generateScript = okScript) {
     "@/lib/claude": {
       generateScript,
       estimateCostCents: () => 3,
+      mostImportant: () => null,
     },
     "@/lib/tts": { synthesize, estimateDurationSeconds: () => 60 },
     "@/lib/pronounce": { applyPronunciations: (s) => s },

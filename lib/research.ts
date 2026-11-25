@@ -63,6 +63,8 @@ export interface ResearchArgs {
   today: string; // YYYY-MM-DD in the show's time zone
   timezone: string;
   episodeTitle?: string;
+  /** The owner's "most important part of this podcast" answer. */
+  priority?: string | null;
 }
 
 export function buildResearchPrompt(a: ResearchArgs): { system: string; userText: string } {
@@ -75,6 +77,9 @@ export function buildResearchPrompt(a: ResearchArgs): { system: string; userText
     "Say when each fact was published or is valid for, if the page says.",
     "End with a section titled \"Couldn't confirm\" listing anything asked for that the results did not answer.",
     "Do not write the episode. Do not add opinions.",
+    ...(a.priority
+      ? [`The show owner says the most important part of this podcast is: "${a.priority}". Weigh that most heavily when choosing what to look up and which facts to keep.`]
+      : []),
   ].join("\n");
   const userText = [
     `SHOW: ${a.showTitle}`,
