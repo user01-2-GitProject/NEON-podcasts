@@ -420,3 +420,52 @@ export const BODY_TEMPLATE = [
   "## Sources & guardrails",
   "Where facts come from, what to avoid, accuracy rules.",
 ].join("\n");
+
+/**
+ * Rebuild a ShowSpec from a stored show (export / "Download show.md" on the
+ * show page). Inverse of specToShowFields for everything the shows table
+ * stores; category, language, explicit and tags aren't stored per show yet,
+ * so they come back as defaults.
+ */
+export function showToSpec(
+  show: {
+    title: string;
+    description: string;
+    style_guide: string;
+    voice_id: string | null;
+    narration_mode: string;
+    cadence: string;
+    schedule_time: string;
+    timezone: string;
+    target_minutes: number;
+    image_url?: string | null;
+  },
+  pronunciations: { term: string; say_as: string; match_mode: string }[],
+): ShowSpec {
+  const spec = emptyShowSpec();
+  spec.title = show.title;
+  spec.tagline = show.description ?? "";
+  spec.narration_mode = show.narration_mode as SpecNarrationMode;
+  spec.cadence = show.cadence as SpecCadence;
+  spec.schedule_time = show.schedule_time;
+  spec.timezone = show.timezone;
+  spec.target_minutes = show.target_minutes;
+  spec.image_url = show.image_url ?? "";
+  let guide = (show.style_guide ?? "").trim();
+  const hostLine = /^Hosts?: (.+?)(?:\r?\n\r?\n|$)/.exec(guide);
+  if (hostLine) {
+    spec.hosts = hostLine[1].split(", ").map((name) => ({ name: name.trim(), voice: "" }));
+    guide = guide.slice(hostLine[0].length).trim();
+  }
+  if (show.voice_id) {
+    if (spec.hosts.length) spec.hosts[0].voice = show.voice_id;
+    else spec.hosts = [{ name: "Host", voice: show.voice_id }];
+  }
+  spec.body = guide;
+  spec.pronunciations = pronunciations.map((p) => ({
+    term: p.term,
+    say_as: p.say_as,
+    match: p.match_mode as SpecMatchMode,
+  }));
+  return spec;
+}

@@ -8,6 +8,7 @@ import SteeringPanel from "@/components/SteeringPanel";
 import EpisodesPanel from "@/components/EpisodesPanel";
 import DeleteShowButton from "@/components/DeleteShowButton";
 import ShowArtworkForm from "@/components/ShowArtworkForm";
+import ShowSpecPanel from "@/components/ShowSpecPanel";
 import { auth } from "@/auth";
 
 export const runtime = "nodejs";
@@ -70,6 +71,8 @@ export default async function ShowPage({ params }: { params: Promise<{ id: strin
           activeBriefings={activeBriefings}
           narrationMode={show.narration_mode === "external" ? "external" : "auto"}
         /> : null}
+
+        {owner ? <ShowSpecPanel showId={id} /> : null}
 
         {owner ? <SteeringPanel showId={id} initialStyleGuide={show.style_guide} initialRules={pronunciations} /> : null}
 
