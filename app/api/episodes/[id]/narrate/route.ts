@@ -12,10 +12,14 @@ export const maxDuration = 300;
 type Params = { params: Promise<{ id: string }> };
 
 // "Make audio": voice an episode that has a script but no audio yet (for
-// example when the voice step failed during generation). Owner-only, like
-// every non-GET /api route (middleware). Publishes, as auto narration does.
-export async function POST(_req: Request, { params }: Params) {
+// example when the voice step failed during generation). With {"redo": true}
+// it replaces existing audio, e.g. after the show's voice was changed.
+// Owner-only, like every non-GET /api route (middleware). Publishes, as auto
+// narration does.
+export async function POST(req: Request, { params }: Params) {
   const { id } = await params;
+  const body = (await req.json().catch(() => ({}))) as { redo?: unknown };
+  const redo = body?.redo === true;
   const rows = (await sql`
     select e.id, e.show_id, e.script, e.audio_url, s.voice_id
     from episodes e join shows s on s.id = e.show_id
@@ -23,7 +27,7 @@ export async function POST(_req: Request, { params }: Params) {
   `) as { id: string; show_id: string; script: string | null; audio_url: string | null; voice_id: string | null }[];
   const ep = rows[0];
   if (!ep) return NextResponse.json({ error: "Episode not found" }, { status: 404 });
-  if (ep.audio_url) return NextResponse.json({ error: "This episode already has audio" }, { status: 409 });
+  if (ep.audio_url && !redo) return NextResponse.json({ error: "This episode already has audio" }, { status: 409 });
   if (!ep.script?.trim()) return NextResponse.json({ error: "This episode has no script to read" }, { status: 400 });
 
   const pronunciations = (await sql`
@@ -44,7 +48,7 @@ export async function POST(_req: Request, { params }: Params) {
     update episodes set
       audio_url = ${storage.url(id)}, byte_size = ${tts.audio.length},
       audio_content_type = ${tts.contentType}, status = 'published', published_at = now()
-    where id = ${id} and audio_url is null
+    where id = ${id} and (${redo} or audio_url is null)
     returning *
   `) as unknown[];
   return NextResponse.json({ episode: updated[0] ?? null }, { status: 200 });
