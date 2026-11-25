@@ -1,3 +1,4 @@
+import { artworkPath } from "@/lib/cover";
 // JSON catalogue for the native app (Phase 3b). Same data as the /browse and
 // /subscriptions pages, plus stream URLs the app can play without a cookie.
 
@@ -60,7 +61,12 @@ export async function listBrowse(db: SqlFn, email: string): Promise<BrowseShow[]
     having count(e.*) filter (where e.status = 'published') > 0
     order by latest_at desc nulls last
   `) as BrowseShow[];
-  return rows.map((r) => ({ ...r, published_count: Number(r.published_count), following: Boolean(r.following) }));
+  return rows.map((r) => ({
+    ...r,
+    image_url: artworkPath(r),
+    published_count: Number(r.published_count),
+    following: Boolean(r.following),
+  }));
 }
 
 export async function listFollowingFeed(db: SqlFn, email: string, limit = 100): Promise<FeedEpisode[]> {
@@ -76,7 +82,11 @@ export async function listFollowingFeed(db: SqlFn, email: string, limit = 100): 
     order by e.published_at desc nulls last, e.created_at desc
     limit ${capped}
   `) as FeedEpisode[];
-  return rows.map((r) => ({ ...r, audio_url: publicAudioPath(r.audio_url, r.rss_token) }));
+  return rows.map((r) => ({
+    ...r,
+    show_image_url: artworkPath({ id: r.show_id, title: r.show_title, image_url: r.show_image_url }),
+    audio_url: publicAudioPath(r.audio_url, r.rss_token),
+  }));
 }
 
 export type ShowDetail = {
@@ -92,6 +102,7 @@ export async function getShowByToken(db: SqlFn, rssToken: string): Promise<ShowD
   `) as ShowDetail["show"][];
   const show = shows[0];
   if (!show) return null;
+  show.image_url = artworkPath(show);
   const rows = (await db`
     select e.id, e.title, e.published_at, e.audio_url
     from episodes e

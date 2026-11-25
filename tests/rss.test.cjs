@@ -31,6 +31,7 @@ function route(showRows = [show], episodeRows = [episode, olderEpisode], setting
     return episodeRows;
   };
   new Function("require", "exports", compiled)((name) => {
+    if (name === "@/lib/cover") return require("../lib/cover.ts");
     assert.equal(name, "@/lib/db");
     return { sql };
   }, exports);

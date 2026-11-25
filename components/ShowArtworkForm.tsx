@@ -41,7 +41,7 @@ export default function ShowArtworkForm({ showId, initialImageUrl }: { showId: s
         save();
       }}
     >
-      <label htmlFor="show-image-url">Artwork image URL</label>
+      <label htmlFor="show-image-url">Use your own artwork (optional)</label>
       <div style={{ display: "flex", gap: 8 }}>
         <input
           id="show-image-url"
@@ -55,8 +55,8 @@ export default function ShowArtworkForm({ showId, initialImageUrl }: { showId: s
         </button>
       </div>
       <p className="muted">
-        Shown in the apps and on lock screens. Podcast apps expect a square JPEG or PNG, 1400–3000 px. Leave empty to
-        use the network cover.
+        Your show already has a free cover made from its name. To use your own picture instead, paste a link to a
+        square image (1400–3000 px). Clear it to go back to the free cover.
       </p>
       {saved ? <p className="muted">Saved.</p> : null}
       {error ? <p className="error" role="alert">{error}</p> : null}
