@@ -2,7 +2,8 @@
 // `show.md` file and the show form produce. Pure: no DB, no imports, so the
 // form, the API and the tests all share the same parse/validate/serialize.
 
-export type SpecCadence = "daily" | "weekly" | "manual";
+// Mirrors lib/cadence.ts (kept literal so this file stays import-free; tests/cadence.test.cjs checks they match).
+export type SpecCadence = "twice_daily" | "daily" | "weekdays" | "twice_weekly" | "weekly" | "manual";
 export type SpecNarrationMode = "auto" | "external";
 export type SpecMatchMode = "word" | "substring";
 
@@ -36,7 +37,22 @@ export interface ShowSpec {
   body: string;
 }
 
-export const CADENCES: SpecCadence[] = ["daily", "weekly", "manual"];
+export const CADENCES: SpecCadence[] = ["twice_daily", "daily", "weekdays", "twice_weekly", "weekly", "manual"];
+
+// Accepts friendly spellings in hand-written show.md ("twice a day", "twice-weekly").
+export function normalizeCadence(value: string): string {
+  const v = value.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  const aliases: Record<string, string> = {
+    twice_a_day: "twice_daily",
+    twice_per_day: "twice_daily",
+    "2x_daily": "twice_daily",
+    twice_a_week: "twice_weekly",
+    twice_per_week: "twice_weekly",
+    "2x_weekly": "twice_weekly",
+    weekday: "weekdays",
+  };
+  return aliases[v] ?? v;
+}
 export const NARRATION_MODES: SpecNarrationMode[] = ["auto", "external"];
 export const MATCH_MODES: SpecMatchMode[] = ["word", "substring"];
 
@@ -222,7 +238,7 @@ export function parseShowMd(text: string): { spec: ShowSpec; errors: string[] } 
   if ("image_url" in data) spec.image_url = str(data.image_url);
   if ("schedule_time" in data) spec.schedule_time = str(data.schedule_time);
   if ("timezone" in data) spec.timezone = str(data.timezone);
-  if ("cadence" in data) spec.cadence = str(data.cadence) as SpecCadence;
+  if ("cadence" in data) spec.cadence = normalizeCadence(str(data.cadence)) as SpecCadence;
   if ("narration_mode" in data) spec.narration_mode = str(data.narration_mode) as SpecNarrationMode;
 
   if ("explicit" in data) {

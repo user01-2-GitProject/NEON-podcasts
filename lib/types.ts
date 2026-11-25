@@ -1,4 +1,5 @@
-export type Cadence = "daily" | "weekly" | "manual";
+export type { Cadence } from "./cadence";
+import type { Cadence } from "./cadence";
 export type NarrationMode = "auto" | "external";
 export type EpisodeStatus = "draft" | "published" | "failed";
 export type RunStatus = "queued" | "running" | "done" | "failed";

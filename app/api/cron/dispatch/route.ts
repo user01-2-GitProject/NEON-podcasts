@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { generateEpisode, MAX_SCHEDULED_ATTEMPTS } from "@/lib/generate";
 import { decideScheduledBatch, skipScheduledRun } from "@/lib/limits";
+import { SCHEDULED_CADENCES, firstSlot } from "@/lib/cadence";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -37,7 +38,10 @@ export async function GET(req: Request) {
       returning show_id, scheduled_for, attempt_count
     )
     update shows set next_run_at = case cadence
+      when 'twice_daily' then (((next_run_at at time zone timezone) + interval '12 hours') at time zone timezone)
       when 'daily' then (((next_run_at at time zone timezone) + interval '1 day') at time zone timezone)
+      when 'weekdays' then (((next_run_at at time zone timezone) + (case extract(isodow from (next_run_at at time zone timezone)) when 5 then 3 when 6 then 2 else 1 end) * interval '1 day') at time zone timezone)
+      when 'twice_weekly' then (((next_run_at at time zone timezone) + (case when extract(isodow from (next_run_at at time zone timezone)) < 4 then 4 - extract(isodow from (next_run_at at time zone timezone)) else 8 - extract(isodow from (next_run_at at time zone timezone)) end) * interval '1 day') at time zone timezone)
       when 'weekly' then (((next_run_at at time zone timezone) + interval '7 days') at time zone timezone)
       else null
     end
@@ -47,19 +51,16 @@ export async function GET(req: Request) {
       and stale.attempt_count >= ${MAX_SCHEDULED_ATTEMPTS}
   `;
 
-  // Existing shows predate scheduling. Give valid daily/weekly shows their first future slot.
-  await sql`
-    update shows set next_run_at = case
-      when (((now() at time zone timezone)::date + schedule_time::time) at time zone timezone) > now()
-        then (((now() at time zone timezone)::date + schedule_time::time) at time zone timezone)
-      else ((((now() at time zone timezone)::date + 1) + schedule_time::time) at time zone timezone)
-    end
-    where next_run_at is null
-      and is_active = true
-      and cadence in ('daily', 'weekly')
-      and schedule_time ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'
-      and timezone in (select name from pg_timezone_names)
-  `;
+  // Shows without a slot yet (older shows, or ones just switched on) get their first future slot.
+  const unscheduled = (await sql`
+    select id, cadence, schedule_time, timezone from shows
+    where next_run_at is null and is_active = true and cadence = any(${SCHEDULED_CADENCES})
+  `) as { id: string; cadence: string; schedule_time: string; timezone: string }[];
+  for (const show of unscheduled) {
+    const slot = firstSlot(show.cadence, show.schedule_time, show.timezone);
+    if (!slot) continue;
+    await sql`update shows set next_run_at = ${slot.toISOString()} where id = ${show.id} and next_run_at is null`;
+  }
 
   // The partial unique index makes this an atomic one-run claim per show and slot.
   await sql`
@@ -67,7 +68,7 @@ export async function GET(req: Request) {
     select id, 'queued', next_run_at, now()
     from shows
     where is_active = true
-      and cadence in ('daily', 'weekly')
+      and cadence = any(${SCHEDULED_CADENCES})
       and next_run_at <= now()
     on conflict (show_id, scheduled_for) where scheduled_for is not null do nothing
   `;
@@ -82,7 +83,7 @@ export async function GET(req: Request) {
         and runs.attempt_count < ${MAX_SCHEDULED_ATTEMPTS}
         and coalesce(runs.next_attempt_at, now()) <= now()
         and shows.is_active = true
-        and shows.cadence in ('daily', 'weekly')
+        and shows.cadence = any(${SCHEDULED_CADENCES})
         and shows.next_run_at = runs.scheduled_for
       order by runs.scheduled_for
       limit ${DISPATCH_LIMIT}

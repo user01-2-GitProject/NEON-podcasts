@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cadenceLabel } from "@/lib/cadence";
 import { sql } from "@/lib/db";
 import type { Show } from "@/lib/types";
 import ShowSpecForm from "@/components/ShowSpecForm";
@@ -66,7 +67,7 @@ export default async function DashboardPage() {
                         {show.title}
                       </Link>
                       <div className="muted">
-                        {show.cadence} · ~{show.target_minutes} min ·{" "}
+                        {cadenceLabel(show.cadence)} · ~{show.target_minutes} min ·{" "}
                         {Number(show.episode_count)} episode
                         {Number(show.episode_count) === 1 ? "" : "s"}
                       </div>

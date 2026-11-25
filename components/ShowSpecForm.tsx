@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { CADENCES, CADENCE_LABELS } from "@/lib/cadence";
 import {
   BODY_TEMPLATE,
   emptyShowSpec,
@@ -155,9 +156,11 @@ export default function ShowSpecForm() {
               value={spec.cadence}
               onChange={(e) => set("cadence", e.target.value as ShowSpec["cadence"])}
             >
-              <option value="manual">Manual</option>
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
+              {CADENCES.map((c) => (
+                <option key={c} value={c}>
+                  {CADENCE_LABELS[c]}
+                </option>
+              ))}
             </select>
           </div>
           <div>

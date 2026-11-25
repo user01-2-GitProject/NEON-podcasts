@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
+import { firstSlot } from "@/lib/cadence";
 import {
   coerceShowSpec,
   parseShowMd,
@@ -72,6 +73,7 @@ export async function PUT(req: Request, { params }: Params) {
   const sayAs = spec.pronunciations.map((p) => p.say_as);
   const modes = spec.pronunciations.map((p) => p.match);
 
+  const firstRun = firstSlot(f.cadence, f.schedule_time, f.timezone)?.toISOString() ?? null;
   const rows = (await sql`
     with s as (
       update shows set
@@ -90,12 +92,7 @@ export async function PUT(req: Request, { params }: Params) {
           when next_run_at is not null and cadence = ${f.cadence}
                and schedule_time = ${f.schedule_time} and timezone = ${f.timezone} then next_run_at
           when not is_active then next_run_at
-          when (((now() at time zone ${f.timezone})::date + ${f.schedule_time}::time)
-                at time zone ${f.timezone}) > now()
-            then (((now() at time zone ${f.timezone})::date + ${f.schedule_time}::time)
-                  at time zone ${f.timezone})
-          else ((((now() at time zone ${f.timezone})::date + 1) + ${f.schedule_time}::time)
-                at time zone ${f.timezone})
+          else ${firstRun}::timestamptz
         end
       where id = ${id}
       returning *
