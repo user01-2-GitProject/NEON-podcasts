@@ -4,7 +4,7 @@ const { readFileSync } = require("node:fs");
 const ts = require("typescript");
 
 const SHOW_ID = "11111111-1111-4111-8111-111111111111";
-const ART = "https://cdn.example/art.png?size=3000&v=2";
+const ART = "https://www.needlesslyengineeredonlinenetwork.com/shows/x/cover.png?v=2";
 
 // Loads a route module from source with its imports swapped for test doubles,
 // the same way tests/rss.test.cjs exercises the feed route.
@@ -54,10 +54,14 @@ async function patch(sql, body) {
 test("image URLs must be http(s); empty or null clears", async () => {
   const { parseImageUrl } = await import("../lib/show-image.ts");
   assert.deepEqual(parseImageUrl(` ${ART} `), { value: ART });
-  assert.deepEqual(parseImageUrl("http://example.com/a.jpg"), { value: "http://example.com/a.jpg" });
+  // Outside picture links are refused in plain words: anything could end up on
+  // Apple and Spotify under NEON's name.
+  for (const outside of ["http://example.com/a.jpg", "https://cdn.example/art.png", "http://www.needlesslyengineeredonlinenetwork.com/a.png", "https://needlesslyengineeredonlinenetwork.com.evil.test/a.png"]) {
+    assert.match(parseImageUrl(outside).error, /Picture links are turned off/, outside);
+  }
   assert.deepEqual(parseImageUrl(""), { value: null });
   assert.deepEqual(parseImageUrl(null), { value: null });
-  for (const bad of ["javascript:alert(1)", "data:image/png;base64,AAAA", "ftp://x/a.png", "/podcast-cover.png", "not a url", 42]) {
+  for (const bad of ["javascript:alert(1)", "data:image/png;base64,AAAA", "ftp://x/a.png", "/podcast-cover.png", "not a url", 42, "https://x.test/a.png"]) {
     assert.ok("error" in parseImageUrl(bad), String(bad));
   }
   assert.ok("error" in parseImageUrl(`https://x.test/${"a".repeat(2048)}`));
@@ -136,11 +140,13 @@ test("RSS uses the show image as <itunes:image>, falling back to its generated c
   const base = { id: SHOW_ID, title: "Show", description: "d" };
   assert.match(
     await feedBody({ ...base, image_url: ART }),
-    /<itunes:image href="https:\/\/cdn\.example\/art\.png\?size=3000&amp;v=2" \/>/,
+    /<itunes:image href="https:\/\/www\.needlesslyengineeredonlinenetwork\.com\/shows\/x\/cover\.png\?v=2" \/>/,
   );
   const generated = new RegExp(`<itunes:image href="https://podcasts\\.example/art/${SHOW_ID}\\?v=[a-z0-9]+" />`);
   assert.match(await feedBody({ ...base, image_url: null }), generated);
   // before migration 009 the column is absent entirely
   assert.match(await feedBody(base), generated);
   assert.match(await feedBody({ ...base, image_url: "javascript:alert(1)" }), generated);
+  // An outside picture saved before links were turned off never reaches the feed.
+  assert.match(await feedBody({ ...base, image_url: "https://cdn.example/art.png" }), generated);
 });
