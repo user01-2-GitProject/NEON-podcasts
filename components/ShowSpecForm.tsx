@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CADENCES, CADENCE_LABELS } from "@/lib/cadence";
 import {
   BODY_TEMPLATE,
@@ -11,6 +11,8 @@ import {
   validateShowSpec,
   type ShowSpec,
 } from "@/lib/show-spec";
+
+const DRAFT_KEY = "neon:new-show-draft";
 
 // One form for the canonical show spec. Fill it in by hand, or import a
 // show.md to fill it; "Download show.md" exports the same thing back out.
@@ -27,9 +29,58 @@ export default function ShowSpecForm() {
   const [errors, setErrors] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const set = <K extends keyof ShowSpec>(key: K, value: ShowSpec[K]) => setSpec((s) => ({ ...s, [key]: value }));
+  // Keep what's typed: restore an unsaved draft, save as you go, and warn
+  // before leaving the page with unsaved work.
+  const [dirty, setDirty] = useState(false);
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current) return;
+    restored.current = true;
+    try {
+      const saved = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+      if (saved?.spec && typeof saved.spec === "object") {
+        setSpec((s) => ({ ...s, ...saved.spec }));
+        setPronText(typeof saved.pronText === "string" ? saved.pronText : "");
+        setDirty(true);
+        setNotice("We kept what you typed last time.");
+      }
+    } catch {
+      // A broken draft is ignored.
+    }
+  }, []);
+  useEffect(() => {
+    if (!dirty) return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ spec, pronText }));
+    } catch {
+      // Storage full or blocked: the leave warning still protects the draft.
+    }
+  }, [dirty, spec, pronText]);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+  function startOver() {
+    localStorage.removeItem(DRAFT_KEY);
+    setDirty(false);
+    setSpec({ ...emptyShowSpec(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", body: BODY_TEMPLATE });
+    setPronText("");
+    setErrors([]);
+    setNotice(null);
+  }
+
+  const set = <K extends keyof ShowSpec>(key: K, value: ShowSpec[K]) => {
+    setDirty(true);
+    setSpec((s) => ({ ...s, [key]: value }));
+  };
   const host = (i: number) => spec.hosts[i] ?? { name: "", voice: "" };
   function setHost(i: number, field: "name" | "voice", value: string) {
+    setDirty(true);
     setSpec((s) => {
       const hosts = [0, 1].map((j) => ({ ...(s.hosts[j] ?? { name: "", voice: "" }) }));
       hosts[i][field] = value;
@@ -54,6 +105,7 @@ export default function ShowSpecForm() {
   async function importFile(file: File) {
     setNotice(null);
     const { spec: parsed, errors: errs } = parseShowMd(await file.text());
+    setDirty(true);
     setSpec(parsed);
     setPronText(
       parsed.pronunciations.map((p) => `${p.term} => ${p.say_as}${p.match === "substring" ? " (substring)" : ""}`).join("\n"),
@@ -87,6 +139,8 @@ export default function ShowSpecForm() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error((data.errors || [data.error || "Failed to create show"]).join("\n"));
+      localStorage.removeItem(DRAFT_KEY);
+      setDirty(false);
       router.push(`/shows/${data.show.id}`);
     } catch (err) {
       setErrors((err instanceof Error ? err.message : String(err)).split("\n"));
@@ -220,7 +274,10 @@ export default function ShowSpecForm() {
           id="spec-pron"
           rows={3}
           value={pronText}
-          onChange={(e) => setPronText(e.target.value)}
+          onChange={(e) => {
+            setDirty(true);
+            setPronText(e.target.value);
+          }}
           placeholder={"FOMC => F O M C\n0DTE => zero D T E"}
         />
 
@@ -231,7 +288,16 @@ export default function ShowSpecForm() {
             ))}
           </ul>
         ) : null}
-        {notice ? <p className="muted">{notice}</p> : null}
+        {notice ? (
+          <p className="muted">
+            {notice}{" "}
+            {dirty ? (
+              <button type="button" className="linklike" onClick={startOver}>
+                Start over
+              </button>
+            ) : null}
+          </p>
+        ) : null}
         <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
           <button type="submit" disabled={busy || !spec.title.trim()}>
             {busy ? "Creating…" : "Create show"}

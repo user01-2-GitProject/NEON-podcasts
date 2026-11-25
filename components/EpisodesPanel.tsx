@@ -66,6 +66,36 @@ function UploadAudio({ episodeId }: { episodeId: string }) {
   );
 }
 
+function MakeAudioButton({ episodeId }: { episodeId: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function makeAudio() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/episodes/${episodeId}/narrate`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Couldn't make the audio");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <span>
+      <button className="btn" disabled={busy} onClick={makeAudio}>
+        {busy ? "Making audio… (about a minute)" : "Make audio"}
+      </button>
+      {error ? <span className="error" style={{ marginLeft: 8 }}>{error}</span> : null}
+    </span>
+  );
+}
+
 function PublishButton({ episode }: { episode: Episode }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -148,7 +178,10 @@ export default function EpisodesPanel({
                     Download mp3
                   </a>
                 ) : owner ? (
-                  <UploadAudio episodeId={ep.id} />
+                  <>
+                    {ep.script ? <MakeAudioButton episodeId={ep.id} /> : null}
+                    <UploadAudio episodeId={ep.id} />
+                  </>
                 ) : null}
                 {owner ? <PublishButton episode={ep} /> : null}
                 {ep.status === "published" ? (
@@ -159,8 +192,8 @@ export default function EpisodesPanel({
 
             {!ep.audio_url ? (
               <p className="muted" style={{ marginTop: 8 }}>
-                Script-only draft. Narrate it externally (e.g. in Muse), then upload the finished
-                audio, then publish the episode.
+                No audio yet. Press Make audio to have the app read it, or narrate it yourself
+                (e.g. in Muse) and upload the file, then publish.
               </p>
             ) : null}
 

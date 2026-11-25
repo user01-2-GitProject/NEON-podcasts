@@ -31,6 +31,11 @@ export default function GeneratePanel({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Generation failed");
+      if (data.voice_error) {
+        setError(`${data.episode?.title || "Episode"}: ${data.voice_error}`);
+        router.refresh();
+        return;
+      }
       setDone(
         mode === "external"
           ? `${data.episode?.title || "Draft"} — script ready. Download it, narrate externally, then upload the audio below.`

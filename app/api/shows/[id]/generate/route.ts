@@ -30,8 +30,8 @@ export async function POST(req: Request, { params }: Params) {
     const mode: NarrationMode | undefined =
       raw === "external" ? "external" : raw === "auto" ? "auto" : undefined;
 
-    const { episode, runId } = await generateEpisode(id, mode);
-    return NextResponse.json({ episode, runId }, { status: 201 });
+    const { episode, runId, voiceError } = await generateEpisode(id, mode);
+    return NextResponse.json({ episode, runId, voice_error: voiceError ?? null }, { status: 201 });
   } catch (err) {
     return NextResponse.json(
       { error: sanitizeError(err, "generateEpisode") },
