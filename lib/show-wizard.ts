@@ -6,9 +6,11 @@ export interface GuidedAnswers {
   about: string;
   audience: string;
   tone: string;
+  important?: string;
+  lookup?: string;
 }
 
-export const EMPTY_ANSWERS: GuidedAnswers = { about: "", audience: "", tone: "" };
+export const EMPTY_ANSWERS: GuidedAnswers = { about: "", audience: "", tone: "", important: "", lookup: "" };
 
 export const TONE_IDEAS = ["Casual and funny", "Straight news", "Calm and thoughtful", "Hype and high energy"];
 
@@ -17,6 +19,10 @@ export function composeBody(a: GuidedAnswers): string {
   if (a.about.trim()) parts.push(`## About the show\n${a.about.trim()}`);
   if (a.audience.trim()) parts.push(`## Who it's for\n${a.audience.trim()}`);
   if (a.tone.trim()) parts.push(`## Voice & style\n${a.tone.trim()}`);
+  // Both headings are read by the app: lib/claude.ts mostImportant() and
+  // lib/research.ts researchBrief().
+  if (a.important?.trim()) parts.push(`## What matters most\n${a.important.trim()}`);
+  if (a.lookup?.trim()) parts.push(`## Look up before each episode\n${a.lookup.trim()}`);
   return parts.join("\n\n");
 }
 
