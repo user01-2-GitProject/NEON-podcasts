@@ -48,3 +48,13 @@ test("the wizard's example shows are valid show files", async () => {
     assert.ok(spec.body.includes("## Hard rules"), `${f} shows an example of hard rules`);
   }
 });
+
+test("the wizard's 'most important' and 'look up' answers become sections the app reads", async () => {
+  const { composeBody } = await import("../lib/show-wizard.ts");
+  const { researchBrief, researchSites } = await import("../lib/research.ts");
+  const body = composeBody({ about: "Football.", audience: "", tone: "", important: "Be fair.", lookup: "This week's game.\nSites: espn.com" });
+  assert.match(body, /## What matters most\nBe fair\./);
+  assert.equal(researchBrief(body), "This week's game.\nSites: espn.com");
+  assert.deepEqual(researchSites(researchBrief(body)), ["espn.com"]);
+  assert.equal(composeBody({ about: "x", audience: "", tone: "", important: " ", lookup: "" }), "## About the show\nx");
+});

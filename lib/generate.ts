@@ -112,6 +112,13 @@ export async function generateEpisode(
       `;
     }
 
+    const recentEpisodes = (await sql`
+      select title, show_notes from episodes
+      where show_id = ${showId}
+      order by created_at desc
+      limit 5
+    `) as { title: string; show_notes: string }[];
+
     const scriptArgs = {
       showTitle: show.title,
       showDescription: show.description,
@@ -119,6 +126,7 @@ export async function generateEpisode(
       briefings: docs,
       styleGuide: show.style_guide,
       episodeTitle: selection.plan?.title || undefined,
+      recentEpisodes,
     };
     let { result, model, inputTokens, outputTokens } = await generateScript(scriptArgs);
 

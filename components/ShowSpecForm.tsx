@@ -260,6 +260,28 @@ export default function ShowSpecForm() {
           </div>
         ) : null}
 
+        <label htmlFor="spec-important">What is the most important part of this podcast to you? (optional)</label>
+        <input
+          id="spec-important"
+          value={answers.important ?? ""}
+          onChange={(e) => answer("important", e.target.value)}
+          disabled={rawBody !== null}
+          placeholder="e.g. Never take a side. Every listener should feel they got it straight."
+        />
+
+        <label htmlFor="spec-lookup">What should we look up before each episode? (optional)</label>
+        <textarea
+          id="spec-lookup"
+          rows={3}
+          value={answers.lookup ?? ""}
+          onChange={(e) => answer("lookup", e.target.value)}
+          disabled={rawBody !== null}
+          placeholder={"e.g. This week's Commanders news, injuries and Sunday's game time.\nSites: commanders.com, espn.com"}
+        />
+        <p className="muted" style={{ marginTop: 4 }}>
+          Leave it blank if your own files are enough. Each look-up costs about a cent. Add a &quot;Sites:&quot; line to only use the sites you trust.
+        </p>
+
         <div className="row">
           <div>
             <label htmlFor="spec-cadence">5. How often?</label>
