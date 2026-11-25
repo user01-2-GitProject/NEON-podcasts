@@ -39,3 +39,10 @@ test("empty or missing style guide adds no guidance section", () => {
   const { system } = buildPrompt(baseArgs);
   assert.doesNotMatch(system, /SHOW STYLE GUIDANCE/);
 });
+
+test("an episode plan title is requested in the user text only", () => {
+  const { system, userText } = buildPrompt({ ...baseArgs, episodeTitle: "Wednesday" });
+  assert.match(userText, /EPISODE TITLE: Wednesday \(use this exact title\)/);
+  assert.doesNotMatch(system, /EPISODE TITLE/);
+  assert.doesNotMatch(buildPrompt(baseArgs).userText, /EPISODE TITLE/);
+});

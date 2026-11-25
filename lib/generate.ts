@@ -4,6 +4,7 @@ import { generateScript, estimateCostCents } from "@/lib/claude";
 import { synthesize, estimateDurationSeconds } from "@/lib/tts";
 import { applyPronunciations } from "@/lib/pronounce";
 import { getStorage } from "@/lib/storage";
+import { selectBriefings, todayIn } from "@/lib/episode-spec";
 import type { Show, Briefing, Episode, NarrationMode, Pronunciation } from "@/lib/types";
 
 export const MAX_SCHEDULED_ATTEMPTS = 5;
@@ -41,9 +42,21 @@ export async function generateEpisode(
     select * from show_pronunciations where show_id = ${showId} order by created_at asc
   `) as Pronunciation[];
 
-  const briefingSnapshot = briefings
+  // At most one ready, due episode plan is used per run; other plans wait.
+  const selection = selectBriefings(briefings, todayIn(show.timezone));
+  const planBriefingId = selection.plan?.briefingId;
+
+  const briefingSnapshot = selection.docs
     .map((b) => `### ${b.filename}\n${b.content_md}`)
     .join("\n\n");
+
+  // A used plan is switched off so the next run doesn't repeat it.
+  const finish = async <T,>(result: T): Promise<T> => {
+    if (planBriefingId) {
+      await sql`update show_briefings set is_active = false where id = ${planBriefingId}`;
+    }
+    return result;
+  };
 
   let runId = scheduledRun?.id;
   if (!runId) {
@@ -68,9 +81,13 @@ export async function generateEpisode(
       showTitle: show.title,
       showDescription: show.description,
       targetMinutes: show.target_minutes,
-      briefings: briefings.map((b) => ({ filename: b.filename, content_md: b.content_md })),
+      briefings: selection.docs,
       styleGuide: show.style_guide,
+      episodeTitle: selection.plan?.title || undefined,
     });
+
+    // A planned episode keeps the title it was planned with.
+    if (selection.plan?.title) result.title = selection.plan.title;
 
     const duration = estimateDurationSeconds(result.script);
     const costCents = estimateCostCents(inputTokens, outputTokens);
@@ -103,7 +120,7 @@ export async function generateEpisode(
             where id = ${showId} and next_run_at = ${scheduledRun.scheduledFor}::timestamptz
           `,
         ]);
-        return { episode: (results[0] as Episode[])[0], runId };
+        return finish({ episode: (results[0] as Episode[])[0], runId });
       }
 
       // Script-only: create a draft episode, no TTS. The user uploads the mp3.
@@ -128,7 +145,7 @@ export async function generateEpisode(
         where id = ${runId}
       `;
 
-      return { episode, runId };
+      return finish({ episode, runId });
     }
 
     // "auto": render audio and publish. Pronunciations affect only the text
@@ -170,7 +187,7 @@ export async function generateEpisode(
           where id = ${showId} and next_run_at = ${scheduledRun.scheduledFor}::timestamptz
         `,
       ]);
-      return { episode: (results[0] as Episode[])[0], runId };
+      return finish({ episode: (results[0] as Episode[])[0], runId });
     }
 
     const storage = getStorage();
@@ -201,7 +218,7 @@ export async function generateEpisode(
       where id = ${runId}
     `;
 
-    return { episode, runId };
+    return finish({ episode, runId });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (pendingAudioEpisodeId) {

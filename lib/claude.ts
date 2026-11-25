@@ -18,6 +18,8 @@ interface GenerateArgs {
   targetMinutes: number;
   briefings: { filename: string; content_md: string }[];
   styleGuide?: string;
+  /** Title from an episode plan; the writer is asked to use it as-is. */
+  episodeTitle?: string;
 }
 
 interface LlmResult {
@@ -69,6 +71,12 @@ export function buildPrompt(args: GenerateArgs): { system: string; userText: str
     `SHOW TITLE: ${args.showTitle}`,
     `SHOW DESCRIPTION: ${args.showDescription || "(none)"}`,
     `TARGET LENGTH: ~${args.targetMinutes} minute(s)`,
+    ...(args.episodeTitle?.trim()
+      ? [
+          `EPISODE TITLE: ${args.episodeTitle.trim()} (use this exact title)`,
+          "This episode has a plan: follow its segments in order and answer its questions.",
+        ]
+      : []),
     "",
     "Source material (the briefing is the content for this episode):",
     briefingBlock,
