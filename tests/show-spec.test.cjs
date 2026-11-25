@@ -119,3 +119,14 @@ test("example show prompt matches the golden snapshot", () => {
   if (process.env.UPDATE_GOLDEN) writeFileSync(golden, actual);
   assert.equal(actual, readFileSync(golden, "utf8"));
 });
+
+test("show files can't point artwork at outside sites", async () => {
+  const { validateShowSpec, emptyShowSpec, TRUSTED_ART_HOSTS } = await import("../lib/show-spec.ts");
+  const { TRUSTED_ART_HOSTS: fromImage } = await import("../lib/show-image.ts");
+  assert.deepEqual(TRUSTED_ART_HOSTS, fromImage, "the two trusted-host lists match");
+  const spec = { ...emptyShowSpec(), title: "T", timezone: "UTC" };
+  const errs = (image_url) => validateShowSpec({ ...spec, image_url }).filter((e) => /image_url|Picture links/.test(e));
+  assert.deepEqual(errs(""), []);
+  assert.deepEqual(errs("https://www.needlesslyengineeredonlinenetwork.com/c.png"), []);
+  assert.match(errs("https://cdn.example/c.png")[0], /Picture links are turned off/);
+});

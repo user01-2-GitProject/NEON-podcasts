@@ -360,15 +360,6 @@ export default function ShowSpecForm() {
               <label htmlFor="spec-tz">Time zone</label>
               <input id="spec-tz" value={spec.timezone} onChange={(e) => set("timezone", e.target.value)} />
             </div>
-            <div>
-              <label htmlFor="spec-image">Artwork link</label>
-              <input
-                id="spec-image"
-                value={spec.image_url}
-                onChange={(e) => set("image_url", e.target.value)}
-                placeholder="Leave blank for now"
-              />
-            </div>
           </div>
 
           <label htmlFor="spec-pron">Say it right (one per line: WORD =&gt; how to say it)</label>

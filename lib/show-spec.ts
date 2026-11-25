@@ -290,6 +290,20 @@ function isValidTimeZone(tz: string): boolean {
 }
 
 /** The one validator both doors use. Returns human-readable problems. */
+// Keep in step with TRUSTED_ART_HOSTS in lib/show-image.ts (this file stays import-free).
+export const TRUSTED_ART_HOSTS = ["needlesslyengineeredonlinenetwork.com"];
+
+function trustedArtHost(raw: string): boolean {
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:" || url.username || url.password || url.port) return false;
+    const host = url.hostname.toLowerCase();
+    return TRUSTED_ART_HOSTS.some((h) => host === h || host.endsWith(`.${h}`));
+  } catch {
+    return false;
+  }
+}
+
 export function validateShowSpec(spec: ShowSpec): string[] {
   const errors: string[] = [];
   if (!spec.title) errors.push("title is required");
@@ -310,6 +324,8 @@ export function validateShowSpec(spec: ShowSpec): string[] {
   }
   if (spec.image_url && !/^https?:\/\/\S+$/i.test(spec.image_url)) {
     errors.push("image_url must be an http(s) URL");
+  } else if (spec.image_url && !trustedArtHost(spec.image_url)) {
+    errors.push("Picture links are turned off. Leave image_url blank; every show gets a free cover made from its name.");
   }
   if (spec.image_url.length > 2048) errors.push("image_url is too long");
   if (spec.language && !/^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(spec.language)) {

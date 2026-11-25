@@ -1,6 +1,27 @@
-// Show artwork is an http(s) image URL (file upload comes later). Empty or
-// null clears it. Anything else is rejected with a client-safe message.
+// Show artwork. Every show gets a free cover made from its name; people can't
+// paste their own picture links or upload images, because a feed with NEON's
+// name on it goes to Apple and Spotify and anyone could point it at anything.
+// The only links kept are NEON's own sites. Empty or null clears it.
 export const IMAGE_URL_MAX = 2048;
+
+// NEON's own sites. Keep in step with TRUSTED_ART_HOSTS in lib/show-spec.ts.
+export const TRUSTED_ART_HOSTS = ["needlesslyengineeredonlinenetwork.com"];
+
+export const ARTWORK_LINKS_OFF =
+  "Picture links are turned off. Every show gets a free cover made from its name, and made-for-you artwork is coming.";
+
+export function isTrustedArtworkUrl(raw: string | null | undefined): boolean {
+  if (!raw) return false;
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:" || url.username || url.password || url.port) return false;
+  const host = url.hostname.toLowerCase();
+  return TRUSTED_ART_HOSTS.some((h) => host === h || host.endsWith(`.${h}`));
+}
 
 export function parseImageUrl(input: unknown): { value: string | null } | { error: string } {
   if (input === null) return { value: null };
@@ -15,5 +36,6 @@ export function parseImageUrl(input: unknown): { value: string | null } | { erro
     return { error: "image_url must be an http(s) URL" };
   }
   if (url.protocol !== "http:" && url.protocol !== "https:") return { error: "image_url must be an http(s) URL" };
+  if (!isTrustedArtworkUrl(url.href)) return { error: ARTWORK_LINKS_OFF };
   return { value: url.href };
 }

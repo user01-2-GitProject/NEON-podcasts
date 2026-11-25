@@ -2,6 +2,8 @@
 // borrowed images and nothing to upload. Pure helpers; the PNG is drawn by
 // app/art/[id]/route.tsx.
 
+import { isTrustedArtworkUrl } from "@/lib/show-image";
+
 export interface CoverPalette {
   from: string;
   to: string;
@@ -45,7 +47,9 @@ export function coverFontSize(title: string): number {
 
 // Where a show's artwork lives: its own image if set, otherwise its generated
 // cover. The version changes with the title so caches pick up renames.
+// Only links on NEON's own sites are used; anything else stored earlier falls
+// back to the free cover, so no outside picture reaches a public feed.
 export function artworkPath(show: { id: string; title: string; image_url?: string | null }): string {
-  if (show.image_url && /^https?:\/\//i.test(show.image_url)) return show.image_url;
+  if (isTrustedArtworkUrl(show.image_url)) return show.image_url as string;
   return `/art/${show.id}?v=${hashString(show.title).toString(36)}`;
 }

@@ -1,65 +1,15 @@
-"use client";
+// What the owner sees about their show's cover. Picture links and uploads are
+// turned off (anything could end up on Apple and Spotify under NEON's name),
+// so this only explains where the cover comes from.
+import { isTrustedArtworkUrl } from "@/lib/show-image";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-
-// Owner control for a show's artwork URL (http/https; empty clears it).
-// Saved through PATCH /api/shows/[id] { image_url }.
-export default function ShowArtworkForm({ showId, initialImageUrl }: { showId: string; initialImageUrl: string | null }) {
-  const router = useRouter();
-  const [imageUrl, setImageUrl] = useState(initialImageUrl ?? "");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-
-  async function save() {
-    setBusy(true);
-    setError(null);
-    setSaved(false);
-    try {
-      const res = await fetch(`/api/shows/${showId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image_url: imageUrl }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) throw new Error(data.error || "Request failed");
-      setSaved(true);
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
-  }
-
+export default function ShowArtworkForm({ initialImageUrl }: { showId?: string; initialImageUrl: string | null }) {
   return (
-    <form
-      style={{ marginTop: 12 }}
-      onSubmit={(e) => {
-        e.preventDefault();
-        save();
-      }}
-    >
-      <label htmlFor="show-image-url">Use your own artwork (optional)</label>
-      <div style={{ display: "flex", gap: 8 }}>
-        <input
-          id="show-image-url"
-          type="url"
-          value={imageUrl}
-          placeholder="https://example.com/cover.jpg"
-          onChange={(e) => setImageUrl(e.target.value)}
-        />
-        <button type="submit" disabled={busy}>
-          Save
-        </button>
-      </div>
-      <p className="muted">
-        Your show already has a free cover made from its name. To use your own picture instead, paste a link to a
-        square image (1400–3000 px). Clear it to go back to the free cover.
-      </p>
-      {saved ? <p className="muted">Saved.</p> : null}
-      {error ? <p className="error" role="alert">{error}</p> : null}
-    </form>
+    <p className="muted" style={{ marginTop: 12 }}>
+      {isTrustedArtworkUrl(initialImageUrl)
+        ? "This show uses artwork from the NEON site."
+        : "Your cover is made for you from the show's name."}{" "}
+      Made-for-you artwork, drawn from everything you told us about the show, is coming soon.
+    </p>
   );
 }
