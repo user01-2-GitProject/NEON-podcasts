@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CADENCES, CADENCE_LABELS } from "@/lib/cadence";
+import { OPENAI_VOICE_OPTIONS, TIMEZONE_OPTIONS, HOST_PRESETS } from "@/lib/voices";
 import {
   BODY_TEMPLATE,
   emptyShowSpec,
@@ -369,22 +370,52 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
           <div className="row">
             <div>
               <label htmlFor="spec-host">Host name</label>
-              <input id="spec-host" value={host(0).name} onChange={(e) => setHost(0, "name", e.target.value)} />
+              <input id="spec-host" list="host-names" value={host(0).name} onChange={(e) => setHost(0, "name", e.target.value)} />
+              <datalist id="host-names">
+                {HOST_PRESETS.map((h) => (
+                  <option key={h.id} value={h.name}>{h.label}</option>
+                ))}
+              </datalist>
             </div>
             <div>
               <label htmlFor="spec-host2">Second host</label>
-              <input id="spec-host2" value={host(1).name} onChange={(e) => setHost(1, "name", e.target.value)} />
+              <input id="spec-host2" list="host-names" value={host(1).name} onChange={(e) => setHost(1, "name", e.target.value)} />
             </div>
             <div>
               <label htmlFor="spec-voice">Voice</label>
-              <input
+              <select
                 id="spec-voice"
-                value={host(0).voice}
+                value={OPENAI_VOICE_OPTIONS.some((v) => v.id === host(0).voice) ? host(0).voice : ""}
                 onChange={(e) => setHost(0, "voice", e.target.value)}
-                placeholder="default"
-              />
+              >
+                <option value="">Default (your Settings voice)</option>
+                {OPENAI_VOICE_OPTIONS.map((v) => (
+                  <option key={v.id} value={v.id}>{v.label}</option>
+                ))}
+              </select>
+              <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>
+                Using your own local voice server? Type its voice name under Full show brief instead.
+              </p>
             </div>
           </div>
+          {HOST_PRESETS.length ? (
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+              {HOST_PRESETS.map((h) => (
+                <button
+                  key={h.id}
+                  type="button"
+                  className="secondary"
+                  onClick={() => {
+                    setHost(0, "name", h.name);
+                    setHost(0, "voice", h.voice);
+                  }}
+                  title={h.label}
+                >
+                  {h.name}
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           <div className="row">
             <div>
@@ -400,7 +431,12 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
             </div>
             <div>
               <label htmlFor="spec-tz">Time zone</label>
-              <input id="spec-tz" value={spec.timezone} onChange={(e) => set("timezone", e.target.value)} />
+              <input id="spec-tz" list="tz-list" value={spec.timezone} onChange={(e) => set("timezone", e.target.value)} />
+              <datalist id="tz-list">
+                {TIMEZONE_OPTIONS.map((z) => (
+                  <option key={z} value={z} />
+                ))}
+              </datalist>
             </div>
           </div>
 
