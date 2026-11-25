@@ -6,10 +6,25 @@
 // The whole list is data, so extra questions can be added without touching
 // the component. composeWizardBody() turns the answers into the show brief
 // markdown the writer reads before every episode.
+//
+// Nov 25 2026 — jimmy's news-scoped trim against the 85-Q spec:
+//   #6 multi-choice takeaway (max 2, conflicting choices grayed out),
+//   #7 geo levels, #8 month/daily, new #9 topics, new #12 POV,
+//   #16 novice/intermediate/expert, #21 story-count ranges,
+//   #23 market asset-classes, #37 bits yes/no.
+//   OUT for MVP: episode shape (#38–44: length, flow, teaser, open, close,
+//   signoff — NEON plugs are hardcoded) and schedule/sources (#47–52:
+//   cadence, time, sources — set on the show page after Create).
 
 import { SHOW_FORMATS } from "@/lib/show-formats";
 
-export type WizardType = "text" | "textarea" | "choice" | "scale" | "yesno";
+export type WizardType =
+  | "text"
+  | "textarea"
+  | "choice"
+  | "scale"
+  | "yesno"
+  | "multi";
 
 export interface WizardStep {
   id: string;
@@ -24,6 +39,12 @@ export interface WizardStep {
   maxLabel?: string;
   required?: boolean;
   when?: (draft: WizardDraft) => boolean;
+  // For `multi`: how many choices the person can pick before the rest gray out.
+  maxPicks?: number;
+  // For `multi`: mutually-conflicting sets. Picking a choice grays out every
+  // other choice in any set it appears in. Spec example: picking "Laugh" grays
+  // out "Stay informed" and "A good story" on the takeaway question.
+  conflicts?: string[][];
   // Section heading the body groups the answer under (markdown ## heading).
   // Answers with the same section are joined into one paragraph each.
   section?: string;
@@ -33,7 +54,8 @@ export interface WizardDraft {
   title: string;
   host_count: 1 | 2;
   format: string;
-  // All other answers live here, keyed by step id.
+  // All other answers live here, keyed by step id. For `multi` the value is
+  // the picked choices joined with " · " (same separator the spec shows).
   answers: Record<string, string>;
 }
 
@@ -50,31 +72,137 @@ export const WIZARD_STEPS: WizardStep[] = [
   // --- Content: what the show is ---
   { id: "about", type: "textarea", question: "What's it about, in one sentence?", placeholder: "e.g. A daily rundown of what moved the stock market.", section: "About the show" },
   { id: "audience", type: "text", question: "Who's it for?", placeholder: "e.g. Casual investors who don't watch the market all day", section: "Who it's for" },
-  { id: "takeaway", type: "text", question: "What should listeners get out of it?", placeholder: "e.g. Feel caught up in 5 minutes", section: "What listeners get" },
-  { id: "where", type: "text", question: "Where in the world?", help: "Only if it matters.", placeholder: "e.g. United States, or Washington DC", section: "Setting" },
-  { id: "when_period", type: "text", question: "What time period?", help: "Only if it matters.", placeholder: "e.g. Today, or the 1930s", section: "Setting" },
+
+  // #6 — pick a couple, conflicting choices gray out.
+  {
+    id: "takeaway",
+    type: "multi",
+    question: "What should listeners get out of it?",
+    help: "Pick up to two. Some choices will gray out if they'd fight with your first pick.",
+    choices: ["Stay informed", "Learn something", "Laugh", "A good story", "Relax", "Get fired up"],
+    maxPicks: 2,
+    // Humour fights with getting informed and with relaxing; being fired-up fights with relaxing.
+    conflicts: [["Laugh", "Stay informed"], ["Laugh", "A good story"], ["Relax", "Get fired up"]],
+    section: "What listeners get",
+  },
+
+  // #7 — world / country / state / city / zip code.
+  {
+    id: "where",
+    type: "choice",
+    question: "Where in the world?",
+    help: "Only if it matters.",
+    choices: ["Worldwide", "USA", "A state (type it below)", "A city (type it below)", "A ZIP code (type it below)", "Doesn't apply"],
+    section: "Setting",
+  },
+  // Free-text follow-up for the state/city/ZIP picks.
+  { id: "where_detail", type: "text", question: "Which state, city or ZIP?", placeholder: "e.g. Michigan, or Detroit, or 48201", when: (d) => /state|city|ZIP/i.test(d.answers.where || ""), section: "Setting" },
+
+  // #8 — month, daily.
+  {
+    id: "when_period",
+    type: "choice",
+    question: "What time period?",
+    help: "Only if it matters.",
+    choices: ["Daily (today's news)", "This week", "This month", "History", "Timeless"],
+    section: "Setting",
+  },
+
+  // #9/#10 — merged "always cover" + "never touch" into one multi-select
+  // "Topics to include". Not picking a chip = don't cover (transcript, Nov 25).
+  {
+    id: "topics",
+    type: "multi",
+    question: "Topics to include",
+    help: "Tap every topic you want covered. Leave the rest off — they won't be covered.",
+    choices: ["Politics", "Sports", "Religion", "Investments", "Weather", "Business / Financial", "Tech", "Science", "Music / Entertainment"],
+    section: "Topics",
+  },
 
   // --- Voice & feel ---
   { id: "tone", type: "text", question: "How should it sound?", placeholder: "e.g. Casual and funny, like two friends talking", section: "Voice & style" },
   { id: "serious", type: "scale", question: "How serious?", min: 1, max: 5, minLabel: "Playful", maxLabel: "Serious", section: "Voice & style" },
-  { id: "explicit", type: "choice", question: "Clean or explicit?", choices: ["Clean (safe for anyone)", "Occasional strong language", "Explicit"], section: "Voice & style" },
-  { id: "graphic", type: "scale", question: "How graphic can it be?", help: "Detail about violence or gore.", min: 1, max: 5, minLabel: "Not at all", maxLabel: "Very", when: (d) => isFormat(d, "truecrime"), section: "Voice & style" },
-  { id: "depth", type: "scale", question: "How deep?", help: "Surface summary or detailed analysis.", min: 1, max: 5, minLabel: "Skim the surface", maxLabel: "Deep dive", section: "Voice & style" },
-  { id: "knowledge", type: "text", question: "What do listeners already know?", help: "So the host doesn't over-explain basics.", placeholder: "e.g. They watch some news but aren't experts", section: "Voice & style" },
 
-  // --- Facts, sources and truth ---
-  { id: "numbers", type: "yesno", question: "Should the host use numbers and stats?", help: "A yes means the writer looks them up and reads them.", section: "Facts & sources" },
-  { id: "cite_sources", type: "yesno", question: "Say where facts come from?", help: "Like 'per AP' or 'according to Reuters'.", section: "Facts & sources" },
-  { id: "truth", type: "choice", question: "True or made up?", choices: ["All true", "Mostly true with some imagined scenes", "Fully fictional"], section: "Facts & sources" },
+  // #12 — point of view. Per transcript Matt and jimmy dropped the vague
+  // "Has opinions" option and kept Neutral / Both sides / Leans L / Leans R.
+  {
+    id: "pov",
+    type: "choice",
+    question: "Point of view",
+    choices: ["Neutral", "Both sides", "Leans left", "Leans right"],
+    section: "Voice & style",
+  },
+
+  { id: "explicit", type: "choice", question: "Clean or explicit?", choices: ["Family friendly", "Some mild language", "Explicit"], section: "Voice & style" },
+
+  // #14 — scale → choice.
+  {
+    id: "graphic",
+    type: "choice",
+    question: "How graphic can it be?",
+    help: "Detail about violence or gore.",
+    choices: ["Keep it light", "Some detail", "Don't hold back"],
+    when: (d) => isFormat(d, "truecrime"),
+    section: "Voice & style",
+  },
+  // #15 — scale → choice.
+  {
+    id: "depth",
+    type: "choice",
+    question: "How deep?",
+    choices: ["Quick overview", "Some detail", "Deep dive"],
+    section: "Voice & style",
+  },
+
+  // #16 — wording from the transcript (jimmy flagged it to reword later).
+  {
+    id: "knowledge",
+    type: "choice",
+    question: "What do listeners already know?",
+    help: "So the host doesn't over-explain basics.",
+    choices: ["Nothing", "The basics", "A lot"],
+    section: "Voice & style",
+  },
+
+  // --- Facts, sources ---
+  // #17 — yes/no → choice.
+  {
+    id: "numbers",
+    type: "choice",
+    question: "Should the host use numbers and stats?",
+    choices: ["Rarely", "When they help", "All of them"],
+    section: "Facts & sources",
+  },
+  // #18 — yes/no → choice.
+  {
+    id: "cite_sources",
+    type: "choice",
+    question: "Say where facts come from?",
+    help: "Like 'per AP' or 'according to Reuters'.",
+    choices: ["Always", "Sometimes", "Never"],
+    section: "Facts & sources",
+  },
+  // #19 "True or made up?" — OUT (repetitive once topics drive source quality).
 
   // --- News-specific ---
-  { id: "news_which", type: "text", question: "Which news?", help: "Topic, region, or publishers you want covered.", placeholder: "e.g. US national headlines, plus DC local", when: (d) => isFormat(d, "news"), section: "News" },
+  // #20 news_which — OUT (the topics multi-select covers it).
+  // #21 — Matt pushed for a clickable 1–10 picker; the scale control already
+  // renders exactly that.
   { id: "news_count", type: "scale", question: "How many stories per episode?", min: 1, max: 10, minLabel: "1", maxLabel: "10", when: (d) => isFormat(d, "news"), section: "News" },
-  { id: "news_feelgood", type: "yesno", question: "End on a feel-good story?", when: (d) => isFormat(d, "news"), section: "News" },
+  // #22 news_feelgood — OUT ("I hate the question", Matt).
 
   // --- Markets-specific ---
-  { id: "markets_which", type: "text", question: "Which markets?", help: "Stocks, crypto, bonds; which indexes.", placeholder: "e.g. S&P 500 and Nasdaq", when: (d) => isFormat(d, "markets"), section: "Markets" },
-  { id: "markets_other_idx", type: "yesno", question: "Other indexes only when they move a lot?", when: (d) => isFormat(d, "markets"), section: "Markets" },
+  // #23 — the six buckets Matt and jimmy landed on.
+  {
+    id: "markets_which",
+    type: "multi",
+    question: "Which markets?",
+    help: "Pick all that apply.",
+    choices: ["Indexes", "Commodities", "Crypto", "Bond market", "Real estate", "Stocks"],
+    when: (d) => isFormat(d, "markets"),
+    section: "Markets",
+  },
+  // #24 markets_other_idx — OUT (transcript: "stupid question, let's move on").
   { id: "markets_wl", type: "yesno", question: "Biggest winner and loser of the day?", when: (d) => isFormat(d, "markets"), section: "Markets" },
 
   // --- History-specific ---
@@ -95,45 +223,70 @@ export const WIZARD_STEPS: WizardStep[] = [
   // --- Banter / talk ---
   { id: "talk_age", type: "text", question: "What age is it for?", placeholder: "e.g. 25-45", when: (d) => isFormat(d, "talk"), section: "Banter" },
   { id: "talk_topics", type: "textarea", question: "What do the hosts talk about?", placeholder: "e.g. The week in tech news, plus whatever we've been watching", when: (d) => isFormat(d, "talk"), section: "Banter" },
-  { id: "talk_bits", type: "text", question: "Any running bits?", help: "A segment the show does every time.", placeholder: "e.g. 'Hot take of the week'", when: (d) => isFormat(d, "talk"), section: "Banter" },
+  // #37 — yes/no (with a type-it follow-up if yes).
+  { id: "talk_bits", type: "yesno", question: "Any running bits?", help: "A segment the show does every time.", when: (d) => isFormat(d, "talk"), section: "Banter" },
+  { id: "talk_bits_which", type: "text", question: "What are the running bits?", placeholder: "e.g. 'Hot take of the week'", when: (d) => isFormat(d, "talk") && d.answers.talk_bits === "yes", section: "Banter" },
 
-  // --- Episode shape ---
-  { id: "length", type: "choice", question: "How long?", choices: ["About 5 minutes", "About 10 minutes", "About 15 minutes", "About 20 minutes", "About 30 minutes", "About 45 minutes", "About 60 minutes"], section: "Episode shape" },
-  { id: "flow", type: "text", question: "How should it flow?", help: "In your own words, or leave blank for a sensible default.", placeholder: "e.g. Short intro, three segments, wrap-up", section: "Episode shape" },
-  { id: "teaser", type: "yesno", question: "Start with a teaser?", help: "A 10-second preview of what's coming.", section: "Episode shape" },
-  { id: "open", type: "text", question: "How should it open?", placeholder: "e.g. 'Good morning, it's Tuesday...'", section: "Episode shape" },
-  { id: "close", type: "text", question: "How should it end?", placeholder: "e.g. 'See you tomorrow'", section: "Episode shape" },
-  { id: "signoff", type: "text", question: "A sign-off line?", placeholder: "e.g. 'Stay sharp.'", section: "Episode shape" },
+  // --- Episode shape — pared to the two spec "always on" bits.
+  // #38–44 (length, flow, teaser, open, close, signoff) are OUT for MVP:
+  // NEON opens and closes every episode with a hardcoded plug.
   { id: "second_person", type: "yesno", question: "Talk to the listener as 'you'?", section: "Episode shape" },
   { id: "say_date", type: "yesno", question: "Say today's date at the start?", section: "Episode shape" },
 
-  // --- Schedule ---
-  { id: "cadence", type: "choice", question: "How often?", choices: ["Twice a day", "Every day", "Weekdays only", "Twice a week", "Once a week", "Manually"], section: "Schedule" },
-  { id: "schedule_time", type: "text", question: "What time?", help: "Local time. Only if the cadence isn't Manual.", placeholder: "e.g. 06:00", section: "Schedule" },
-
-  // --- Source material ---
-  { id: "sources_basis", type: "textarea", question: "What should episodes be based on?", help: "Your notes, a book, a website, a live search.", placeholder: "e.g. The commanders.com blog and this week's game stats", section: "Source material" },
-  { id: "sources_reuse", type: "choice", question: "Use these for every episode or just the next?", choices: ["Every episode", "Just the next one"], section: "Source material" },
+  // --- Schedule / sources / hosts persona / 2-host dynamics ---
+  // #47–52 (cadence, time, sources, reuse, pronunciations) are OUT for MVP:
+  // owners set them on the show page after Create.
 
   // --- Host persona ---
-  { id: "host_age", type: "text", question: "How old do the hosts sound?", placeholder: "e.g. 30s", section: "Hosts" },
-  { id: "host_inspired", type: "text", question: "Inspired by anyone?", placeholder: "e.g. Ira Glass but less scripted", section: "Hosts" },
-  { id: "host_backstory", type: "text", question: "A bit of backstory?", help: "Only if it would change how they talk.", placeholder: "e.g. Grew up in Detroit, worked in finance", section: "Hosts" },
+  // #54 host_age OUT (transcript: only ~3 canned voices in MVP, can't change age).
+  // #60–63 OUT for MVP (inspired-by, catchphrases, never-say, backstory).
 
   // --- Two-host specifics ---
-  { id: "hosts_dynamic", type: "text", question: "How do the hosts work together?", placeholder: "e.g. One asks, one explains", when: (d) => d.host_count === 2, section: "Hosts" },
-  { id: "hosts_disagree", type: "scale", question: "How often do they disagree?", min: 1, max: 5, minLabel: "Never", maxLabel: "Always", when: (d) => d.host_count === 2, section: "Hosts" },
-  { id: "hosts_turns", type: "text", question: "Who opens and who closes?", placeholder: "e.g. Sterling opens, Ellen closes", when: (d) => d.host_count === 2, section: "Hosts" },
+  // #75 — add "Professional" and "Mentor / student" (transcript).
+  {
+    id: "hosts_dynamic",
+    type: "choice",
+    question: "How do the hosts work together?",
+    choices: ["Banter", "One leads, one asks", "They debate", "Expert and beginner", "Mentor and student", "Professional"],
+    when: (d) => d.host_count === 2,
+    section: "Hosts",
+  },
+  // #76 — "A lot" → "Often".
+  {
+    id: "hosts_disagree",
+    type: "choice",
+    question: "How often do they disagree?",
+    choices: ["Never", "Sometimes", "Often"],
+    when: (d) => d.host_count === 2,
+    section: "Hosts",
+  },
+  // #77 — repurposed: segment format.
+  {
+    id: "hosts_segments",
+    type: "choice",
+    question: "Segment format",
+    help: "Hosts take segments one after the other, or talk through them together.",
+    choices: ["Sequentially", "Conversationally"],
+    when: (d) => d.host_count === 2,
+    section: "Hosts",
+  },
 
   // --- Humor ---
   { id: "humor", type: "scale", question: "How much humor?", min: 1, max: 5, minLabel: "None", maxLabel: "A lot", section: "Voice & style" },
 
+  // --- Speech speed — a new one (jimmy, Nov 25).
+  {
+    id: "speech_speed",
+    type: "choice",
+    question: "How fast should they talk?",
+    help: "Concise skips the fluff; the x2/x3 options cram more into the same minutes.",
+    choices: ["Normal", "Concise", "Fast (about 2x)", "Very fast (about 3x)"],
+    section: "Voice & style",
+  },
+
   // --- Weight & rules ---
   { id: "important", type: "textarea", question: "What is most important to you about this show?", help: "The writer weighs this most. See 'What matters most' in the brief.", placeholder: "e.g. The family is safe, and everyone finishes already looking forward to Saturday." },
   { id: "rules", type: "textarea", question: "Any hard-line rules?", help: "Things the show must never do.", placeholder: "e.g. Never take a political side. Never share listener names." },
-
-  // --- Research ---
-  { id: "lookup", type: "textarea", question: "What should we look up before each episode?", help: "Leave blank if your own files are enough. Each look-up costs about a cent.", placeholder: "e.g. This week's Commanders news and Sunday's game time.\nSites: commanders.com, espn.com" },
 
   // --- Finish ---
   { id: "preview", type: "yesno", question: "Make the first full episode now?", help: "You can also do this later from the show page." },
@@ -141,6 +294,36 @@ export const WIZARD_STEPS: WizardStep[] = [
 
 export function visibleSteps(draft: WizardDraft): WizardStep[] {
   return WIZARD_STEPS.filter((s) => !s.when || s.when(draft));
+}
+
+// Which choices on a `multi` step should be grayed out, given the current pick.
+// A choice is grayed when:
+//   - it is already picked (so can't be picked again), OR
+//   - another picked choice is in the same `conflicts` set, OR
+//   - the maxPicks cap is reached and this choice isn't already picked.
+export function grayedChoices(step: WizardStep, picked: string[]): string[] {
+  if (step.type !== "multi") return [];
+  const out = new Set<string>();
+  const sets = step.conflicts || [];
+  const cap = step.maxPicks ?? Infinity;
+  for (const choice of step.choices || []) {
+    if (picked.includes(choice)) continue; // handled by the "selected" state, not gray
+    if (picked.length >= cap) { out.add(choice); continue; }
+    for (const set of sets) {
+      if (set.includes(choice) && set.some((c) => picked.includes(c))) { out.add(choice); break; }
+    }
+  }
+  return [...out];
+}
+
+// Multi-pick values are stored joined by " · ". Helpers to read and write.
+const MULTI_SEP = " · ";
+export function readMulti(v: string | undefined): string[] {
+  if (!v) return [];
+  return v.split(MULTI_SEP).map((s) => s.trim()).filter(Boolean);
+}
+export function writeMulti(picks: string[]): string {
+  return picks.join(MULTI_SEP);
 }
 
 // Turns answers into the show brief body, grouped by section. The format
@@ -167,8 +350,6 @@ export function composeWizardBody(draft: WizardDraft): string {
   if (imp) parts.push(`## What matters most\n${imp}`);
   const rules = draft.answers.rules?.trim();
   if (rules) parts.push(`## Hard rules\n${rules}`);
-  const look = draft.answers.lookup?.trim();
-  if (look) parts.push(`## Look up before each episode\n${look}`);
   return parts.join("\n\n");
 }
 
@@ -176,19 +357,24 @@ function formatAnswer(step: WizardStep, v: string): string {
   const val = v.trim();
   if (step.type === "yesno") return `- ${step.question} ${val === "yes" ? "Yes" : "No"}`;
   if (step.type === "scale") return `- ${step.question} ${val}/${step.max ?? 5}${step.maxLabel ? ` (${step.minLabel} to ${step.maxLabel})` : ""}`;
+  if (step.type === "multi") return `- ${step.question} ${val}`;
   // Most text answers drop the question and read as a short paragraph.
   if (step.type === "textarea") return val;
   return `- ${step.question} ${val}`;
 }
 
 // A small placeholder episode-length string ("About 10 minutes") → 10.
+// Episode length isn't asked in the wizard anymore (#38 out) — the finish
+// step passes `undefined` so this returns the fallback.
 export function minutesFromLengthAnswer(ans: string | undefined, fallback = 10): number {
   if (!ans) return fallback;
   const m = /(\d+)/.exec(ans);
   return m ? Number(m[1]) : fallback;
 }
 
-// Map the cadence choice label to the stored cadence id.
+// Cadence isn't asked in the wizard anymore (#47 out) — owners set it on the
+// show page. This helper stays for ShowSpecForm's parser; manual cadence is
+// the safe default when the wizard finishes.
 const CADENCE_MAP: Record<string, string> = {
   "Twice a day": "twice_daily",
   "Every day": "daily",
