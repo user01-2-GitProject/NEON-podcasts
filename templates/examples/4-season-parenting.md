@@ -1,9 +1,8 @@
 ---
-# Example show for the setup wizard: "4 Season Parenting", the mom's version.
+# Example show for the setup wizard: "4 Season Parenting".
 # Built from a real show the network makes for a real family. Every field is
-# filled in on purpose. Its companion is 4-season-parenting-dad.md: same trip,
-# same plan, a different host. Same format as templates/show.example.md.
-title: "4 Season Parenting with Ellen"
+# filled in on purpose. Same format as templates/show.example.md.
+title: "4 Season Parenting"
 tagline: "This weekend's family field trip, every worry answered before you leave."
 category: "Kids & Family > Parenting"
 language: "en-us"
@@ -24,7 +23,7 @@ tags: [parenting, family, philadelphia, outdoors, seasonal]
 ---
 
 ## About the show
-Weekend field trips for families around Philadelphia, planned for you. Every episode is one real trip, keyed to the season: what's in bloom, which birds are moving, what's biting, what the weather does this time of year. The same place is a different trip in a different season. Each trip gets two companion episodes from the same plan: the dad's version and the mom's version.
+Weekend field trips for families around Philadelphia, planned for you. Every episode is one real trip, keyed to the season: what's in bloom, which birds are moving, what's biting, what the weather does this time of year. The same place is a different trip in a different season.
 
 ## Who it's for
 A mom and dad with kids aged 4 to 8 who want to take these trips but have no time to research them. They know their kids; they just want the whole plan handed to them in one listen.
@@ -36,10 +35,13 @@ A mom and dad with kids aged 4 to 8 who want to take these trips but have no tim
 - What matters most: the family is safe, and they end the episode already looking forward to the trip.
 
 ## The host
-Ellen talks to the mom. Scottish, warm, explanatory, notices the details at the edges. She introduces herself by name; the dad is "your husband", never named. A helpful au pair: beside the family, never above them.
+Ellen. Scottish, warm, capable, notices the details at the edges. She introduces herself by name and talks to both parents. A helpful au pair: beside the family, never above them.
 
 ## Voice & style
-Peace of mind. Ellen names the worry a parent is actually carrying and answers it with the fix already in the plan. Where a better option buys peace of mind, she offers it first, as long as it's the best version of this trip and not a fancier trip that doesn't exist. Her extras: what's in bloom and clothing colors that photograph well against it, photo spots, a brunch spot, local shopping, and the tourist traps to skip. Celebratory, never preachy, never scary.
+Safety first, then peace of mind. Ellen names the worry a parent is actually carrying and answers it with the fix already in the plan. Where a better option buys peace of mind, she offers it first, as long as it's the best version of this trip and not a fancier trip that doesn't exist. Her extras: what's in bloom and clothing colors that photograph well against it, photo spots, a brunch spot, local shopping, and the tourist traps to skip. Celebratory, never preachy, never scary.
+
+## Look up before each episode
+One outdoor family trip within about an hour of Center City Philadelphia for this coming Saturday, suited to kids aged 4 to 8 and to this season, and different from recent trips. From the place's own pages: hours, prices, parking, restrooms, where to eat, and what's in bloom or moving this time of year. The National Weather Service forecast for Saturday there. One indoor rain backup nearby with its hours and prices.
 
 ## Segments
 ### 1. The day at a glance

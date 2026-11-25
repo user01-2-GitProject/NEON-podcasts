@@ -45,6 +45,7 @@ function generate(db, synthesize, generateScript = okScript) {
     "@/lib/storage": { getStorage: () => { throw new Error("storage should not be touched"); } },
     "@/lib/episode-spec": require("../lib/episode-spec.ts"),
     "@/lib/script-check": require("../lib/script-check.ts"),
+    "@/lib/research": { researchBrief: () => null },
   });
 }
 
