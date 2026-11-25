@@ -6,6 +6,7 @@ import { applyPronunciations } from "@/lib/pronounce";
 import { checkScript, needsRewrite, rewriteNotes } from "@/lib/script-check";
 import { getStorage } from "@/lib/storage";
 import { selectBriefings, todayIn } from "@/lib/episode-spec";
+import { researchBrief, lookUp, researchBriefing, sourcesNote, SEARCH_COST_CENTS } from "@/lib/research";
 import type { Show, Briefing, Episode, NarrationMode, Pronunciation } from "@/lib/types";
 
 export const MAX_SCHEDULED_ATTEMPTS = 5;
@@ -88,11 +89,34 @@ export async function generateEpisode(
       `;
     }
 
+    // Shows that ask for it get one web look-up first; what it found becomes
+    // one more briefing (and the episode's sources).
+    const brief = researchBrief(show.style_guide);
+    let docs = selection.docs;
+    let research: Awaited<ReturnType<typeof lookUp>> | null = null;
+    if (brief) {
+      const today = todayIn(show.timezone);
+      research = await lookUp({
+        showTitle: show.title,
+        showDescription: show.description,
+        brief,
+        today,
+        timezone: show.timezone,
+        episodeTitle: selection.plan?.title || undefined,
+      });
+      const looked = researchBriefing(research, today);
+      docs = [...selection.docs, looked];
+      await sql`
+        update runs set briefing_snapshot = ${`${briefingSnapshot}\n\n### ${looked.filename}\n${looked.content_md}`}
+        where id = ${runId} and show_id = ${showId}
+      `;
+    }
+
     const scriptArgs = {
       showTitle: show.title,
       showDescription: show.description,
       targetMinutes: show.target_minutes,
-      briefings: selection.docs,
+      briefings: docs,
       styleGuide: show.style_guide,
       episodeTitle: selection.plan?.title || undefined,
     };
@@ -118,9 +142,14 @@ export async function generateEpisode(
 
     // A planned episode keeps the title it was planned with.
     if (selection.plan?.title) result.title = selection.plan.title;
+    if (research) {
+      inputTokens += research.inputTokens;
+      outputTokens += research.outputTokens;
+      result.show_notes = `${result.show_notes}${sourcesNote(research.sources)}`;
+    }
 
     const duration = estimateDurationSeconds(result.script);
-    const costCents = estimateCostCents(inputTokens, outputTokens);
+    const costCents = estimateCostCents(inputTokens, outputTokens) + (research ? SEARCH_COST_CENTS : 0);
 
     if (mode === "external") {
       if (scheduledRun) {
