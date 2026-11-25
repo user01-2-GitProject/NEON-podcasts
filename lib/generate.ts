@@ -9,6 +9,16 @@ import type { Show, Briefing, Episode, NarrationMode, Pronunciation } from "@/li
 
 export const MAX_SCHEDULED_ATTEMPTS = 5;
 
+// A voice failure explained in words a show owner can act on. Provider
+// details stay in the server log and the runs table.
+export function friendlyVoiceError(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+  if (/^No OpenAI voice key/.test(message)) {
+    return "The script is saved, but there's no voice key yet. Add one under Settings → Voice, then press Make audio on the episode.";
+  }
+  return "The script is saved, but the voice step failed. Check Settings → Voice, then press Make audio on the episode to try again.";
+}
+
 export interface ScheduledRunContext {
   id: string;
   scheduledFor: string;
@@ -24,7 +34,7 @@ export async function generateEpisode(
   showId: string,
   modeOverride?: NarrationMode,
   scheduledRun?: ScheduledRunContext,
-): Promise<{ episode: Episode; runId: string }> {
+): Promise<{ episode: Episode; runId: string; voiceError?: string }> {
   const showRows = (await sql`select * from shows where id = ${showId}`) as Show[];
   const show = showRows[0];
   if (!show) throw new Error("Show not found");
@@ -153,7 +163,28 @@ export async function generateEpisode(
 
     // "auto": render audio and publish. Pronunciations affect only the text
     // handed to TTS; the episode row below still stores the original script.
-    const tts = await synthesize(applyPronunciations(result.script, pronunciations), show.voice_id);
+    let tts: Awaited<ReturnType<typeof synthesize>>;
+    try {
+      tts = await synthesize(applyPronunciations(result.script, pronunciations), show.voice_id);
+    } catch (voiceErr) {
+      // Scheduled runs retry the whole run. A run someone pressed keeps the
+      // script as a draft, so a voice problem never throws away the writing.
+      if (scheduledRun) throw voiceErr;
+      const draftRows = (await sql`
+        insert into episodes (show_id, title, script, show_notes, duration_seconds, status)
+        values (${showId}, ${result.title}, ${result.script}, ${result.show_notes}, ${duration}, 'draft')
+        returning *
+      `) as Episode[];
+      const raw = voiceErr instanceof Error ? voiceErr.message : String(voiceErr);
+      console.error(`[voice] ${raw}`);
+      await sql`
+        update runs set
+          status = 'failed', episode_id = ${draftRows[0].id}, model = ${model},
+          cost_cents = ${costCents}, error = ${`voice: ${raw}`}, finished_at = now()
+        where id = ${runId}
+      `;
+      return finish({ episode: draftRows[0], runId, voiceError: friendlyVoiceError(voiceErr) });
+    }
     const byteSize = tts.audio.length;
 
     if (scheduledRun) {
