@@ -71,7 +71,7 @@ export default function GeneratePanel({
 
       {activeBriefings === 0 ? (
         <p className="muted">
-          No active briefings — the episode will be a short general one. Upload a briefing above for
+          No active briefings — the episode will be a short general one. Add a briefing above for
           real content.
         </p>
       ) : (
