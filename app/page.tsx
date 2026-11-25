@@ -82,7 +82,17 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        {owner ? <ShowSpecForm /> : null}
+        {owner ? (
+          <div className="panel">
+            <h2>Start a new show</h2>
+            <p className="muted">A few questions, one at a time, with "Skip" on everything but the name.</p>
+            <p><Link href="/shows/new" className="btn primary">Start the wizard</Link></p>
+            <details style={{ marginTop: 12 }}>
+              <summary className="muted">Rather fill it all in at once? Use the long form.</summary>
+              <ShowSpecForm />
+            </details>
+          </div>
+        ) : null}
       </div>
     </>
   );
