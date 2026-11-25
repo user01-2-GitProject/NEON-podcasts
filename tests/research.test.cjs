@@ -139,6 +139,7 @@ test("a show that asks for it gets its look-up as a briefing, sources in the not
     "@/lib/claude": {
       generateScript: async (args) => { writerDocs = args.briefings; return { result: { title: "T", script, show_notes: "notes" }, model: "m", inputTokens: 1, outputTokens: 1 }; },
       estimateCostCents: () => 2,
+      mostImportant: () => "Be fair.",
     },
     "@/lib/tts": { synthesize: async () => { throw new Error("no tts"); }, estimateDurationSeconds: () => 60 },
     "@/lib/pronounce": { applyPronunciations: (s) => s },
@@ -148,7 +149,8 @@ test("a show that asks for it gets its look-up as a briefing, sources in the not
     "@/lib/research": {
       ...research,
       lookUp: async (a) => {
-        assert.match(a.brief, /Tonight's top US news/);
+        assert.match(a.brief, /Tonight.s top US news/);
+        assert.equal(a.priority, "Be fair.");
         return { notes: "- Fact [1]", sources: [{ url: "https://espn.com/a", title: "A" }], model: "m", inputTokens: 5, outputTokens: 5 };
       },
     },
@@ -161,4 +163,10 @@ test("a show that asks for it gets its look-up as a briefing, sources in the not
   assert.ok(calls.some((c) => /briefing_snapshot/.test(c.text) && c.values.some((v) => typeof v === "string" && v.includes("looked-up-"))), "run keeps what was looked up");
   const done = calls.find((c) => /status = 'done'|update runs set/.test(c.text) && c.values.includes(2 + research.SEARCH_COST_CENTS));
   assert.ok(done, "run cost includes the search");
+});
+
+test("the owner's 'most important' answer steers what gets looked up", () => {
+  const base = { showTitle: "x", showDescription: "", brief: "y", today: "d", timezone: "UTC" };
+  assert.match(research.buildResearchPrompt({ ...base, priority: "Be fair." }).system, /most important part of this podcast is: "Be fair\."/);
+  assert.ok(!research.buildResearchPrompt(base).system.includes("most important"));
 });

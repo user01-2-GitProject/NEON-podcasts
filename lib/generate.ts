@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { getSql, sql } from "@/lib/db";
-import { generateScript, estimateCostCents } from "@/lib/claude";
+import { generateScript, estimateCostCents, mostImportant } from "@/lib/claude";
 import { synthesize, estimateDurationSeconds } from "@/lib/tts";
 import { applyPronunciations } from "@/lib/pronounce";
 import { checkScript, needsRewrite, rewriteNotes } from "@/lib/script-check";
@@ -103,6 +103,7 @@ export async function generateEpisode(
         today,
         timezone: show.timezone,
         episodeTitle: selection.plan?.title || undefined,
+        priority: mostImportant(show.style_guide),
       });
       const looked = researchBriefing(research, today);
       docs = [...selection.docs, looked];
