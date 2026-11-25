@@ -40,6 +40,7 @@ function patchRoute(sql) {
     "next/server": require("next/server"),
     "@/lib/db": { sql },
     "@/lib/schedule": require("../lib/schedule.ts"),
+    "@/lib/cadence": require("../lib/cadence.ts"),
     "@/lib/show-image": require("../lib/show-image.ts"),
     "@/lib/storage": { getStorage: () => ({ delete: async () => {} }) },
   }).PATCH;

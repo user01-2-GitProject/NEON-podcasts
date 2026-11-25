@@ -61,7 +61,7 @@ test("tricky strings survive a round trip", () => {
 
 test("validation catches bad input from either door", () => {
   const s = spec.emptyShowSpec();
-  s.cadence = "weekdays";
+  s.cadence = "hourly";
   s.narration_mode = "robot";
   s.schedule_time = "25:00";
   s.timezone = "Mars/Olympus";

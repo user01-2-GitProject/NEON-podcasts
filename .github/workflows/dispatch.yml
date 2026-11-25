@@ -1,0 +1,30 @@
+# Hourly nudge for the episode scheduler. Vercel Hobby crons fire once a day,
+# which can't serve twice-a-day shows, so this calls the same dispatch route
+# every hour. Does nothing until the repo has CRON_SECRET (same value as the
+# Vercel env var) under Settings → Secrets and variables → Actions.
+name: Scheduler
+
+on:
+  schedule:
+    - cron: "5 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Call /api/cron/dispatch
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL || 'https://neon-podcasts.vercel.app' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET repo secret not set; skipping."
+            exit 0
+          fi
+          curl --fail-with-body --silent --show-error --max-time 320 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$APP_URL/api/cron/dispatch"

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
+import { firstSlot, isCadence } from "@/lib/cadence";
 import { currentUserId } from "@/lib/me";
 import { scheduleError } from "@/lib/schedule";
 import { parseImageUrl } from "@/lib/show-image";
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
   const description = (body.description || "").toString();
   const voiceId = body.voice_id ? body.voice_id.toString() : null;
   const narrationMode = body.narration_mode === "external" ? "external" : "auto";
-  const cadence = ["daily", "weekly", "manual"].includes(body.cadence) ? body.cadence : "weekly";
+  const cadence = isCadence(body.cadence) ? body.cadence : "weekly";
   const scheduleTime = (body.schedule_time || "09:00").toString();
   const timezone = (body.timezone || "UTC").toString();
   const invalidSchedule = cadence === "manual" ? null : scheduleError(scheduleTime, timezone);
@@ -33,6 +34,7 @@ export async function POST(req: Request) {
   const image = body.image_url !== undefined ? parseImageUrl(body.image_url) : { value: null };
   if ("error" in image) return NextResponse.json({ error: image.error }, { status: 400 });
   // The creator owns the show; generation usage and limits are charged to them.
+  const firstRun = firstSlot(cadence, scheduleTime, timezone)?.toISOString() ?? null;
   const userId = await currentUserId(req);
 
   const rows = (await sql`
@@ -42,16 +44,7 @@ export async function POST(req: Request) {
     values
       (${userId}, ${title}, ${description}, ${voiceId}, ${narrationMode}, ${cadence}, ${scheduleTime},
        ${timezone}, ${targetMinutes},
-       case when ${cadence} = 'manual' then null else
-         case
-           when (((now() at time zone ${timezone})::date + ${scheduleTime}::time)
-                 at time zone ${timezone}) > now()
-             then (((now() at time zone ${timezone})::date + ${scheduleTime}::time)
-                   at time zone ${timezone})
-           else ((((now() at time zone ${timezone})::date + 1) + ${scheduleTime}::time)
-                 at time zone ${timezone})
-         end
-       end)
+       ${firstRun}::timestamptz)
     returning *
   `) as Show[];
   // Set separately so creating shows keeps working before migration 009.

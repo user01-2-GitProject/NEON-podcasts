@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
+import { firstSlot, isCadence } from "@/lib/cadence";
 import { scheduleError } from "@/lib/schedule";
 import { parseImageUrl } from "@/lib/show-image";
 import { getStorage } from "@/lib/storage";
@@ -29,7 +30,7 @@ export async function PATCH(req: Request, { params }: Params) {
   const styleGuide = body.style_guide !== undefined ? body.style_guide.toString() : show.style_guide;
   const voiceId = body.voice_id !== undefined ? (body.voice_id ? body.voice_id.toString() : null) : show.voice_id;
   const cadence =
-    body.cadence !== undefined && ["daily", "weekly", "manual"].includes(body.cadence)
+    body.cadence !== undefined && isCadence(body.cadence)
       ? body.cadence
       : show.cadence;
   const scheduleTime = body.schedule_time !== undefined ? body.schedule_time.toString() : show.schedule_time;
@@ -56,6 +57,7 @@ export async function PATCH(req: Request, { params }: Params) {
     timezone !== show.timezone ||
     (!show.is_active && isActive);
 
+  const firstRun = firstSlot(cadence, scheduleTime, timezone)?.toISOString() ?? null;
   const rows = (await sql`
     update shows set
       title = ${title},
@@ -70,12 +72,7 @@ export async function PATCH(req: Request, { params }: Params) {
       next_run_at = case
         when ${cadence} = 'manual' then null
         when next_run_at is not null and not ${resetSchedule} then next_run_at
-        when (((now() at time zone ${timezone})::date + ${scheduleTime}::time)
-              at time zone ${timezone}) > now()
-          then (((now() at time zone ${timezone})::date + ${scheduleTime}::time)
-                at time zone ${timezone})
-        else ((((now() at time zone ${timezone})::date + 1) + ${scheduleTime}::time)
-              at time zone ${timezone})
+        else ${firstRun}::timestamptz
       end
     where id = ${id}
     returning *

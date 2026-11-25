@@ -17,7 +17,7 @@ function route(sql) {
   const compiled = ts.transpileModule(readFileSync("app/api/shows/[id]/spec/route.ts", "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS },
   }).outputText;
-  const modules = { "next/server": require("next/server"), "@/lib/db": { sql }, "@/lib/show-spec": specLib };
+  const modules = { "next/server": require("next/server"), "@/lib/db": { sql }, "@/lib/show-spec": specLib, "@/lib/cadence": require("../lib/cadence.ts") };
   const exports = {};
   new Function("require", "exports", compiled)((name) => {
     if (!(name in modules)) throw new Error(`unexpected import ${name}`);

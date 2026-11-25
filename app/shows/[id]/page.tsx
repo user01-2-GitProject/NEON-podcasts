@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cadenceLabel } from "@/lib/cadence";
 import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
 import type { Show, Briefing, Episode, Run, Pronunciation } from "@/lib/types";
@@ -58,7 +59,7 @@ export default async function ShowPage({ params }: { params: Promise<{ id: strin
           <h2>{show.title}</h2>
           <p className="muted">{show.description || "No description."}</p>
           <p className="muted">
-            {show.cadence} · ~{show.target_minutes} min · timezone {show.timezone}
+            {cadenceLabel(show.cadence)} · ~{show.target_minutes} min · timezone {show.timezone}
           </p>
           {owner ? <ShowArtworkForm showId={id} initialImageUrl={show.image_url ?? null} /> : null}
           {owner ? <DeleteShowButton showId={id} showTitle={show.title} /> : null}

@@ -25,6 +25,7 @@ function route(sql) {
     "@/lib/db": { sql },
     "@/lib/me": { currentUserId: async () => "user-1" },
     "@/lib/show-spec": specLib,
+    "@/lib/cadence": require("../lib/cadence.ts"),
   };
   const exports = {};
   new Function("require", "exports", compiled)((name) => {
@@ -65,7 +66,7 @@ test("file door and form door write identical values", async () => {
 test("invalid specs are rejected with every problem and nothing is written", async () => {
   for (const body of [
     { markdown: "no frontmatter" },
-    { spec: { title: "", cadence: "weekdays", target_minutes: "5" } },
+    { spec: { title: "", cadence: "hourly", target_minutes: "5" } },
     { spec: { title: "x", image_url: "javascript:alert(1)" } },
     { spec: { title: "x", pronunciations: [{ term: "a", say_as: "b", match: "regex" }] } },
     {},
@@ -76,7 +77,7 @@ test("invalid specs are rejected with every problem and nothing is written", asy
     assert.equal(res.status, 400, JSON.stringify(body));
     assert.equal(db.calls.length, 0);
   }
-  const res = await route(recordingSql()).POST(post({ spec: { title: "", cadence: "weekdays" } }));
+  const res = await route(recordingSql()).POST(post({ spec: { title: "", cadence: "hourly" } }));
   const data = await res.json();
   assert.ok(data.errors.length >= 2);
 });

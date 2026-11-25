@@ -27,7 +27,7 @@ show.md ──┐
 | `language` | string (BCP-47) | RSS `<language>` | — | Default `en-us`. |
 | `explicit` | bool | RSS `<itunes:explicit>` | — | Default `false`. |
 | `image_url` | url | `shows.image_url` (PR #46) | ✅ for publish | Artwork; itunes:image. |
-| `cadence` | enum `daily\|weekly\|manual` | `shows.cadence` | ✅ | Scheduling. |
+| `cadence` | enum `twice_daily\|daily\|weekdays\|twice_weekly\|weekly\|manual` (also "twice a day", "twice a week") | `shows.cadence` | ✅ | Scheduling. twice_daily = time and time+12h; weekdays = Mon–Fri; twice_weekly = Mon & Thu. |
 | `schedule_time` / `timezone` | `HH:MM` / IANA tz | `shows.schedule_time`/`timezone` | — | When the scheduler runs. |
 | `target_minutes` | int | `shows.target_minutes` | ✅ | Episode length target. |
 | `narration_mode` | enum `auto\|external` | `shows.narration_mode` | ✅ | `auto` = app renders TTS; `external` = script only. |

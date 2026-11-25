@@ -197,7 +197,10 @@ export async function skipScheduledRun(db: SqlFn, runId: string, reason: string)
       returning show_id, scheduled_for
     )
     update shows set next_run_at = case cadence
+      when 'twice_daily' then (((next_run_at at time zone timezone) + interval '12 hours') at time zone timezone)
       when 'daily' then (((next_run_at at time zone timezone) + interval '1 day') at time zone timezone)
+      when 'weekdays' then (((next_run_at at time zone timezone) + (case extract(isodow from (next_run_at at time zone timezone)) when 5 then 3 when 6 then 2 else 1 end) * interval '1 day') at time zone timezone)
+      when 'twice_weekly' then (((next_run_at at time zone timezone) + (case when extract(isodow from (next_run_at at time zone timezone)) < 4 then 4 - extract(isodow from (next_run_at at time zone timezone)) else 8 - extract(isodow from (next_run_at at time zone timezone)) end) * interval '1 day') at time zone timezone)
       when 'weekly' then (((next_run_at at time zone timezone) + interval '7 days') at time zone timezone)
       else null
     end

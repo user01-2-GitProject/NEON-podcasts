@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
+import { firstSlot } from "@/lib/cadence";
 import { currentUserId } from "@/lib/me";
 import { coerceShowSpec, parseShowMd, specToShowFields, validateShowSpec, MAX_SPEC_BYTES } from "@/lib/show-spec";
 import type { Show } from "@/lib/types";
@@ -36,6 +37,7 @@ export async function POST(req: Request) {
   }
 
   const f = specToShowFields(spec);
+  const firstRun = firstSlot(f.cadence, f.schedule_time, f.timezone)?.toISOString() ?? null;
   const userId = await currentUserId(req);
   const terms = spec.pronunciations.map((p) => p.term);
   const sayAs = spec.pronunciations.map((p) => p.say_as);
@@ -51,16 +53,7 @@ export async function POST(req: Request) {
         (${userId}, ${f.title}, ${f.description}, ${f.style_guide}, ${f.voice_id},
          ${f.narration_mode}, ${f.cadence}, ${f.schedule_time}, ${f.timezone},
          ${f.target_minutes}, ${f.image_url},
-         case when ${f.cadence} = 'manual' then null else
-           case
-             when (((now() at time zone ${f.timezone})::date + ${f.schedule_time}::time)
-                   at time zone ${f.timezone}) > now()
-               then (((now() at time zone ${f.timezone})::date + ${f.schedule_time}::time)
-                     at time zone ${f.timezone})
-             else ((((now() at time zone ${f.timezone})::date + 1) + ${f.schedule_time}::time)
-                   at time zone ${f.timezone})
-           end
-         end)
+         ${firstRun}::timestamptz)
       returning *
     ),
     p as (
