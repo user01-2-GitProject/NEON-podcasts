@@ -36,3 +36,15 @@ test("a guided show passes the same validation as show.md", async () => {
   assert.deepEqual(validateShowSpec(spec), []);
   assert.match(buildStyleGuide(spec), /Retail investors/);
 });
+
+test("the wizard's example shows are valid show files", async () => {
+  const { readFileSync, readdirSync } = require("node:fs");
+  const { parseShowMd, validateShowSpec } = await import("../lib/show-spec.ts");
+  const files = readdirSync("templates/examples").filter((f) => f.endsWith(".md"));
+  assert.ok(files.length >= 1);
+  for (const f of files) {
+    const { spec, errors } = parseShowMd(readFileSync(`templates/examples/${f}`, "utf8"));
+    assert.deepEqual([...errors, ...validateShowSpec(spec)], [], f);
+    assert.ok(spec.body.includes("## Hard rules"), `${f} shows an example of hard rules`);
+  }
+});
