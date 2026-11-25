@@ -2,7 +2,7 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import { useCallback } from "react";
 import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { DownloadButton } from "../../components";
-import { showByToken, type FeedEpisode } from "../../lib/api";
+import { absoluteUrl, showByToken, type FeedEpisode } from "../../lib/api";
 import { usePlayer } from "../../lib/player";
 import { colors } from "../../lib/theme";
 import { useApi } from "../../lib/useApi";
@@ -26,7 +26,7 @@ export default function ShowScreen() {
           data?.show.image_url || data?.show.description ? (
             <View style={styles.header}>
               {data.show.image_url ? (
-                <Image source={{ uri: data.show.image_url }} style={styles.art} accessibilityLabel={`${data.show.title} artwork`} />
+                <Image source={{ uri: absoluteUrl(data.show.image_url) }} style={styles.art} accessibilityLabel={`${data.show.title} artwork`} />
               ) : null}
               {data.show.description ? <Text style={styles.desc}>{data.show.description}</Text> : null}
             </View>

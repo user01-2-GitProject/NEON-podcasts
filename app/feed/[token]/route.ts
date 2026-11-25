@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db";
+import { artworkPath } from "@/lib/cover";
 import type { Show } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -90,7 +91,7 @@ export async function GET(req: Request, { params }: Params) {
     <description>${xml(description)}</description>
     <language>en-us</language>
     <itunes:author>${xml(author)}</itunes:author>
-    <itunes:image href="${xml(show.image_url && /^https?:\/\//i.test(show.image_url) ? show.image_url : new URL("/podcast-cover.png", origin).href)}" />
+    <itunes:image href="${xml(new URL(artworkPath(show), origin).href)}" />
     <itunes:category text="${xml(category)}" />
     <itunes:explicit>${explicit}</itunes:explicit>
     <itunes:type>episodic</itunes:type>

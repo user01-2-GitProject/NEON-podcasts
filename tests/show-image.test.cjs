@@ -123,6 +123,7 @@ test("browse, show detail and the following feed expose the show image", async (
 function feedRoute(showRow) {
   return loadRoute("app/feed/[token]/route.ts", {
     "@/lib/db": { sql: (strings) => (strings.join("?").includes("from shows") ? [showRow] : []) },
+    "@/lib/cover": require("../lib/cover.ts"),
   }).GET;
 }
 
@@ -131,14 +132,15 @@ async function feedBody(showRow) {
   return res.text();
 }
 
-test("RSS uses the show image as <itunes:image>, falling back to the network cover", async () => {
+test("RSS uses the show image as <itunes:image>, falling back to its generated cover", async () => {
   const base = { id: SHOW_ID, title: "Show", description: "d" };
   assert.match(
     await feedBody({ ...base, image_url: ART }),
     /<itunes:image href="https:\/\/cdn\.example\/art\.png\?size=3000&amp;v=2" \/>/,
   );
-  assert.match(await feedBody({ ...base, image_url: null }), /<itunes:image href="https:\/\/podcasts\.example\/podcast-cover\.png" \/>/);
+  const generated = new RegExp(`<itunes:image href="https://podcasts\\.example/art/${SHOW_ID}\\?v=[a-z0-9]+" />`);
+  assert.match(await feedBody({ ...base, image_url: null }), generated);
   // before migration 009 the column is absent entirely
-  assert.match(await feedBody(base), /podcast-cover\.png/);
-  assert.match(await feedBody({ ...base, image_url: "javascript:alert(1)" }), /podcast-cover\.png/);
+  assert.match(await feedBody(base), generated);
+  assert.match(await feedBody({ ...base, image_url: "javascript:alert(1)" }), generated);
 });

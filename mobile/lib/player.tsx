@@ -25,7 +25,7 @@ function lockMetadata(episode: FeedEpisode) {
     title: episode.title,
     artist: episode.show_title,
     albumTitle: "NEON",
-    ...(episode.show_image_url ? { artworkUrl: episode.show_image_url } : {}),
+    ...(episode.show_image_url ? { artworkUrl: absoluteUrl(episode.show_image_url) } : {}),
   };
 }
 

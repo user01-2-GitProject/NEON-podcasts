@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { artworkPath } from "@/lib/cover";
 import { cadenceLabel } from "@/lib/cadence";
 import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
@@ -55,7 +56,7 @@ export default async function ShowPage({ params }: { params: Promise<{ id: strin
 
       <div className="container">
         <div className="panel">
-          {show.image_url ? <img className="show-art" src={show.image_url} alt={`${show.title} artwork`} /> : null}
+          <img className="show-art" src={artworkPath(show)} alt={`${show.title} artwork`} />
           <h2>{show.title}</h2>
           <p className="muted">{show.description || "No description."}</p>
           <p className="muted">

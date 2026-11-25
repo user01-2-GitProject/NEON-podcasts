@@ -4,7 +4,7 @@ import authConfig from "@/auth.config";
 import { sql } from "@/lib/db";
 import { bearerForbiddenPath, bearerToken, bearerRequestAllowed, isSelfServicePath, tokenHash, type ApiTokenScope } from "@/lib/api-tokens";
 
-const PUBLIC_PREFIXES = ["/login", "/privacy", "/terms", "/api/auth", "/api/cron", "/feed", "/listen", "/_next", "/favicon.ico"];
+const PUBLIC_PREFIXES = ["/login", "/art", "/privacy", "/terms", "/api/auth", "/api/cron", "/feed", "/listen", "/_next", "/favicon.ico"];
 // Decode the v5 session with Auth.js while keeping Node-only password code out of Edge.
 const { auth } = NextAuth(authConfig);
 
