@@ -79,9 +79,12 @@ export default function ShowWizard() {
     try {
       const format = SHOW_FORMATS.find((f) => f.id === draft.format);
       const voice = format?.defaultVoice && OPENAI_VOICE_OPTIONS.some((v) => v.id === format.defaultVoice) ? format.defaultVoice : "";
+      // Hosts must have a name (lib/show-spec.ts validateShowSpec), and the wizard
+      // doesn't ask for the second host's name yet, so we give sensible fallbacks.
+      const firstName = format?.defaultHostName || "Host";
       const hosts = draft.host_count === 2
-        ? [{ name: format?.defaultHostName ?? "", voice }, { name: "", voice: "" }]
-        : [{ name: format?.defaultHostName ?? "", voice }];
+        ? [{ name: firstName, voice }, { name: "Co-host", voice: "" }]
+        : [{ name: firstName, voice }];
       const cadence = cadenceFromAnswer(draft.answers.cadence);
       const body = composeWizardBody(draft);
       const spec = {
@@ -107,6 +110,12 @@ export default function ShowWizard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "That didn't save. Try again.");
       try { localStorage.removeItem(DRAFT_KEY); } catch {}
+      // Honor "Make the first full episode now?" by kicking off a generation
+      // before the redirect. Any failure here is reported on the show page
+      // (the Runs panel) rather than blocking the redirect.
+      if (draft.answers.preview === "yes") {
+        void fetch(`/api/shows/${data.show.id}/generate`, { method: "POST" });
+      }
       router.push(`/shows/${data.show.id}?from=wizard`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

@@ -383,18 +383,39 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
             </div>
             <div>
               <label htmlFor="spec-voice">Voice</label>
-              <select
-                id="spec-voice"
-                value={OPENAI_VOICE_OPTIONS.some((v) => v.id === host(0).voice) ? host(0).voice : ""}
-                onChange={(e) => setHost(0, "voice", e.target.value)}
-              >
-                <option value="">Default (your Settings voice)</option>
-                {OPENAI_VOICE_OPTIONS.map((v) => (
-                  <option key={v.id} value={v.id}>{v.label}</option>
-                ))}
-              </select>
+              {(() => {
+                const v = host(0).voice;
+                const isKnown = !v || OPENAI_VOICE_OPTIONS.some((o) => o.id === v);
+                const CUSTOM = "__custom__";
+                return (
+                  <>
+                    <select
+                      id="spec-voice"
+                      value={isKnown ? v : CUSTOM}
+                      onChange={(e) => {
+                        if (e.target.value === CUSTOM) setHost(0, "voice", " ");
+                        else setHost(0, "voice", e.target.value);
+                      }}
+                    >
+                      <option value="">Default (your Settings voice)</option>
+                      {OPENAI_VOICE_OPTIONS.map((o) => (
+                        <option key={o.id} value={o.id}>{o.label}</option>
+                      ))}
+                      <option value={CUSTOM}>Custom (type a voice name below)</option>
+                    </select>
+                    {!isKnown ? (
+                      <input
+                        style={{ marginTop: 6 }}
+                        placeholder="Your local or ElevenLabs voice name"
+                        value={v.trim()}
+                        onChange={(e) => setHost(0, "voice", e.target.value)}
+                      />
+                    ) : null}
+                  </>
+                );
+              })()}
               <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>
-                Using your own local voice server? Type its voice name under Full show brief instead.
+                Pick a hosted voice, or Custom to type your local or ElevenLabs voice name.
               </p>
             </div>
           </div>

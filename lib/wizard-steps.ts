@@ -143,8 +143,13 @@ export function visibleSteps(draft: WizardDraft): WizardStep[] {
   return WIZARD_STEPS.filter((s) => !s.when || s.when(draft));
 }
 
-// Turns answers into the show brief body, grouped by section.
+// Turns answers into the show brief body, grouped by section. The format
+// comes first so the writer always sees it even when the content questions
+// are skipped.
 export function composeWizardBody(draft: WizardDraft): string {
+  const parts: string[] = [];
+  const formatLabel = SHOW_FORMATS.find((f) => f.id === draft.format)?.label;
+  if (formatLabel) parts.push(`## Format\n${formatLabel}`);
   const bySection = new Map<string, string[]>();
   for (const step of visibleSteps(draft)) {
     if (!step.section) continue;
@@ -155,7 +160,6 @@ export function composeWizardBody(draft: WizardDraft): string {
     arr.push(line);
     bySection.set(step.section, arr);
   }
-  const parts: string[] = [];
   for (const [section, lines] of bySection) parts.push(`## ${section}\n${lines.join("\n")}`);
   // "What matters most" and "Look up before each episode" keep the exact
   // headings the writer and look-up code read (lib/claude.ts, lib/research.ts).

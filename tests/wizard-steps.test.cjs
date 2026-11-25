@@ -56,6 +56,7 @@ test("composeWizardBody: groups by section and uses the special headings", async
     },
   };
   const body = w.composeWizardBody(draft);
+  assert.ok(body.includes("## Format\nNews"), "format in body");
   assert.ok(body.includes("## About the show\nA daily rundown."));
   assert.ok(body.includes("## News\n"));
   assert.ok(body.includes("US national news"));
@@ -75,4 +76,10 @@ test("cadence and minutes helpers map wizard answers back to stored values", asy
   assert.equal(w.minutesFromLengthAnswer(undefined), 10);
   assert.equal(w.formatIdFromLabel("News"), "news");
   assert.equal(w.formatIdFromLabel("not a thing"), "");
+});
+
+test("composeWizardBody includes the format header even with no content answers", async () => {
+  const w = await import("../lib/wizard-steps.ts");
+  const body = w.composeWizardBody({ title: "T", host_count: 1, format: "history", answers: {} });
+  assert.match(body, /^## Format\nHistory\b/);
 });
