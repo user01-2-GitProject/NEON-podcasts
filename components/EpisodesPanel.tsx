@@ -66,16 +66,26 @@ function UploadAudio({ episodeId }: { episodeId: string }) {
   );
 }
 
-function MakeAudioButton({ episodeId }: { episodeId: string }) {
+function MakeAudioButton({ episodeId, redo = false }: { episodeId: string; redo?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [armed, setArmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function makeAudio() {
+    // Redo replaces audio listeners may already have, so it takes two taps.
+    if (redo && !armed) {
+      setArmed(true);
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/episodes/${episodeId}/narrate`, { method: "POST" });
+      const res = await fetch(`/api/episodes/${episodeId}/narrate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ redo }),
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Couldn't make the audio");
       router.refresh();
@@ -83,13 +93,21 @@ function MakeAudioButton({ episodeId }: { episodeId: string }) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
+      setArmed(false);
     }
   }
 
+  const label = busy
+    ? "Making audio… (about a minute)"
+    : redo
+      ? armed
+        ? "Tap again to replace the audio"
+        : "Redo audio"
+      : "Make audio";
   return (
     <span>
-      <button className="btn" disabled={busy} onClick={makeAudio}>
-        {busy ? "Making audio… (about a minute)" : "Make audio"}
+      <button className={redo && !armed ? "btn secondary" : "btn"} disabled={busy} onClick={makeAudio}>
+        {label}
       </button>
       {error ? <span className="error" style={{ marginLeft: 8 }}>{error}</span> : null}
     </span>
@@ -174,9 +192,12 @@ export default function EpisodesPanel({
                   Download script (.md)
                 </a>
                 {ep.audio_url ? (
-                  <a className="btn" href={`${ep.audio_url}?download=1`}>
-                    Download mp3
-                  </a>
+                  <>
+                    <a className="btn" href={`${ep.audio_url}?download=1`}>
+                      Download mp3
+                    </a>
+                    {owner && ep.script ? <MakeAudioButton episodeId={ep.id} redo /> : null}
+                  </>
                 ) : owner ? (
                   <>
                     {ep.script ? <MakeAudioButton episodeId={ep.id} /> : null}

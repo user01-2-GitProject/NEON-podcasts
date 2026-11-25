@@ -37,7 +37,11 @@ function friendly(err: string): string {
 // New show in plain questions, in the order people think about a show. The
 // answers become the show brief; "More options" holds everything else,
 // including the full brief and the show file (.md) import/export.
-export default function ShowSpecForm() {
+// With editShowId the same form edits an existing show: it opens filled in
+// with the show's current setup and saves over it (the show page's "Change
+// setup" button), so any earlier choice can be changed after creating.
+export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {}) {
+  const editing = Boolean(editShowId);
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [spec, setSpec] = useState<ShowSpec>(freshSpec);
@@ -57,6 +61,13 @@ export default function ShowSpecForm() {
   useEffect(() => {
     if (restored.current) return;
     restored.current = true;
+    if (editShowId) {
+      fetch(`/api/shows/${editShowId}/spec?format=json`, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error("Couldn't load this show's setup"))))
+        .then((data: { spec: ShowSpec }) => fill(data.spec))
+        .catch((err) => setErrors([err instanceof Error ? err.message : String(err)]));
+      return;
+    }
     try {
       const saved = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
       if (saved?.spec && typeof saved.spec === "object") {
@@ -72,7 +83,7 @@ export default function ShowSpecForm() {
     }
   }, []);
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty || editing) return;
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ spec, answers, rawBody, pronText }));
     } catch {
@@ -141,10 +152,7 @@ export default function ShowSpecForm() {
     };
   }
 
-  async function importFile(file: File) {
-    setNotice(null);
-    const { spec: parsed, errors: errs } = parseShowMd(await file.text());
-    setDirty(true);
+  function fill(parsed: ShowSpec) {
     setSpec(parsed);
     setAnswers(EMPTY_ANSWERS);
     setRawBody(parsed.body);
@@ -152,6 +160,13 @@ export default function ShowSpecForm() {
     setPronText(
       parsed.pronunciations.map((p) => `${p.term} => ${p.say_as}${p.match === "substring" ? " (substring)" : ""}`).join("\n"),
     );
+  }
+
+  async function importFile(file: File) {
+    setNotice(null);
+    const { spec: parsed, errors: errs } = parseShowMd(await file.text());
+    setDirty(true);
+    fill(parsed);
     setErrors(errs.map(friendly));
     if (!errs.length) setNotice(`Filled in from ${file.name}. Check it over, then press Create show.`);
   }
@@ -174,16 +189,17 @@ export default function ShowSpecForm() {
     if (errs.length) return;
     setBusy(true);
     try {
-      const res = await fetch("/api/shows/spec", {
-        method: "POST",
+      const res = await fetch(editShowId ? `/api/shows/${editShowId}/spec` : "/api/shows/spec", {
+        method: editShowId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ spec: s }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error((data.errors || [data.error || "Couldn't create the show"]).join("\n"));
-      localStorage.removeItem(DRAFT_KEY);
+      if (!res.ok) throw new Error((data.errors || [data.error || (editShowId ? "Couldn't save the changes" : "Couldn't create the show")]).join("\n"));
+      if (!editShowId) localStorage.removeItem(DRAFT_KEY);
       setDirty(false);
-      router.push(`/shows/${data.show.id}`);
+      router.push(`/shows/${editShowId ?? data.show.id}`);
+      router.refresh();
     } catch (err) {
       setErrors((err instanceof Error ? err.message : String(err)).split("\n").map(friendly));
     } finally {
@@ -195,8 +211,12 @@ export default function ShowSpecForm() {
 
   return (
     <div className="panel">
-      <h2>Start a new show</h2>
-      <p className="muted">Answer a few questions. You can change any of it later.</p>
+      <h2>{editing ? "Change your show's setup" : "Start a new show"}</h2>
+      <p className="muted">
+        {editing
+          ? "Everything you picked is here. Change what you like, then press Save changes. Episodes you already made keep their audio; use Redo audio on an episode to re-voice it."
+          : "Answer a few questions. You can change any of it later."}
+      </p>
       <input
         ref={fileRef}
         type="file"
@@ -449,7 +469,7 @@ export default function ShowSpecForm() {
         {notice ? (
           <p className="muted">
             {notice}{" "}
-            {dirty ? (
+            {dirty && !editing ? (
               <button type="button" className="linklike" onClick={startOver}>
                 Start over
               </button>
@@ -458,8 +478,13 @@ export default function ShowSpecForm() {
         ) : null}
         <div style={{ marginTop: 14 }}>
           <button type="submit" disabled={busy || !spec.title.trim()}>
-            {busy ? "Creating…" : "Create show"}
+            {busy ? (editing ? "Saving…" : "Creating…") : editing ? "Save changes" : "Create show"}
           </button>
+          {editing ? (
+            <a className="btn secondary" style={{ marginLeft: 8 }} href={`/shows/${editShowId}`}>
+              Cancel
+            </a>
+          ) : null}
         </div>
       </form>
     </div>

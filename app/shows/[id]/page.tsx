@@ -62,6 +62,13 @@ export default async function ShowPage({ params }: { params: Promise<{ id: strin
           <p className="muted">
             {cadenceLabel(show.cadence)} · ~{show.target_minutes} min · timezone {show.timezone}
           </p>
+          {owner ? (
+            <p>
+              <Link href={`/shows/${id}/edit`} className="btn secondary">
+                ← Change setup
+              </Link>
+            </p>
+          ) : null}
           {owner ? <ShowArtworkForm showId={id} initialImageUrl={show.image_url ?? null} /> : null}
           {owner ? <DeleteShowButton showId={id} showTitle={show.title} /> : null}
         </div>
