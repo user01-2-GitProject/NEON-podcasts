@@ -8,7 +8,8 @@ export type ScriptIssueKind =
   | "markup"
   | "too-short"
   | "too-long"
-  | "cut-off";
+  | "cut-off"
+  | "behind-the-scenes";
 
 export interface ScriptIssue {
   kind: ScriptIssueKind;
@@ -56,6 +57,11 @@ const MARKUP: { re: RegExp; what: string }[] = [
   { re: /https?:\/\/\S+/i, what: "web addresses" },
 ];
 
+// The host reading the show's setup out loud ("the only rule on this show
+// is...", "as instructed") instead of just following it.
+const BEHIND_THE_SCENES =
+  /\b(?:the|our) (?:only |one |main |first |golden )?rules? (?:of|on|for|in) (?:the|this|our) (?:show|podcast|program|episode)\b|\b(?:the|my|our) style guide\b|\bas (?:instructed|directed|requested in the brief)\b|\b(?:per|according to) (?:the|my) (?:brief|instructions|show notes)\b|\bI(?:'m| am) (?:an AI|a language model|instructed|told to)\b/i;
+
 export function checkScript(script: string, targetMinutes: number): ScriptIssue[] {
   const issues: ScriptIssue[] = [];
   const text = script.trim();
@@ -79,6 +85,14 @@ export function checkScript(script: string, targetMinutes: number): ScriptIssue[
   const found = MARKUP.filter((m) => m.re.test(text)).map((m) => m.what);
   if (found.length) {
     issues.push({ kind: "markup", message: `The script has things the voice would read out loud: ${found.join(", ")}.` });
+  }
+
+  const meta = BEHIND_THE_SCENES.exec(text);
+  if (meta) {
+    issues.push({
+      kind: "behind-the-scenes",
+      message: `The host reads the show's setup out loud ("${meta[0]}") instead of just following it.`,
+    });
   }
 
   if (wordCount < target * 0.5) {

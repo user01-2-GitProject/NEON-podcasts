@@ -80,3 +80,26 @@ test("long run-on sentences are split so no voice request is too big", async () 
   assert.ok(chunks.every((c) => c.length <= 3500));
   assert.equal(chunks.join(" "), runOn);
 });
+
+test("the host reading the show's rules out loud is caught", async () => {
+  const { checkScript, needsRewrite } = await import("../lib/script-check.ts");
+  const base = "Welcome back to Diamond Hands, the markets show for the rest of us. ";
+  for (const slip of [
+    "And remember, the only rule on this show is we never say his username.",
+    "As instructed, here is the biggest loser of the day.",
+    "My style guide says to keep this short.",
+    "Per the brief, we cover the S&P and the Dow.",
+  ]) {
+    const issues = checkScript(base + slip, 1);
+    assert.ok(issues.some((i) => i.kind === "behind-the-scenes"), slip);
+    assert.equal(needsRewrite(issues), true);
+  }
+  // Talking about rules in the news itself is fine.
+  assert.ok(!checkScript(base + "The SEC proposed new rules for crypto exchanges today.", 1).some((i) => i.kind === "behind-the-scenes"));
+});
+
+test("the writer is told the setup is direction, not something to read out", async () => {
+  const { buildPrompt } = await import("../lib/claude.ts");
+  const { system } = buildPrompt({ showTitle: "T", showDescription: "d", targetMinutes: 5, briefings: [], styleGuide: "Rule: biggest loser every day." });
+  assert.match(system, /never read it out or talk about it/);
+});
