@@ -75,10 +75,10 @@ Deterministic and CI-safe: given a canonical `show.md`, assert the **assembled g
 
 ## 4. Rollout
 
-1. Lock this spec (frontmatter field list + body sections) — this doc.
-2. `lib/show-spec.ts` parser/serializer + validation + round-trip tests.
-3. Wire `applyShowSpec` into show create/edit; snapshot-test the prompt.
-4. Form backed by `ShowSpec` (+ import/export `show.md`) — covers non-md users like Matt.
+1. ✅ Lock this spec (frontmatter field list + body sections) — this doc (#49).
+2. ✅ `lib/show-spec.ts` parser/serializer + validation + round-trip tests (#50).
+3. ✅ Create from spec: `POST /api/shows/spec` (#53). Edit from spec: `GET`/`PUT /api/shows/[id]/spec` (export show.md / replace from show.md). Prompt golden test in `tests/show-spec.test.cjs`.
+4. ✅ Form backed by `ShowSpec` (+ import/export `show.md`) — covers non-md users like Matt (#53). Show page has Download / Update from show.md.
 5. Episodes: each episode fills the show's segment scaffold (jimmy's `Episode-Template.md` standardized — see `templates/episode.example.md`).
 
 See `templates/show.example.md` for a filled example and `templates/episode.example.md` for the per-episode template (derived from `Episode-Template.md`).
