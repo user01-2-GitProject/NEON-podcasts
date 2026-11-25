@@ -51,36 +51,38 @@ export default function GeneratePanel({
 
   return (
     <div className="panel">
-      <h2>Generate an episode</h2>
+      <h2>Make an episode</h2>
       <p className="muted">
-        Reads the active briefing(s) and writes a script with Claude. Then either renders the audio
-        for you, or hands you the script to narrate externally.
+        Writes a script from your show and its source material, then reads it aloud for you (or gives you the
+        script to record yourself).
       </p>
 
       <div style={{ marginTop: 10 }}>
-        <label htmlFor="mode">Narration</label>
+        <label htmlFor="mode">Who reads it?</label>
         <select
           id="mode"
           value={mode}
           onChange={(e) => setMode(e.target.value as NarrationMode)}
         >
-          <option value="auto">Auto — app renders the audio (TTS)</option>
-          <option value="external">Script only — I narrate externally (e.g. Muse)</option>
+          <option value="auto">The app reads it aloud</option>
+          <option value="external">Just the script, I'll record it myself</option>
         </select>
       </div>
 
       {activeBriefings === 0 ? (
         <p className="muted">
-          No active briefings — the episode will be a short general one. Add a briefing above for
-          real content.
+          No source material in use, so this episode will be general. Add notes, a link or a document above
+          for real content.
         </p>
       ) : (
-        <p className="muted">{activeBriefings} active briefing(s) will be used.</p>
+        <p className="muted">
+          Using {activeBriefings} piece{activeBriefings === 1 ? "" : "s"} of source material.
+        </p>
       )}
       <div style={{ marginTop: 12 }}>
         <button onClick={generate} disabled={busy}>
           {busy
-            ? "Generating… (this can take a minute)"
+            ? "Making it… (this can take a minute)"
             : mode === "external"
               ? "Generate script"
               : "Generate now"}

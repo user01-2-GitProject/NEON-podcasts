@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { currentCaller } from "@/lib/current-user";
 import { sql } from "@/lib/db";
 import { generateEpisode } from "@/lib/generate";
-import { sanitizeError } from "@/lib/errors";
+import { friendlyGenerateError, sanitizeError } from "@/lib/errors";
 import { checkGeneration } from "@/lib/limits";
 import type { NarrationMode } from "@/lib/types";
 
@@ -33,9 +33,8 @@ export async function POST(req: Request, { params }: Params) {
     const { episode, runId, voiceError } = await generateEpisode(id, mode);
     return NextResponse.json({ episode, runId, voice_error: voiceError ?? null }, { status: 201 });
   } catch (err) {
-    return NextResponse.json(
-      { error: sanitizeError(err, "generateEpisode") },
-      { status: 500 }
-    );
+    sanitizeError(err, "generateEpisode"); // logs the full details
+    const { message, status } = friendlyGenerateError(err);
+    return NextResponse.json({ error: message }, { status });
   }
 }

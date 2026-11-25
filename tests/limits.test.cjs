@@ -48,7 +48,7 @@ test("members are allowed under the episode cap and refused at it", async () => 
   const denied = decideGeneration({ isOwner: false, usage: { episodes: 3, costCents: 10 }, limits });
   assert.equal(denied.allowed, false);
   assert.equal(denied.limit, "episodes");
-  assert.equal(denied.reason, "Daily generation limit reached (3 episodes/day). Try again tomorrow.");
+  assert.equal(denied.reason, "You've made today's 3 episodes. More tomorrow, or ask an owner to raise the limit.");
 });
 
 test("members are refused once the daily cost cap is reached", async () => {
@@ -56,7 +56,7 @@ test("members are refused once the daily cost cap is reached", async () => {
   const denied = decideGeneration({ isOwner: false, usage: { episodes: 1, costCents: 50 }, limits });
   assert.equal(denied.allowed, false);
   assert.equal(denied.limit, "cost");
-  assert.match(denied.reason, /\$0\.50\/day/);
+  assert.match(denied.reason, /today.s \$0\.50 episode budget/);
   assert.equal(decideGeneration({ isOwner: false, usage: { episodes: 1, costCents: 49 }, limits }).allowed, true);
 });
 
@@ -108,7 +108,7 @@ test("a scheduler batch approves runs in order until each user's cap", async () 
   );
   assert.deepEqual(plan.allowed, ["a", "b", "d", "e", "f"]);
   assert.deepEqual(plan.skipped.map((s) => s.runId), ["c"]);
-  assert.match(plan.skipped[0].reason, /3 episodes\/day/);
+  assert.match(plan.skipped[0].reason, /today.s 3 episodes/);
 });
 
 test("the scheduler batch doesn't count its own claimed runs as prior usage", async () => {
