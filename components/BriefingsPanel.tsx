@@ -20,11 +20,13 @@ export default function BriefingsPanel({
 
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
-  const [showFile, setShowFile] = useState(false);
+  const [link, setLink] = useState("");
+  const [note, setNote] = useState<string | null>(null);
 
   async function send(body: FormData | string) {
     setBusy(true);
     setError(null);
+    setNote(null);
     try {
       const res = await fetch(`/api/shows/${showId}/briefings`, {
         method: "POST",
@@ -32,7 +34,8 @@ export default function BriefingsPanel({
         body,
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Couldn't save the briefing");
+      if (!res.ok) throw new Error(data.error || "Couldn't save that. Try again.");
+      setNote(data.truncated ? "Saved. It was very long, so only the first part will be used." : "Saved.");
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -64,6 +67,15 @@ export default function BriefingsPanel({
     }
   }
 
+  async function addLink(e: React.FormEvent) {
+    e.preventDefault();
+    if (!link.trim()) return;
+    if (await send(JSON.stringify({ url: link.trim() }))) {
+      setLink("");
+      router.refresh();
+    }
+  }
+
   async function toggle(b: Briefing) {
     await fetch(`/api/shows/${showId}/briefings/${b.id}`, {
       method: "PATCH",
@@ -80,71 +92,90 @@ export default function BriefingsPanel({
 
   return (
     <div className="panel">
-      <h2>Briefings</h2>
+      <h2>Source material</h2>
       <p className="muted">
-        Notes the host reads before every episode: news, talking points, links, anything you want
-        covered. Active briefings are used for every episode until you switch them off.
+        What the host should talk about: news, notes, articles, talking points. Add as much or as little as you
+        like. With none, episodes stay general.
       </p>
 
       {owner ? (
-        <form onSubmit={save}>
-          <label htmlFor="briefing-title">Name (optional)</label>
-          <input
-            id="briefing-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. This week's market news"
-          />
-          <label htmlFor="briefing-text">Write or paste your notes</label>
-          <textarea
-            id="briefing-text"
-            rows={6}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Paste an article, a list of headlines, or just a few sentences about what to talk about."
-          />
-          {error ? <p className="error">{error}</p> : null}
-          <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <button type="submit" disabled={busy || !text.trim()}>
-              {busy ? "Saving…" : "Save briefing"}
-            </button>
-            <button type="button" className="linklike" onClick={() => setShowFile((v) => !v)}>
-              or add a file instead
-            </button>
-          </div>
-          {showFile ? (
+        <>
+          <form onSubmit={save}>
+            <label htmlFor="briefing-text">Paste or type notes</label>
+            <textarea
+              id="briefing-text"
+              rows={5}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="e.g. GameStop up 12% on rumors of a buyback. Fed meets Wednesday. Talk about the Reddit thread about…"
+            />
+            <label htmlFor="briefing-title">Give it a name (optional)</label>
+            <input
+              id="briefing-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. This week's market news"
+            />
             <div style={{ marginTop: 10 }}>
-              <input
-                id="briefing"
-                ref={fileRef}
-                type="file"
-                accept=".md,.markdown,.txt,text/markdown,text/plain"
-                onChange={() => void upload()}
-              />
+              <button type="submit" disabled={busy || !text.trim()}>
+                {busy ? "Saving…" : "Save notes"}
+              </button>
             </div>
-          ) : null}
-        </form>
+          </form>
+
+          <form onSubmit={addLink} style={{ marginTop: 16 }}>
+            <label htmlFor="briefing-link">Or add a link to an article</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                id="briefing-link"
+                type="url"
+                inputMode="url"
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                placeholder="https://…"
+              />
+              <button type="submit" disabled={busy || !link.trim()}>
+                Add
+              </button>
+            </div>
+          </form>
+
+          <div style={{ marginTop: 16 }}>
+            <label htmlFor="briefing">Or upload a document (PDF, Word or text)</label>
+            <input
+              id="briefing"
+              ref={fileRef}
+              type="file"
+              accept=".pdf,.docx,.txt,.md,.html,.htm,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/html"
+              onChange={() => void upload()}
+              disabled={busy}
+            />
+          </div>
+          {busy ? <p className="muted">Working on it…</p> : null}
+          {note && !error ? <p className="muted">{note}</p> : null}
+          {error ? <p className="error" role="alert">{error}</p> : null}
+        </>
       ) : null}
 
       <div style={{ marginTop: 16 }}>
         {initialBriefings.length === 0 ? (
-          <p className="muted">No briefings yet. Without one, episodes stay general.</p>
+          <p className="muted">Nothing added yet.</p>
         ) : (
           initialBriefings.map((b) => (
             <div className="list-item" key={b.id}>
               <div>
                 <strong>{b.filename}</strong>{" "}
                 <span className={`tag ${b.is_active ? "active" : ""}`}>
-                  {b.is_active ? "active" : "inactive"}
+                  {b.is_active ? "in use" : "paused"}
                 </span>
                 <details>
-                  <summary className="muted">{b.content_md.length} characters · show</summary>
+                  <summary className="muted">Show text</summary>
                   <pre style={{ whiteSpace: "pre-wrap", fontSize: 13 }}>{b.content_md}</pre>
                 </details>
               </div>
               {owner ? <div style={{ display: "flex", gap: 8 }}>
                 <button className="secondary" onClick={() => toggle(b)}>
-                  {b.is_active ? "Deactivate" : "Activate"}
+                  {b.is_active ? "Pause" : "Use again"}
                 </button>
                 <button className="danger" onClick={() => remove(b)}>
                   Delete

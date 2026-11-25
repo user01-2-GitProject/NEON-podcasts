@@ -101,14 +101,14 @@ export function decideGeneration(opts: { isOwner: boolean; usage: Usage; limits:
     return {
       allowed: false,
       limit: "episodes",
-      reason: `Daily generation limit reached (${limits.episodesPerDay} episodes/day). Try again tomorrow.`,
+      reason: `You've made today's ${limits.episodesPerDay} episodes. More tomorrow, or ask an owner to raise the limit.`,
     };
   }
   if (usage.costCents >= limits.costCentsPerDay) {
     return {
       allowed: false,
       limit: "cost",
-      reason: `Daily generation cost limit reached ($${(limits.costCentsPerDay / 100).toFixed(2)}/day). Try again tomorrow.`,
+      reason: `You've used today's $${(limits.costCentsPerDay / 100).toFixed(2)} episode budget. More tomorrow, or ask an owner to raise the limit.`,
     };
   }
   return { allowed: true, unlimited: false };
