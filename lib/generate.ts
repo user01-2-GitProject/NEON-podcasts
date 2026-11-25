@@ -3,6 +3,7 @@ import { getSql, sql } from "@/lib/db";
 import { generateScript, estimateCostCents } from "@/lib/claude";
 import { synthesize, estimateDurationSeconds } from "@/lib/tts";
 import { applyPronunciations } from "@/lib/pronounce";
+import { checkScript, needsRewrite, rewriteNotes } from "@/lib/script-check";
 import { getStorage } from "@/lib/storage";
 import { selectBriefings, todayIn } from "@/lib/episode-spec";
 import type { Show, Briefing, Episode, NarrationMode, Pronunciation } from "@/lib/types";
@@ -87,14 +88,33 @@ export async function generateEpisode(
       `;
     }
 
-    const { result, model, inputTokens, outputTokens } = await generateScript({
+    const scriptArgs = {
       showTitle: show.title,
       showDescription: show.description,
       targetMinutes: show.target_minutes,
       briefings: selection.docs,
       styleGuide: show.style_guide,
       episodeTitle: selection.plan?.title || undefined,
-    });
+    };
+    let { result, model, inputTokens, outputTokens } = await generateScript(scriptArgs);
+
+    // Check the script before it becomes audio. A draft with a real problem
+    // (repeats, leftover blanks or markup, cut off) gets one rewrite; what's
+    // still wrong after that is noted on the run for the owner to see.
+    let issues = checkScript(result.script, show.target_minutes);
+    if (needsRewrite(issues)) {
+      console.warn(`[script-check] rewriting: ${issues.map((i) => i.kind).join(", ")}`);
+      const second = await generateScript({ ...scriptArgs, fixNotes: rewriteNotes(issues) });
+      inputTokens += second.inputTokens;
+      outputTokens += second.outputTokens;
+      const secondIssues = checkScript(second.result.script, show.target_minutes);
+      if (secondIssues.length <= issues.length) {
+        result = second.result;
+        model = second.model;
+        issues = secondIssues;
+      }
+    }
+    const checkNote = issues.length ? `Script check: ${issues.map((i) => i.message).join(" ")}` : null;
 
     // A planned episode keeps the title it was planned with.
     if (selection.plan?.title) result.title = selection.plan.title;
@@ -117,7 +137,7 @@ export async function generateEpisode(
           tx`
             update runs set
               status = 'done', episode_id = ${episodeId}, model = ${model},
-              tts_provider = 'external', cost_cents = ${costCents}, error = null,
+              tts_provider = 'external', cost_cents = ${costCents}, error = ${checkNote},
               next_attempt_at = null, finished_at = now()
             where id = ${runId}
           `,
@@ -154,6 +174,7 @@ export async function generateEpisode(
           model = ${model},
           tts_provider = 'external',
           cost_cents = ${costCents},
+          error = ${checkNote},
           finished_at = now()
         where id = ${runId}
       `;
@@ -208,7 +229,7 @@ export async function generateEpisode(
         tx`
           update runs set
             status = 'done', episode_id = ${episodeId}, model = ${model},
-            tts_provider = ${tts.provider}, cost_cents = ${costCents}, error = null,
+            tts_provider = ${tts.provider}, cost_cents = ${costCents}, error = ${checkNote},
             next_attempt_at = null, finished_at = now()
           where id = ${runId} and status = 'running'
         `,
@@ -251,6 +272,7 @@ export async function generateEpisode(
         model = ${model},
         tts_provider = ${tts.provider},
         cost_cents = ${costCents},
+        error = ${checkNote},
         finished_at = now()
       where id = ${runId}
     `;

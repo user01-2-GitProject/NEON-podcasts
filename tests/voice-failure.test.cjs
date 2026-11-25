@@ -31,17 +31,20 @@ function fakeDb() {
   return { sql, calls };
 }
 
-function generate(db, synthesize) {
+const okScript = async () => ({ result: { title: "Ep 1", script: "Hello listeners.", show_notes: "notes" }, model: "m", inputTokens: 1, outputTokens: 1 });
+
+function generate(db, synthesize, generateScript = okScript) {
   return load("lib/generate.ts", {
     "@/lib/db": { sql: db.sql, getSql: () => ({ transaction: async () => [[]] }) },
     "@/lib/claude": {
-      generateScript: async () => ({ result: { title: "Ep 1", script: "Hello listeners.", show_notes: "notes" }, model: "m", inputTokens: 1, outputTokens: 1 }),
+      generateScript,
       estimateCostCents: () => 3,
     },
     "@/lib/tts": { synthesize, estimateDurationSeconds: () => 60 },
     "@/lib/pronounce": { applyPronunciations: (s) => s },
     "@/lib/storage": { getStorage: () => { throw new Error("storage should not be touched"); } },
     "@/lib/episode-spec": require("../lib/episode-spec.ts"),
+    "@/lib/script-check": require("../lib/script-check.ts"),
   });
 }
 
@@ -75,4 +78,29 @@ test("friendlyVoiceError never leaks provider details", () => {
   const msg = friendlyVoiceError(new Error("401 Incorrect API key provided: sk-abc123"));
   assert.ok(!msg.includes("sk-abc123"));
   assert.match(msg, /Make audio/);
+});
+
+test("a script that repeats itself gets one rewrite before audio", async () => {
+  const db = fakeDb();
+  const looped = "The market closed higher today on strong earnings from the big banks. ".repeat(2) + "Thanks for listening.";
+  const calls = [];
+  const writer = async (args) => {
+    calls.push(args);
+    const script = calls.length === 1 ? looped : "A clean script with no problems at all. Thanks for listening.";
+    return { result: { title: "Ep", script, show_notes: "n" }, model: "m", inputTokens: 10, outputTokens: 10 };
+  };
+  const { generateEpisode } = generate(db, async () => { throw new Error("no voice"); }, writer);
+  const out = await generateEpisode("show-1");
+  assert.equal(calls.length, 2);
+  assert.match(calls[1].fixNotes, /repeats itself/);
+  assert.equal(out.episode.script, "A clean script with no problems at all. Thanks for listening.");
+});
+
+test("a clean script is written once", async () => {
+  const db = fakeDb();
+  let n = 0;
+  const writer = async (args) => { n++; return okScript(args); };
+  const { generateEpisode } = generate(db, async () => { throw new Error("no voice"); }, writer);
+  await generateEpisode("show-1");
+  assert.equal(n, 1);
 });

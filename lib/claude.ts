@@ -20,6 +20,8 @@ interface GenerateArgs {
   styleGuide?: string;
   /** Title from an episode plan; the writer is asked to use it as-is. */
   episodeTitle?: string;
+  /** Problems found in a first draft, for one rewrite (lib/script-check). */
+  fixNotes?: string;
 }
 
 interface LlmResult {
@@ -83,6 +85,7 @@ export function buildPrompt(args: GenerateArgs): { system: string; userText: str
     "Source material (the briefing is the content for this episode):",
     briefingBlock,
     "",
+    ...(args.fixNotes?.trim() ? [args.fixNotes.trim(), ""] : []),
     "Return ONLY a JSON object with exactly these string keys: title, script, show_notes.",
     "Do not wrap it in markdown fences. Do not add any other keys or commentary.",
   ].join("\n");

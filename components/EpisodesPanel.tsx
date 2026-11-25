@@ -235,7 +235,7 @@ export default function EpisodesPanel({
                   {fmtDuration(episode?.duration_seconds ?? null)} · {cost}
                   {run.attempt_count > 0 ? ` · attempt ${run.attempt_count}/5` : ""}
                 </span>
-                {run.error ? <div className="error">{run.error}</div> : null}
+                {run.error ? <div className={run.status === "done" ? "muted" : "error"}>{run.error}</div> : null}
               </div>
               <span className="muted">{new Date(run.started_at).toLocaleString()}</span>
             </div>

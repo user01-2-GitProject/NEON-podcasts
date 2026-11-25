@@ -1,6 +1,7 @@
 // Text-to-speech abstraction. Supports OpenAI, ElevenLabs, and local/self-hosted.
 // Long scripts are chunked and the resulting mp3 buffers concatenated.
 
+import { joinMp3 } from "@/lib/mp3";
 import { pickOpenAiVoice, resolveTtsConfig, type TtsConfig } from "@/lib/settings";
 
 const MAX_CHARS_PER_CHUNK = 3500;
@@ -27,7 +28,9 @@ export async function synthesize(script: string, voiceOverride?: string | null):
     }
   }
 
-  return { audio: Buffer.concat(buffers), contentType: "audio/mpeg", provider };
+  // Joined without each piece's length header, so players don't stop or skip
+  // where the first piece ends.
+  return { audio: joinMp3(buffers), contentType: "audio/mpeg", provider };
 }
 
 // Local / self-hosted voices via any OpenAI-compatible speech endpoint.
@@ -111,11 +114,13 @@ async function safeText(res: Response): Promise<string> {
 }
 
 // Split on paragraph/sentence boundaries, never mid-word, staying under the limit.
-function chunkText(text: string, limit: number): string[] {
+export function chunkText(text: string, limit: number): string[] {
   const clean = text.replace(/\r\n/g, "\n").trim();
   if (clean.length <= limit) return [clean];
 
-  const sentences = clean.split(/(?<=[.!?])\s+/);
+  // A run-on "sentence" longer than the limit is split on words, so no piece
+  // goes over the voice service's input cap.
+  const sentences = clean.split(/(?<=[.!?])\s+/).flatMap((s) => splitLong(s, limit));
   const chunks: string[] = [];
   let current = "";
   for (const sentence of sentences) {
@@ -128,6 +133,22 @@ function chunkText(text: string, limit: number): string[] {
   }
   if (current.trim()) chunks.push(current.trim());
   return chunks;
+}
+
+function splitLong(sentence: string, limit: number): string[] {
+  if (sentence.length <= limit) return [sentence];
+  const out: string[] = [];
+  let current = "";
+  for (const word of sentence.split(/\s+/)) {
+    if (current && current.length + 1 + word.length > limit) {
+      out.push(current);
+      current = word;
+    } else {
+      current = current ? `${current} ${word}` : word;
+    }
+  }
+  if (current) out.push(current);
+  return out;
 }
 
 // We do not decode the mp3 to measure exact duration in the MVP.
