@@ -482,7 +482,9 @@ export function showToSpec(
   spec.schedule_time = show.schedule_time;
   spec.timezone = show.timezone;
   spec.target_minutes = show.target_minutes;
-  spec.image_url = show.image_url ?? "";
+  // An uploaded cover lives at /art/<id>?u=… and isn't a link the setup can
+  // edit; saving the setup keeps it (see the spec PUT route).
+  spec.image_url = show.image_url && !show.image_url.startsWith("/art/") ? show.image_url : "";
   let guide = (show.style_guide ?? "").trim();
   const hostLine = /^Hosts?: (.+?)(?:\r?\n\r?\n|$)/.exec(guide);
   if (hostLine) {

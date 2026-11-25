@@ -1,7 +1,8 @@
 // Show artwork. Every show gets a free cover made from its name; people can't
-// paste their own picture links or upload images, because a feed with NEON's
-// name on it goes to Apple and Spotify and anyone could point it at anything.
-// The only links kept are NEON's own sites. Empty or null clears it.
+// paste their own picture links, because a feed with NEON's name on it goes to
+// Apple and Spotify and anyone could point it at anything. The only links kept
+// are NEON's own sites. Empty or null clears it. Owners can upload a picture
+// instead (lib/cover-upload.ts, /api/shows/[id]/artwork).
 export const IMAGE_URL_MAX = 2048;
 
 // NEON's own sites. Keep in step with TRUSTED_ART_HOSTS in lib/show-spec.ts.
