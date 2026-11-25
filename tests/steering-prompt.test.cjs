@@ -46,3 +46,18 @@ test("an episode plan title is requested in the user text only", () => {
   assert.doesNotMatch(system, /EPISODE TITLE/);
   assert.doesNotMatch(buildPrompt(baseArgs).userText, /EPISODE TITLE/);
 });
+
+test("the owner's 'most important' answer leads the writer's direction", () => {
+  const { mostImportant } = exportsObj;
+  const guide = '## Voice & style\nCalm.\n\n## What matters most\nNever take a "side".\nBe fair.\n\n## Hard rules\n- No opinions.';
+  assert.equal(mostImportant(guide), "Never take a 'side'. Be fair.");
+  assert.equal(mostImportant("## Voice & style\nCalm."), null);
+  assert.equal(mostImportant("## What matters most\n\n## Hard rules\n- x"), null);
+  const { system } = buildPrompt({ ...baseArgs, styleGuide: guide });
+  const at = system.indexOf("most important part of this podcast");
+  assert.ok(at > 0 && at < system.indexOf("Rules for the script field:"), "said before the script rules");
+  assert.ok(system.includes("Never take a 'side'. Be fair."));
+  assert.match(system, /never overrides the rules about accuracy/);
+  const plain = buildPrompt({ ...baseArgs, styleGuide: "Calm." }).system;
+  assert.ok(!plain.includes("most important part"));
+});
