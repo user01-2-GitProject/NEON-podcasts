@@ -275,3 +275,11 @@ button.linklike {
 .wizard-nav { display: flex; gap: 8px; margin-top: 16px; }
 .wizard-nav .btn { flex: 1; padding: 12px 16px; font-size: 16px; }
 .wizard-nav .btn.primary { flex: 2; }
+.wizard-choices-row { flex-direction: row; }
+.wizard-scale { margin-top: 16px; }
+.wizard-scale-labels { display: flex; justify-content: space-between; font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 8px; }
+.wizard-scale-dots { display: flex; gap: 6px; justify-content: space-between; }
+.wizard-scale-dot { flex: 1; padding: 14px 0; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.03); color: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+.wizard-scale-dot:hover { background: rgba(255,255,255,0.08); }
+.wizard-scale-dot-selected { border-color: var(--brand, #c8a2ff); background: rgba(200,162,255,0.14); }
+.linklike { background: none; border: none; color: var(--brand, #c8a2ff); cursor: pointer; padding: 0; text-decoration: underline; font: inherit; }
