@@ -44,6 +44,11 @@ export async function PATCH(req: Request, { params }: Params) {
       ? Math.max(1, Math.min(120, Math.round(Number(body.target_minutes))))
       : show.target_minutes;
   const isActive = body.is_active !== undefined ? Boolean(body.is_active) : show.is_active;
+  // is_official: owner-side toggle for the NEON-official badge. Middleware
+  // already gates PATCH to owners, so any true/false value is honored.
+  if (body.is_official !== undefined) {
+    await sql`update shows set is_official = ${Boolean(body.is_official)} where id = ${id}`;
+  }
   // Artwork is written only when the request sets it, so other edits keep
   // working before migration 009 adds the column.
   if (body.image_url !== undefined) {

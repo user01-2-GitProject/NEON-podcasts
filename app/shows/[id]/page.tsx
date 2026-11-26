@@ -10,6 +10,7 @@ import SteeringPanel from "@/components/SteeringPanel";
 import EpisodesPanel from "@/components/EpisodesPanel";
 import DeleteShowButton from "@/components/DeleteShowButton";
 import OfficialBadge from "@/components/OfficialBadge";
+import OfficialToggle from "@/components/OfficialToggle";
 import ShowArtworkForm from "@/components/ShowArtworkForm";
 import ShowSpecPanel from "@/components/ShowSpecPanel";
 import { auth } from "@/auth";
@@ -101,6 +102,11 @@ export default async function ShowPage({
             </>
           ) : null}
           {owner ? <ShowArtworkForm showId={id} initialImageUrl={show.image_url ?? null} /> : null}
+          {owner ? (
+            <div style={{ margin: "12px 0" }}>
+              <OfficialToggle showId={id} initialOfficial={!!show.is_official} />
+            </div>
+          ) : null}
           {owner ? <DeleteShowButton showId={id} showTitle={show.title} /> : null}
         </div>
 
