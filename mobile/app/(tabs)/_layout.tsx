@@ -1,18 +1,19 @@
 import { Tabs } from "expo-router";
 import { View } from "react-native";
 import { MiniPlayer } from "../../components";
-import { colors } from "../../lib/theme";
+import { useTheme } from "../../lib/theme-context";
 
 export default function TabsLayout() {
+  const { colors: c } = useTheme();
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: c.bg }}>
       <Tabs
         screenOptions={{
-          headerStyle: { backgroundColor: colors.bg },
-          headerTintColor: colors.text,
-          tabBarStyle: { backgroundColor: colors.bg, borderTopColor: "#222" },
-          tabBarActiveTintColor: colors.accent,
-          tabBarInactiveTintColor: colors.muted,
+          headerStyle: { backgroundColor: c.bg, borderBottomColor: c.hairline },
+          headerTintColor: c.text,
+          tabBarStyle: { backgroundColor: c.bg, borderTopColor: c.hairline },
+          tabBarActiveTintColor: c.accent,
+          tabBarInactiveTintColor: c.muted,
           tabBarIconStyle: { display: "none" },
           tabBarLabelStyle: { fontSize: 14, fontWeight: "600" },
         }}
