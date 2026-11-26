@@ -100,3 +100,9 @@ test("composeWizardBody includes the format header even with no content answers"
   const body = w.composeWizardBody({ title: "T", host_count: 1, format: "history", answers: {} });
   assert.match(body, /^## Format\nHistory\b/);
 });
+
+test("who's going lands in the brief under its own heading", async () => {
+  const w = await import("../lib/wizard-steps.ts");
+  const body = w.composeWizardBody({ ...w.EMPTY_WIZARD, title: "T", answers: { whos_going: "Me, Sarah, Ava and Leo" } });
+  assert.match(body, /## Who's going\nMe, Sarah, Ava and Leo/);
+});

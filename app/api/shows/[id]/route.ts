@@ -57,7 +57,7 @@ export async function PATCH(req: Request, { params }: Params) {
     timezone !== show.timezone ||
     (!show.is_active && isActive);
 
-  const firstRun = firstSlot(cadence, scheduleTime, timezone)?.toISOString() ?? null;
+  const firstRun = firstSlot(cadence, scheduleTime, timezone, new Date(), show.air_days)?.toISOString() ?? null;
   const rows = (await sql`
     update shows set
       title = ${title},

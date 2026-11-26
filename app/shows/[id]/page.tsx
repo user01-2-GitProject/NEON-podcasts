@@ -60,7 +60,7 @@ export default async function ShowPage({ params }: { params: Promise<{ id: strin
           <h2>{show.title}</h2>
           <p className="muted">{show.description || "No description."}</p>
           <p className="muted">
-            {cadenceLabel(show.cadence)} · ~{show.target_minutes} min · timezone {show.timezone}
+            {cadenceLabel(show.cadence, show.air_days)} · ~{show.target_minutes} min · timezone {show.timezone}
           </p>
           {owner ? (
             <p>

@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   }
 
   const f = specToShowFields(spec);
-  const firstRun = firstSlot(f.cadence, f.schedule_time, f.timezone)?.toISOString() ?? null;
+  const firstRun = firstSlot(f.cadence, f.schedule_time, f.timezone, new Date(), f.air_days)?.toISOString() ?? null;
   const userId = await currentUserId(req);
   const terms = spec.pronunciations.map((p) => p.term);
   const sayAs = spec.pronunciations.map((p) => p.say_as);
@@ -48,11 +48,11 @@ export async function POST(req: Request) {
     with s as (
       insert into shows
         (user_id, title, description, style_guide, voice_id, narration_mode, cadence,
-         schedule_time, timezone, target_minutes, image_url, next_run_at)
+         schedule_time, timezone, target_minutes, image_url, air_days, next_run_at)
       values
         (${userId}, ${f.title}, ${f.description}, ${f.style_guide}, ${f.voice_id},
          ${f.narration_mode}, ${f.cadence}, ${f.schedule_time}, ${f.timezone},
-         ${f.target_minutes}, ${f.image_url},
+         ${f.target_minutes}, ${f.image_url}, ${f.air_days}::smallint[],
          ${firstRun}::timestamptz)
       returning *
     ),

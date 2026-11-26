@@ -73,7 +73,7 @@ export async function PUT(req: Request, { params }: Params) {
   const sayAs = spec.pronunciations.map((p) => p.say_as);
   const modes = spec.pronunciations.map((p) => p.match);
 
-  const firstRun = firstSlot(f.cadence, f.schedule_time, f.timezone)?.toISOString() ?? null;
+  const firstRun = firstSlot(f.cadence, f.schedule_time, f.timezone, new Date(), f.air_days)?.toISOString() ?? null;
   const rows = (await sql`
     with s as (
       update shows set
@@ -90,10 +90,12 @@ export async function PUT(req: Request, { params }: Params) {
           when ${f.image_url}::text is null and image_url like '/art/%' then image_url
           else ${f.image_url}
         end,
+        air_days = ${f.air_days}::smallint[],
         next_run_at = case
           when ${f.cadence} = 'manual' then null
           when next_run_at is not null and cadence = ${f.cadence}
-               and schedule_time = ${f.schedule_time} and timezone = ${f.timezone} then next_run_at
+               and schedule_time = ${f.schedule_time} and timezone = ${f.timezone}
+               and air_days is not distinct from ${f.air_days}::smallint[] then next_run_at
           when not is_active then next_run_at
           else ${firstRun}::timestamptz
         end

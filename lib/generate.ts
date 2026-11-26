@@ -186,6 +186,7 @@ export async function generateEpisode(
       when 'weekdays' then (((next_run_at at time zone timezone) + (case extract(isodow from (next_run_at at time zone timezone)) when 5 then 3 when 6 then 2 else 1 end) * interval '1 day') at time zone timezone)
       when 'twice_weekly' then (((next_run_at at time zone timezone) + (case when extract(isodow from (next_run_at at time zone timezone)) < 4 then 4 - extract(isodow from (next_run_at at time zone timezone)) else 8 - extract(isodow from (next_run_at at time zone timezone)) end) * interval '1 day') at time zone timezone)
       when 'weekly' then (((next_run_at at time zone timezone) + interval '7 days') at time zone timezone)
+      when 'days' then (((next_run_at at time zone timezone) + (select min(n) from generate_series(1, 7) n where extract(isodow from (next_run_at at time zone timezone) + n * interval '1 day')::int = any(air_days)) * interval '1 day') at time zone timezone)
       else null
     end
             where id = ${showId} and next_run_at = ${scheduledRun.scheduledFor}::timestamptz
@@ -278,6 +279,7 @@ export async function generateEpisode(
       when 'weekdays' then (((next_run_at at time zone timezone) + (case extract(isodow from (next_run_at at time zone timezone)) when 5 then 3 when 6 then 2 else 1 end) * interval '1 day') at time zone timezone)
       when 'twice_weekly' then (((next_run_at at time zone timezone) + (case when extract(isodow from (next_run_at at time zone timezone)) < 4 then 4 - extract(isodow from (next_run_at at time zone timezone)) else 8 - extract(isodow from (next_run_at at time zone timezone)) end) * interval '1 day') at time zone timezone)
       when 'weekly' then (((next_run_at at time zone timezone) + interval '7 days') at time zone timezone)
+      when 'days' then (((next_run_at at time zone timezone) + (select min(n) from generate_series(1, 7) n where extract(isodow from (next_run_at at time zone timezone) + n * interval '1 day')::int = any(air_days)) * interval '1 day') at time zone timezone)
       else null
     end
           where id = ${showId} and next_run_at = ${scheduledRun.scheduledFor}::timestamptz
@@ -340,6 +342,7 @@ export async function generateEpisode(
       when 'weekdays' then (((next_run_at at time zone timezone) + (case extract(isodow from (next_run_at at time zone timezone)) when 5 then 3 when 6 then 2 else 1 end) * interval '1 day') at time zone timezone)
       when 'twice_weekly' then (((next_run_at at time zone timezone) + (case when extract(isodow from (next_run_at at time zone timezone)) < 4 then 4 - extract(isodow from (next_run_at at time zone timezone)) else 8 - extract(isodow from (next_run_at at time zone timezone)) end) * interval '1 day') at time zone timezone)
       when 'weekly' then (((next_run_at at time zone timezone) + interval '7 days') at time zone timezone)
+      when 'days' then (((next_run_at at time zone timezone) + (select min(n) from generate_series(1, 7) n where extract(isodow from (next_run_at at time zone timezone) + n * interval '1 day')::int = any(air_days)) * interval '1 day') at time zone timezone)
       else null
     end
         where id = ${showId}

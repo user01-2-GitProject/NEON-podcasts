@@ -62,3 +62,20 @@ test("show.md accepts friendly cadence spellings", async () => {
   const cadence = await import("../lib/cadence.ts");
   assert.deepEqual(CADENCES, cadence.CADENCES);
 });
+
+test("firstSlot: 'days' only lands on picked weekdays", async () => {
+  const { firstSlot } = await import("../lib/cadence.ts");
+  // Wed 2026-11-25 10:00 Detroit (15:00Z), show airs Tue + Sat at 08:00.
+  const now = new Date("2026-11-25T15:00:00Z");
+  const slot = firstSlot("days", "08:00", "America/Detroit", now, [2, 6]);
+  assert.equal(slot.toISOString(), "2026-11-28T13:00:00.000Z"); // Saturday 08:00 Detroit
+  assert.equal(firstSlot("days", "08:00", "America/Detroit", now, []), null);
+});
+
+test("show.md round-trips picked days", async () => {
+  const s = await import("../lib/show-spec.ts");
+  const spec = { ...s.emptyShowSpec(), title: "T", cadence: "days", days: [2, 6] };
+  const back = s.parseShowMd(s.toShowMd(spec)).spec;
+  assert.deepEqual(back.days, [2, 6]);
+  assert.ok(s.validateShowSpec({ ...spec, days: [] }).some((e) => /at least one day/.test(e)));
+});

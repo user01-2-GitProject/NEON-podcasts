@@ -6,15 +6,16 @@
 //   weekdays     schedule_time Monday to Friday
 //   twice_weekly schedule_time on Monday and Thursday
 //   weekly       schedule_time once a week, on the weekday of the first slot
+//   days         schedule_time on the weekdays the owner picked (shows.air_days)
 //   manual       never scheduled
 //
 // The first slot is computed here in JS (firstSlot). Moving to the following
 // slot happens inside SQL statements that must stay atomic, so they share the
 // NEXT_SLOT_SQL expression below; tests/cadence.test.cjs checks every copy.
 
-export type Cadence = "twice_daily" | "daily" | "weekdays" | "twice_weekly" | "weekly" | "manual";
+export type Cadence = "twice_daily" | "daily" | "weekdays" | "twice_weekly" | "weekly" | "days" | "manual";
 
-export const CADENCES: Cadence[] = ["twice_daily", "daily", "weekdays", "twice_weekly", "weekly", "manual"];
+export const CADENCES: Cadence[] = ["twice_daily", "daily", "weekdays", "twice_weekly", "weekly", "days", "manual"];
 export const SCHEDULED_CADENCES: Cadence[] = CADENCES.filter((c) => c !== "manual");
 
 export const CADENCE_LABELS: Record<Cadence, string> = {
@@ -23,6 +24,7 @@ export const CADENCE_LABELS: Record<Cadence, string> = {
   weekdays: "Weekdays (Mon–Fri)",
   twice_weekly: "Twice a week (Mon & Thu)",
   weekly: "Weekly",
+  days: "On days I pick",
   manual: "Manual only",
 };
 
@@ -30,7 +32,25 @@ export function isCadence(value: unknown): value is Cadence {
   return typeof value === "string" && (CADENCES as string[]).includes(value);
 }
 
-export function cadenceLabel(value: string): string {
+// ISO weekdays: 1 = Monday … 7 = Sunday.
+export const DAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+// Clean a list of picked days: whole numbers 1-7, no repeats, in week order.
+export function cleanDays(input: unknown): number[] {
+  if (!Array.isArray(input)) return [];
+  const out = new Set<number>();
+  for (const d of input) {
+    const n = typeof d === "number" ? d : typeof d === "string" ? DAY_SHORT.findIndex((x) => x.toLowerCase() === d.trim().toLowerCase().slice(0, 3)) + 1 || Number(d) : NaN;
+    if (Number.isInteger(n) && n >= 1 && n <= 7) out.add(n);
+  }
+  return [...out].sort((a, b) => a - b);
+}
+
+export function cadenceLabel(value: string, days?: number[] | null): string {
+  if (value === "days") {
+    const picked = cleanDays(days ?? []);
+    return picked.length ? picked.map((d) => DAY_SHORT[d - 1]).join(", ") : "No days picked";
+  }
   return isCadence(value) ? CADENCE_LABELS[value] : value;
 }
 
@@ -43,6 +63,7 @@ export const NEXT_SLOT_SQL = `case cadence
       when 'weekdays' then (((next_run_at at time zone timezone) + (case extract(isodow from (next_run_at at time zone timezone)) when 5 then 3 when 6 then 2 else 1 end) * interval '1 day') at time zone timezone)
       when 'twice_weekly' then (((next_run_at at time zone timezone) + (case when extract(isodow from (next_run_at at time zone timezone)) < 4 then 4 - extract(isodow from (next_run_at at time zone timezone)) else 8 - extract(isodow from (next_run_at at time zone timezone)) end) * interval '1 day') at time zone timezone)
       when 'weekly' then (((next_run_at at time zone timezone) + interval '7 days') at time zone timezone)
+      when 'days' then (((next_run_at at time zone timezone) + (select min(n) from generate_series(1, 7) n where extract(isodow from (next_run_at at time zone timezone) + n * interval '1 day')::int = any(air_days)) * interval '1 day') at time zone timezone)
       else null
     end`;
 
@@ -88,15 +109,24 @@ function isoDow(year: number, month: number, day: number): number {
   return d === 0 ? 7 : d;
 }
 
-function dayAllowed(cadence: Cadence, dow: number): boolean {
+function dayAllowed(cadence: Cadence, dow: number, days: number[]): boolean {
+  if (cadence === "days") return days.includes(dow);
   if (cadence === "weekdays") return dow <= 5;
   if (cadence === "twice_weekly") return dow === 1 || dow === 4;
   return true;
 }
 
 // The first slot strictly after `now`, or null for manual / invalid input.
-export function firstSlot(cadence: string, scheduleTime: string, timeZone: string, now: Date = new Date()): Date | null {
+export function firstSlot(
+  cadence: string,
+  scheduleTime: string,
+  timeZone: string,
+  now: Date = new Date(),
+  airDays?: number[] | null,
+): Date | null {
   if (!isCadence(cadence) || cadence === "manual") return null;
+  const days = cleanDays(airDays ?? []);
+  if (cadence === "days" && !days.length) return null;
   const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(scheduleTime);
   if (!m) return null;
   let today: LocalParts;
@@ -111,7 +141,7 @@ export function firstSlot(cadence: string, scheduleTime: string, timeZone: strin
   for (let offset = 0; offset <= 8; offset++) {
     const date = new Date(Date.UTC(today.year, today.month - 1, today.day + offset));
     const [y, mo, d] = [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()];
-    if (!dayAllowed(cadence, isoDow(y, mo, d))) continue;
+    if (!dayAllowed(cadence, isoDow(y, mo, d), days)) continue;
     for (const h of hours) {
       const slot = zonedToUtc(y, mo, d, h, minute, timeZone);
       if (slot.getTime() > now.getTime()) return slot;

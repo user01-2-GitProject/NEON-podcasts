@@ -3,7 +3,7 @@
 // form, the API and the tests all share the same parse/validate/serialize.
 
 // Mirrors lib/cadence.ts (kept literal so this file stays import-free; tests/cadence.test.cjs checks they match).
-export type SpecCadence = "twice_daily" | "daily" | "weekdays" | "twice_weekly" | "weekly" | "manual";
+export type SpecCadence = "twice_daily" | "daily" | "weekdays" | "twice_weekly" | "weekly" | "days" | "manual";
 export type SpecNarrationMode = "auto" | "external";
 export type SpecMatchMode = "word" | "substring";
 
@@ -26,6 +26,8 @@ export interface ShowSpec {
   explicit: boolean;
   image_url: string;
   cadence: SpecCadence;
+  /** ISO weekdays (1 = Mon … 7 = Sun), used when cadence is "days". */
+  days: number[];
   schedule_time: string;
   timezone: string;
   target_minutes: number;
@@ -37,7 +39,19 @@ export interface ShowSpec {
   body: string;
 }
 
-export const CADENCES: SpecCadence[] = ["twice_daily", "daily", "weekdays", "twice_weekly", "weekly", "manual"];
+export const CADENCES: SpecCadence[] = ["twice_daily", "daily", "weekdays", "twice_weekly", "weekly", "days", "manual"];
+
+// Mirrors lib/cadence.ts DAY_SHORT / cleanDays (kept literal: import-free file).
+const SPEC_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+export function specDays(input: unknown): number[] {
+  if (!Array.isArray(input)) return [];
+  const out = new Set<number>();
+  for (const d of input) {
+    const n = typeof d === "number" ? d : typeof d === "string" ? SPEC_DAYS.indexOf(d.trim().toLowerCase().slice(0, 3)) + 1 || Number(d) : NaN;
+    if (Number.isInteger(n) && n >= 1 && n <= 7) out.add(n);
+  }
+  return [...out].sort((a, b) => a - b);
+}
 
 // Accepts friendly spellings in hand-written show.md ("twice a day", "twice-weekly").
 export function normalizeCadence(value: string): string {
@@ -50,6 +64,10 @@ export function normalizeCadence(value: string): string {
     twice_per_week: "twice_weekly",
     "2x_weekly": "twice_weekly",
     weekday: "weekdays",
+    on_days: "days",
+    custom_days: "days",
+    pick_days: "days",
+    on_days_i_pick: "days",
   };
   return aliases[v] ?? v;
 }
@@ -68,6 +86,7 @@ export function emptyShowSpec(): ShowSpec {
     explicit: false,
     image_url: "",
     cadence: "weekly",
+    days: [],
     schedule_time: "09:00",
     timezone: "UTC",
     target_minutes: 5,
@@ -205,7 +224,7 @@ export function parseFrontmatter(src: string): { data: Record<string, Value>; er
 const KNOWN_KEYS = new Set([
   "title", "tagline", "category", "language", "explicit", "image_url", "cadence",
   "schedule_time", "timezone", "target_minutes", "narration_mode", "hosts",
-  "pronunciations", "tags",
+  "pronunciations", "tags", "days",
 ]);
 
 function str(v: Value | undefined): string {
@@ -239,6 +258,10 @@ export function parseShowMd(text: string): { spec: ShowSpec; errors: string[] } 
   if ("schedule_time" in data) spec.schedule_time = str(data.schedule_time);
   if ("timezone" in data) spec.timezone = str(data.timezone);
   if ("cadence" in data) spec.cadence = normalizeCadence(str(data.cadence)) as SpecCadence;
+  if ("days" in data) {
+    if (!Array.isArray(data.days)) errors.push("days must be a list like [mon, wed, fri]");
+    else spec.days = specDays(data.days);
+  }
   if ("narration_mode" in data) spec.narration_mode = str(data.narration_mode) as SpecNarrationMode;
 
   if ("explicit" in data) {
@@ -312,6 +335,9 @@ export function validateShowSpec(spec: ShowSpec): string[] {
   if (!CADENCES.includes(spec.cadence)) {
     errors.push(`cadence must be one of: ${CADENCES.join(", ")}`);
   }
+  if (spec.cadence === "days" && !specDays(spec.days).length) {
+    errors.push("Pick at least one day for this show to come out.");
+  }
   if (!NARRATION_MODES.includes(spec.narration_mode)) {
     errors.push(`narration_mode must be one of: ${NARRATION_MODES.join(", ")}`);
   }
@@ -361,6 +387,7 @@ export function toShowMd(spec: ShowSpec): string {
     `explicit: ${spec.explicit ? "true" : "false"}`,
     `image_url: ${q(spec.image_url)}`,
     `cadence: ${q(spec.cadence)}`,
+    ...(spec.cadence === "days" ? [`days: [${specDays(spec.days).map((d) => SPEC_DAYS[d - 1]).join(", ")}]`] : []),
     `schedule_time: ${q(spec.schedule_time)}`,
     `timezone: ${q(spec.timezone)}`,
     `target_minutes: ${spec.target_minutes}`,
@@ -399,6 +426,7 @@ export function specToShowFields(spec: ShowSpec) {
     voice_id: spec.hosts[0]?.voice || null,
     narration_mode: spec.narration_mode,
     cadence: spec.cadence,
+    air_days: spec.cadence === "days" ? specDays(spec.days) : null,
     schedule_time: spec.schedule_time,
     timezone: spec.timezone,
     target_minutes: spec.target_minutes,
@@ -421,6 +449,7 @@ export function coerceShowSpec(input: unknown): ShowSpec {
   spec.language = s(o.language, spec.language) || spec.language;
   spec.image_url = s(o.image_url, "");
   spec.cadence = s(o.cadence, spec.cadence) as SpecCadence;
+  spec.days = specDays(o.days);
   spec.schedule_time = s(o.schedule_time, spec.schedule_time);
   spec.timezone = s(o.timezone, spec.timezone);
   spec.narration_mode = s(o.narration_mode, spec.narration_mode) as SpecNarrationMode;
@@ -471,6 +500,7 @@ export function showToSpec(
     timezone: string;
     target_minutes: number;
     image_url?: string | null;
+    air_days?: number[] | null;
   },
   pronunciations: { term: string; say_as: string; match_mode: string }[],
 ): ShowSpec {
@@ -479,6 +509,7 @@ export function showToSpec(
   spec.tagline = show.description ?? "";
   spec.narration_mode = show.narration_mode as SpecNarrationMode;
   spec.cadence = show.cadence as SpecCadence;
+  spec.days = specDays(show.air_days ?? []);
   spec.schedule_time = show.schedule_time;
   spec.timezone = show.timezone;
   spec.target_minutes = show.target_minutes;
