@@ -19,7 +19,7 @@ Point `EXPO_PUBLIC_API_URL` at `http://<rig-lan-ip>:3000` to test against the Ri
 
 ## Release (EAS build + submit)
 
-`eas.json` defines three build profiles: `development` (dev client, internal), `preview` (internal distribution — Android APK, iOS ad-hoc), and `production` (store builds — iOS TestFlight/App Store, Android app bundle for the internal track). The icon/splash files in `assets/` are solid-color placeholders; replace them with real artwork before a public release.
+`eas.json` defines three build profiles: `development` (dev client, internal), `preview` (internal distribution — Android APK, iOS ad-hoc), and `production` (store builds — iOS TestFlight/App Store, Android app bundle for the internal track). The icon/splash files in `assets/` are the final circle-N artwork on `#0b0d12`.
 
 Build with EAS:
 
@@ -50,7 +50,7 @@ Set real values for these secrets before building or submitting a release. `EXPO
 ## Before store submission
 
 - `app.json` uses `com.needlesslyengineeredonlinenetwork.neon` for both the iOS bundle identifier and Android package. Confirm this is the identifier registered in the Apple and Google consoles.
-- Replace the placeholder `assets/icon.png`, `assets/adaptive-icon.png` and `assets/splash.png` with final artwork.
+- `assets/icon.png`, `assets/adaptive-icon.png` and `assets/splash.png` are the final circle-N artwork; don't replace them with placeholders before a store build.
 - Fill real Apple/Google IDs and the Play service-account key path in `eas.json` via EAS credentials/secrets, never in committed files.
 - Set the real `EXPO_PUBLIC_*` secrets and confirm `https://neon-podcasts.vercel.app/privacy` and `/terms` are live.
 - Exercise Settings → Delete account against the deployed account-deletion API before release.
