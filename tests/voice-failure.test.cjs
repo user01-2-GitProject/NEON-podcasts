@@ -43,7 +43,7 @@ function generate(db, synthesize, generateScript = okScript) {
       mostImportant: () => null,
     },
     "@/lib/tts": { synthesize, estimateDurationSeconds: () => 60 },
-    "@/lib/pronounce": { applyPronunciations: (s) => s },
+    "@/lib/pronounce": { applyPronunciations: (s) => s, isNeverSay: () => false },
     "@/lib/storage": { getStorage: () => { throw new Error("storage should not be touched"); } },
     "@/lib/episode-spec": require("../lib/episode-spec.ts"),
     "@/lib/script-check": require("../lib/script-check.ts"),

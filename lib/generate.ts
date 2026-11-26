@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { getSql, sql } from "@/lib/db";
 import { generateScript, estimateCostCents, mostImportant } from "@/lib/claude";
 import { synthesize, estimateDurationSeconds } from "@/lib/tts";
-import { applyPronunciations } from "@/lib/pronounce";
+import { applyPronunciations, isNeverSay } from "@/lib/pronounce";
 import { checkScript, needsRewrite, rewriteNotes } from "@/lib/script-check";
 import { getStorage } from "@/lib/storage";
 import { selectBriefings, todayIn } from "@/lib/episode-spec";
@@ -132,6 +132,7 @@ export async function generateEpisode(
       styleGuide: show.style_guide,
       episodeTitle: selection.plan?.title || undefined,
       recentEpisodes,
+      neverSay: pronunciations.filter((p) => isNeverSay(p.term)).map((p) => ({ term: p.term, say_as: p.say_as })),
     };
     let { result, model, inputTokens, outputTokens } = await generateScript(scriptArgs);
 

@@ -17,6 +17,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { HOST_PRESETS } from "@/lib/voices";
+import { parseTrickyWords } from "@/lib/pronounce";
+import TrickyWordsFinder from "@/components/TrickyWordsFinder";
 import ShowPreview from "@/components/ShowPreview";
 import {
   CUSTOM_HOST,
@@ -125,7 +127,7 @@ export default function ShowWizard() {
         narration_mode: "auto",
         image_url: "",
         body,
-        pronunciations: [],
+        pronunciations: parseTrickyWords(draft.answers.tricky_words || ""),
       };
       const res = await fetch("/api/shows/spec", {
         method: "POST",
@@ -252,6 +254,20 @@ export default function ShowWizard() {
       <WizardProgress current={clampedIdx + 1} total={flat.length} />
       <div className="wizard-card">
         <StepView step={step} value={valueFor(step)} onChange={(v) => setAnswer(step.id, v)} firstRef={firstInput} />
+        {step.id === "tricky_words" ? (
+          // Look through what they've typed so far (no show exists yet).
+          <TrickyWordsFinder
+            getText={() => [draft.title, ...Object.entries(draft.answers).filter(([k]) => k !== "tricky_words").map(([, v]) => v)].join("\n")}
+            have={parseTrickyWords(valueFor(step)).map((p) => p.term)}
+            onAdd={(t, s) => {
+              setDraft((d) => {
+                const cur = d.answers.tricky_words || "";
+                const next = (cur.trim() ? `${cur.replace(/\s+$/, "")}\n` : "") + `${t} = ${s}`;
+                return { ...d, answers: { ...d.answers, tricky_words: next } };
+              });
+            }}
+          />
+        ) : null}
       </div>
       {error ? <p className="error">{error}</p> : null}
       <div className="wizard-nav">
