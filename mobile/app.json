@@ -21,6 +21,7 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      "expo-notifications",
       ["expo-audio", { "enableBackgroundPlayback": true }],
       ["expo-splash-screen", { "image": "./assets/splash.png", "imageWidth": 240, "resizeMode": "contain", "backgroundColor": "#F9F0DF" }],
       "expo-asset"
