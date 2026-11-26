@@ -39,7 +39,7 @@ function duration(seconds: number | null): string | null {
 
 export async function GET(req: Request, { params }: Params) {
   const { token } = await params;
-  const shows = (await sql`select * from shows where rss_token = ${token} limit 1`) as Show[];
+  const shows = (await sql`select * from shows where rss_token = ${token} and is_active limit 1`) as Show[];
   const show = shows[0];
   if (!show) return new Response("Not found", { status: 404 });
 

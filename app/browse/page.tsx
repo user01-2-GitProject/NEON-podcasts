@@ -41,6 +41,7 @@ export default async function BrowsePage() {
         max(e.published_at) as latest_at
       from shows s
       left join episodes e on e.show_id = s.id
+      where s.is_active
       group by s.id
       having count(e.*) filter (where e.status = 'published') > 0
       order by latest_at desc nulls last
