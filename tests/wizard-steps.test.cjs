@@ -101,6 +101,54 @@ test("composeWizardBody includes the format header even with no content answers"
   assert.match(body, /^## Format\nHistory\b/);
 });
 
+test("brandedTitle: adds the N.E.O.N. prefix idempotently", async () => {
+  const w = await import("../lib/wizard-steps.ts");
+  assert.equal(w.brandedTitle("Sunday Morning Markets"), "N.E.O.N. - Sunday Morning Markets");
+  assert.equal(w.brandedTitle("  Sunday Morning Markets  "), "N.E.O.N. - Sunday Morning Markets");
+  // Already prefixed titles are left alone, case- and spacing-insensitive.
+  assert.equal(w.brandedTitle("N.E.O.N. - Sunday Morning Markets"), "N.E.O.N. - Sunday Morning Markets");
+  assert.equal(w.brandedTitle("neon - rebel news"), "neon - rebel news");
+  assert.equal(w.brandedTitle("NEON Daily"), "NEON Daily");
+});
+
+test("stepsByTab: 1 host hides host2; 2 hosts shows all three tabs", async () => {
+  const w = await import("../lib/wizard-steps.ts");
+  const one = w.stepsByTab({ ...w.EMPTY_WIZARD, host_count: 1, format: "news" });
+  assert.deepEqual(one.map((t) => t.tab.id), ["show", "host1"]);
+  const two = w.stepsByTab({ ...w.EMPTY_WIZARD, host_count: 2, format: "news" });
+  assert.deepEqual(two.map((t) => t.tab.id), ["show", "host1", "host2"]);
+  // host2 tab holds the two-host specifics plus anything_host2.
+  const host2 = two.find((t) => t.tab.id === "host2");
+  const ids = (host2?.steps || []).map((s) => s.id);
+  assert.ok(ids.includes("hosts_dynamic"));
+  assert.ok(ids.includes("hosts_disagree"));
+  assert.ok(ids.includes("hosts_segments"));
+  assert.ok(ids.includes("anything_host2"));
+});
+
+test("reviewLines: shows filled answers only, with short previews", async () => {
+  const w = await import("../lib/wizard-steps.ts");
+  const draft = {
+    title: "Weekly Tech",
+    host_count: 1,
+    format: "news",
+    answers: {
+      about: "A weekly rundown of the biggest tech moves. Short and sharp.",
+      serious: "4",
+      cite_sources: "Sometimes",
+    },
+  };
+  const lines = w.reviewLines(draft);
+  const byId = Object.fromEntries(lines.map(({ step, line }) => [step.id, line]));
+  // title and about are filled; empty answers are skipped.
+  assert.equal(byId.title, "Weekly Tech");
+  assert.ok(byId.about.startsWith("A weekly rundown"));
+  // Scale renders as "N out of M".
+  assert.match(byId.serious, /4 out of 5/);
+  // Empty ids never appear.
+  assert.ok(!("audience" in byId));
+});
+
 test("who's going lands in the brief under its own heading", async () => {
   const w = await import("../lib/wizard-steps.ts");
   const body = w.composeWizardBody({ ...w.EMPTY_WIZARD, title: "T", answers: { whos_going: "Me, Sarah, Ava and Leo" } });

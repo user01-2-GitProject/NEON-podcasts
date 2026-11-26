@@ -45,10 +45,22 @@ export interface WizardStep {
   // other choice in any set it appears in. Spec example: picking "Laugh" grays
   // out "Stay informed" and "A good story" on the takeaway question.
   conflicts?: string[][];
+  // For `text`/`textarea`: per-step cap. Textareas without one get 2000.
+  maxLength?: number;
   // Section heading the body groups the answer under (markdown ## heading).
   // Answers with the same section are joined into one paragraph each.
   section?: string;
+  // Which tab of the wizard this step belongs to. Defaults to "show".
+  tab?: "show" | "host1" | "host2";
 }
+
+// The three tabs the wizard walks through, in order.
+export const WIZARD_TABS: { id: "show" | "host1" | "host2"; label: string; when?: (d: WizardDraft) => boolean }[] = [
+  { id: "show", label: "Show" },
+  { id: "host1", label: "Host 1" },
+  { id: "host2", label: "Host 2", when: (d) => d.host_count === 2 },
+];
+export type WizardTabId = "show" | "host1" | "host2";
 
 export interface WizardDraft {
   title: string;
@@ -252,7 +264,7 @@ export const WIZARD_STEPS: WizardStep[] = [
   // #54 host_age OUT (transcript: only ~3 canned voices in MVP, can't change age).
   // #60–63 OUT for MVP (inspired-by, catchphrases, never-say, backstory).
 
-  // --- Two-host specifics ---
+  // --- Two-host specifics (Host 2 tab) ---
   // #75 — add "Professional" and "Mentor / student" (transcript).
   {
     id: "hosts_dynamic",
@@ -260,6 +272,7 @@ export const WIZARD_STEPS: WizardStep[] = [
     question: "How do the hosts work together?",
     choices: ["Banter", "One leads, one asks", "They debate", "Expert and beginner", "Mentor and student", "Professional"],
     when: (d) => d.host_count === 2,
+    tab: "host2",
     section: "Hosts",
   },
   // #76 — "A lot" → "Often".
@@ -269,6 +282,7 @@ export const WIZARD_STEPS: WizardStep[] = [
     question: "How often do they disagree?",
     choices: ["Never", "Sometimes", "Often"],
     when: (d) => d.host_count === 2,
+    tab: "host2",
     section: "Hosts",
   },
   // #77 — repurposed: segment format.
@@ -279,8 +293,10 @@ export const WIZARD_STEPS: WizardStep[] = [
     help: "Hosts take segments one after the other, or talk through them together.",
     choices: ["Sequentially", "Conversationally"],
     when: (d) => d.host_count === 2,
+    tab: "host2",
     section: "Hosts",
   },
+  { id: "anything_host2", type: "textarea", question: "Anything else about host 2?", help: "Same as host 1 — backstory, voice, catchphrases.", placeholder: "e.g. Softer voice, asks the questions. Grew up listening to late-night radio.", maxLength: 5000, when: (d) => d.host_count === 2, tab: "host2", section: "Host 2" },
 
   // --- Humor ---
   { id: "humor", type: "scale", question: "How much humor?", min: 1, max: 5, minLabel: "None", maxLabel: "A lot", section: "Voice & style" },
@@ -299,12 +315,61 @@ export const WIZARD_STEPS: WizardStep[] = [
   { id: "important", type: "textarea", question: "What is most important to you about this show?", help: "The writer weighs this most. See 'What matters most' in the brief.", placeholder: "e.g. The family is safe, and everyone finishes already looking forward to Saturday." },
   { id: "rules", type: "textarea", question: "Any hard-line rules?", help: "Things the show must never do.", placeholder: "e.g. Never take a political side. Never share listener names." },
 
-  // --- Finish ---
-  { id: "preview", type: "yesno", question: "Make the first full episode now?", help: "You can also do this later from the show page." },
+  // --- End-of-tab free text (jimmy + Matt, Nov 25): up to 5,000 characters ---
+  { id: "anything_show", type: "textarea", question: "Anything else about the show?", help: "A paragraph in your own words. Not a prompt — this is context NEON uses, the host won't read it out.", placeholder: "e.g. Stay unbiased. It's fine to say which way each party leans, but what I want to understand is the issue.", maxLength: 5000, section: "Anything else about the show" },
+
+  // --- Host 1 tab ---
+  // (The host2 steps — hosts_dynamic, hosts_disagree, hosts_segments,
+  // anything_host2 — live earlier in this array and carry tab: "host2".)
+  { id: "anything_host1", type: "textarea", question: "Anything else about host 1?", help: "Backstory, voice tweaks, a catchphrase — anything the writer should know.", placeholder: "e.g. Grew up in Detroit, finance background, dry wit. Loves a short pause for effect.", maxLength: 5000, tab: "host1", section: "Host 1" },
 ];
 
 export function visibleSteps(draft: WizardDraft): WizardStep[] {
   return WIZARD_STEPS.filter((s) => !s.when || s.when(draft));
+}
+
+// Groups visibleSteps by tab, in tab order. A hidden tab (e.g. host2 for a
+// one-host draft) is dropped entirely.
+export function stepsByTab(draft: WizardDraft): { tab: typeof WIZARD_TABS[number]; steps: WizardStep[] }[] {
+  const steps = visibleSteps(draft);
+  const out: { tab: typeof WIZARD_TABS[number]; steps: WizardStep[] }[] = [];
+  for (const tab of WIZARD_TABS) {
+    if (tab.when && !tab.when(draft)) continue;
+    const forTab = steps.filter((s) => (s.tab || "show") === tab.id);
+    if (forTab.length) out.push({ tab, steps: forTab });
+  }
+  return out;
+}
+
+// One-sentence preview per filled answer, for the review screen. Skipped and
+// empty answers are left out.
+export function reviewLines(draft: WizardDraft): { step: WizardStep; line: string }[] {
+  const out: { step: WizardStep; line: string }[] = [];
+  for (const step of visibleSteps(draft)) {
+    const v = step.id === "title" ? draft.title : draft.answers[step.id];
+    if (!v || !v.trim()) continue;
+    out.push({ step, line: previewLine(step, v) });
+  }
+  return out;
+}
+
+function previewLine(step: WizardStep, v: string): string {
+  const val = v.trim();
+  if (step.type === "yesno") return val === "yes" ? "Yes" : "No";
+  if (step.type === "scale") return `${val} out of ${step.max ?? 5}${step.maxLabel ? ` (${step.minLabel} → ${step.maxLabel})` : ""}`;
+  if (step.type === "multi") return val;
+  // text / textarea / choice — clip to one short sentence.
+  const first = val.split(/(?<=[.!?])\s+/)[0] || val;
+  return first.length > 140 ? first.slice(0, 137) + "…" : first;
+}
+
+// The owner's title gets a hardcoded "N.E.O.N. - " prefix so Apple/Spotify
+// listings all carry the brand (jimmy + Matt, Nov 25). Already-prefixed
+// titles are left alone, case-insensitive.
+export function brandedTitle(raw: string): string {
+  const title = raw.trim();
+  if (/^N\.?\s*E\.?\s*O\.?\s*N\.?\s*(-|–|—)?\s*/i.test(title)) return title;
+  return `N.E.O.N. - ${title}`;
 }
 
 // Which choices on a `multi` step should be grayed out, given the current pick.

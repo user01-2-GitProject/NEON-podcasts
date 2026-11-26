@@ -4,8 +4,14 @@
 // in lib/wizard-steps.ts, so adding or trimming questions never touches this
 // file. Each screen is small, finger-friendly and carries Back + Skip +
 // Next; Save goes to localStorage on every keystroke so a closed tab
-// doesn't lose progress. Finish creates the show from the answers and
-// redirects to the show page, whose Edit show button keeps editing.
+// doesn't lose progress.
+//
+// The walk is grouped into tabs (Show / Host 1 / Host 2 if two hosts), with a
+// review screen at the very end showing every filled answer as a one-sentence
+// preview. Create requires a two-click confirm ("are you sure?") because
+// changes after Create start costing money. Finish creates the show from
+// the answers and redirects to the show page, whose Edit show button keeps
+// editing.
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,14 +20,15 @@ import { SHOW_FORMATS } from "@/lib/show-formats";
 import { OPENAI_VOICE_OPTIONS } from "@/lib/voices";
 import {
   EMPTY_WIZARD,
-  WIZARD_STEPS,
+  brandedTitle,
   cadenceFromAnswer,
   composeWizardBody,
   formatIdFromLabel,
   grayedChoices,
   minutesFromLengthAnswer,
   readMulti,
-  visibleSteps,
+  reviewLines,
+  stepsByTab,
   writeMulti,
   type WizardDraft,
   type WizardStep,
@@ -33,6 +40,8 @@ export default function ShowWizard() {
   const router = useRouter();
   const [draft, setDraft] = useState<WizardDraft>(EMPTY_WIZARD);
   const [stepIdx, setStepIdx] = useState(0);
+  const [reviewing, setReviewing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,13 +63,26 @@ export default function ShowWizard() {
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ draft, stepIdx })); } catch {}
   }, [draft, stepIdx, loaded]);
 
-  const steps = useMemo(() => visibleSteps(draft), [draft]);
-  const clampedIdx = Math.min(stepIdx, steps.length - 1);
-  const step = steps[clampedIdx];
+  // Flatten the tab/step tree into one ordered list; each slot carries the
+  // tab it belongs to so the header can say "Show · 5 of 20".
+  const tabs = useMemo(() => stepsByTab(draft), [draft]);
+  const flat = useMemo(() => tabs.flatMap((t) => t.steps.map((s) => ({ step: s, tab: t.tab }))), [tabs]);
+  const clampedIdx = Math.min(stepIdx, Math.max(0, flat.length - 1));
+  const slot = flat[clampedIdx];
+  const step = slot?.step;
+  const tabInfo = slot?.tab;
+
+  // Position within the current tab, for the "Show · 5 of 20" header.
+  const posInTab = useMemo(() => {
+    if (!tabInfo) return { current: 0, total: 0 };
+    const sameTab = flat.filter((f) => f.tab.id === tabInfo.id);
+    const idx = sameTab.findIndex((f) => f.step === step);
+    return { current: idx + 1, total: sameTab.length };
+  }, [flat, tabInfo, step]);
 
   useEffect(() => {
     firstInput.current?.focus();
-  }, [clampedIdx, step?.id]);
+  }, [clampedIdx, step?.id, reviewing]);
 
   function setAnswer(id: string, value: string) {
     if (id === "title") setDraft((d) => ({ ...d, title: value }));
@@ -73,7 +95,7 @@ export default function ShowWizard() {
     return draft.answers[step.id] ?? "";
   }
 
-  const last = clampedIdx === steps.length - 1;
+  const atLastStep = clampedIdx === flat.length - 1;
   const canNext = step?.required ? valueFor(step).trim().length > 0 : true;
 
   async function finish() {
@@ -82,7 +104,7 @@ export default function ShowWizard() {
     try {
       const format = SHOW_FORMATS.find((f) => f.id === draft.format);
       const voice = format?.defaultVoice && OPENAI_VOICE_OPTIONS.some((v) => v.id === format.defaultVoice) ? format.defaultVoice : "";
-      // Hosts must have a name (lib/show-spec.ts validateShowSpec), and the wizard
+      // Hosts must have a name (lib/show-spec.ts validateShowSpec); the wizard
       // doesn't ask for the second host's name yet, so we give sensible fallbacks.
       const firstName = format?.defaultHostName || "Host";
       const hosts = draft.host_count === 2
@@ -91,7 +113,9 @@ export default function ShowWizard() {
       const cadence = cadenceFromAnswer(draft.answers.cadence);
       const body = composeWizardBody(draft);
       const spec = {
-        title: draft.title.trim(),
+        // "N.E.O.N. - " prefix is hardcoded so every show carries the brand
+        // through to Apple and Spotify (jimmy + Matt, Nov 25).
+        title: brandedTitle(draft.title),
         tagline: "",
         hosts,
         cadence,
@@ -113,25 +137,110 @@ export default function ShowWizard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "That didn't save. Try again.");
       try { localStorage.removeItem(DRAFT_KEY); } catch {}
-      // Honor "Make the first full episode now?" by kicking off a generation
-      // before the redirect. Any failure here is reported on the show page
-      // (the Runs panel) rather than blocking the redirect.
+      // Honor "Make the first full episode now?" from the review screen.
+      // Failure here is reported on the show page (Runs panel), not here.
       if (draft.answers.preview === "yes") {
         void fetch(`/api/shows/${data.show.id}/generate`, { method: "POST" });
       }
       router.push(`/shows/${data.show.id}?from=wizard`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+      setConfirming(false);
     } finally {
       setBusy(false);
     }
   }
 
-  if (!step) return <p className="muted">Loading…</p>;
+  if (!loaded) return <p className="muted">Loading…</p>;
+
+  // ---- Review phase: shown after the last step. ----
+  if (reviewing) {
+    const lines = reviewLines(draft);
+    const previewAnswer = draft.answers.preview ?? "";
+    return (
+      <div className="wizard">
+        <div className="wizard-tab-header">
+          <span className="wizard-tab-label">Review</span>
+          <span className="wizard-tab-pos muted">Last stop before Create</span>
+        </div>
+        <div className="wizard-card">
+          <h2>Your show so far</h2>
+          <p className="muted">
+            It'll be called <strong>{brandedTitle(draft.title || "(untitled)")}</strong>.
+            Tap <em>Back</em> to change anything, or create the show below.
+          </p>
+          {lines.length ? (
+            <dl className="wizard-review">
+              {lines.map(({ step, line }) => (
+                <div key={step.id} className="wizard-review-row">
+                  <dt>{step.question}</dt>
+                  <dd>{line}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <p className="muted">You skipped every question — we'll use sensible defaults.</p>
+          )}
+          <hr style={{ margin: "16px 0", borderColor: "rgba(255,255,255,0.08)" }} />
+          <h3 style={{ marginTop: 0 }}>Make the first full episode now?</h3>
+          <p className="muted">You can also do this later from the show page.</p>
+          <div className="wizard-choices wizard-choices-row">
+            {["yes", "no"].map((c) => (
+              <button
+                key={c}
+                type="button"
+                className={`wizard-choice${previewAnswer === c ? " wizard-choice-selected" : ""}`}
+                aria-pressed={previewAnswer === c}
+                onClick={() => setAnswer("preview", c)}
+              >
+                <span className="wizard-choice-title">{c === "yes" ? "Yes" : "No"}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        {error ? <p className="error">{error}</p> : null}
+        <div className="wizard-nav">
+          <button type="button" className="btn secondary" disabled={busy} onClick={() => { setReviewing(false); setConfirming(false); }}>
+            Back
+          </button>
+          {confirming ? (
+            <>
+              <button type="button" className="btn secondary" disabled={busy} onClick={() => setConfirming(false)}>
+                Cancel
+              </button>
+              <button type="button" className="btn primary" disabled={busy} onClick={() => void finish()}>
+                {busy ? "Creating…" : "Yes, create it"}
+              </button>
+            </>
+          ) : (
+            <button type="button" className="btn primary" disabled={busy || draft.title.trim().length === 0} onClick={() => setConfirming(true)}>
+              Create show
+            </button>
+          )}
+        </div>
+        {confirming ? (
+          <p className="muted" style={{ marginTop: 8, fontSize: 13, textAlign: "center" }}>
+            Changes after Create start costing a bit per edit.
+          </p>
+        ) : (
+          <p className="muted" style={{ marginTop: 8, fontSize: 13, textAlign: "center" }}>
+            Three free changes after the show is made.
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // ---- Step phase. ----
+  if (!step || !tabInfo) return <p className="muted">Loading…</p>;
 
   return (
     <div className="wizard">
-      <WizardProgress current={clampedIdx + 1} total={steps.length} />
+      <div className="wizard-tab-header">
+        <span className="wizard-tab-label">{tabInfo.label}</span>
+        <span className="wizard-tab-pos muted">{posInTab.current} / {posInTab.total}</span>
+      </div>
+      <WizardProgress current={clampedIdx + 1} total={flat.length} />
       <div className="wizard-card">
         <StepView step={step} value={valueFor(step)} onChange={(v) => setAnswer(step.id, v)} firstRef={firstInput} />
       </div>
@@ -149,15 +258,15 @@ export default function ShowWizard() {
           <button
             type="button"
             className="btn secondary"
-            onClick={() => (last ? void finish() : setStepIdx(clampedIdx + 1))}
+            onClick={() => (atLastStep ? setReviewing(true) : setStepIdx(clampedIdx + 1))}
             disabled={busy}
           >
             Skip for now
           </button>
         ) : null}
-        {last ? (
-          <button type="button" className="btn primary" disabled={!canNext || busy} onClick={() => void finish()}>
-            {busy ? "Saving…" : "Create show"}
+        {atLastStep ? (
+          <button type="button" className="btn primary" disabled={!canNext || busy} onClick={() => setReviewing(true)}>
+            Review and create
           </button>
         ) : (
           <button type="button" className="btn primary" disabled={!canNext || busy} onClick={() => setStepIdx(clampedIdx + 1)}>
@@ -170,8 +279,8 @@ export default function ShowWizard() {
       </p>
       <p className="muted" style={{ marginTop: 4, fontSize: 12, textAlign: "center" }}>
         Done with the wizard?{" "}
-        <button type="button" className="linklike" onClick={() => void finish()} disabled={busy}>
-          Create show now and finish the rest later
+        <button type="button" className="linklike" onClick={() => setReviewing(true)} disabled={busy}>
+          Skip ahead to review
         </button>
         , or <Link href="/">cancel</Link>.
       </p>
@@ -194,6 +303,8 @@ function StepView({ step, value, onChange, firstRef }: {
   onChange: (v: string) => void;
   firstRef: React.MutableRefObject<HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement | null>;
 }) {
+  const textareaMax = step.maxLength || 2000;
+  const charsLeft = step.type === "textarea" && step.maxLength ? Math.max(0, step.maxLength - value.length) : null;
   return (
     <>
       <h2>{step.question}</h2>
@@ -206,18 +317,25 @@ function StepView({ step, value, onChange, firstRef }: {
           placeholder={step.placeholder || ""}
           onChange={(e) => onChange(e.target.value)}
           autoComplete="off"
-          maxLength={200}
+          maxLength={step.maxLength || 200}
         />
       ) : step.type === "textarea" ? (
-        <textarea
-          ref={(el) => { firstRef.current = el; }}
-          className="wizard-input"
-          rows={5}
-          value={value}
-          placeholder={step.placeholder || ""}
-          onChange={(e) => onChange(e.target.value)}
-          maxLength={2000}
-        />
+        <>
+          <textarea
+            ref={(el) => { firstRef.current = el; }}
+            className="wizard-input"
+            rows={5}
+            value={value}
+            placeholder={step.placeholder || ""}
+            onChange={(e) => onChange(e.target.value.slice(0, textareaMax))}
+            maxLength={textareaMax}
+          />
+          {charsLeft !== null ? (
+            <p className="muted" style={{ marginTop: 4, fontSize: 12, textAlign: "right" }}>
+              {charsLeft.toLocaleString()} characters left
+            </p>
+          ) : null}
+        </>
       ) : step.type === "choice" ? (
         <div className="wizard-choices">
           {(step.choices || []).map((c, i) => (
