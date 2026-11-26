@@ -17,7 +17,10 @@ import {
   TONE_IDEAS,
   cleanImageUrl,
   composeBody,
+  joinBrief,
+  splitBrief,
   taglineFrom,
+  type BriefLayout,
   type GuidedAnswers,
 } from "@/lib/show-wizard";
 
@@ -39,8 +42,8 @@ function friendly(err: string): string {
 // answers become the show brief; "More options" holds everything else,
 // including the full brief and the show file (.md) import/export.
 // With editShowId the same form edits an existing show: it opens filled in
-// with the show's current setup and saves over it (the show page's "Change
-// setup" button), so any earlier choice can be changed after creating.
+// with the show's current answers and saves over it (the show page's "Edit
+// show" and "Edit schedule" buttons). Saving never touches episodes.
 export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {}) {
   const editing = Boolean(editShowId);
   const router = useRouter();
@@ -49,6 +52,9 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
   const [answers, setAnswers] = useState<GuidedAnswers>(EMPTY_ANSWERS);
   // null = the brief comes from the answers; a string = edited by hand or imported.
   const [rawBody, setRawBody] = useState<string | null>(null);
+  // Editing: where each answer sits in the show's existing brief, so the
+  // sections the questions don't cover are kept as they were.
+  const [layout, setLayout] = useState<BriefLayout | null>(null);
   const [pronText, setPronText] = useState("");
   const [moreOpen, setMoreOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -64,7 +70,7 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
     restored.current = true;
     if (editShowId) {
       fetch(`/api/shows/${editShowId}/spec?format=json`, { cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : Promise.reject(new Error("Couldn't load this show's setup"))))
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error("We couldn't load this show. Check your connection and refresh the page."))))
         .then((data: { spec: ShowSpec }) => fill(data.spec))
         .catch((err) => setErrors([err instanceof Error ? err.message : String(err)]));
       return;
@@ -130,7 +136,7 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
     });
   }
 
-  const body = rawBody ?? composeBody(answers);
+  const body = rawBody ?? (layout ? joinBrief(layout, answers) : composeBody(answers));
 
   // "TERM => say as" per line; a trailing " (substring)" switches match mode.
   function currentSpec(): ShowSpec {
@@ -153,11 +159,22 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
     };
   }
 
+  // Open a saved show (or a show file) with every answer in its own box.
+  // Only text before the first heading can't go in a box; then the full
+  // brief under More options is used as is.
   function fill(parsed: ShowSpec) {
     setSpec(parsed);
-    setAnswers(EMPTY_ANSWERS);
-    setRawBody(parsed.body);
-    setMoreOpen(true);
+    const split = splitBrief(parsed.body);
+    if (split.layout.preamble) {
+      setAnswers(EMPTY_ANSWERS);
+      setLayout(null);
+      setRawBody(parsed.body);
+      setMoreOpen(true);
+    } else {
+      setAnswers(split.answers);
+      setLayout(split.layout);
+      setRawBody(null);
+    }
     setPronText(
       parsed.pronunciations.map((p) => `${p.term} => ${p.say_as}${p.match === "substring" ? " (substring)" : ""}`).join("\n"),
     );
@@ -169,7 +186,7 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
     setDirty(true);
     fill(parsed);
     setErrors(errs.map(friendly));
-    if (!errs.length) setNotice(`Filled in from ${file.name}. Check it over, then press Create show.`);
+    if (!errs.length) setNotice(`Filled in from ${file.name}. Check it over, then press ${editing ? "Save changes" : "Create show"}.`);
   }
 
   function download() {
@@ -199,7 +216,7 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
       if (!res.ok) throw new Error((data.errors || [data.error || (editShowId ? "Couldn't save the changes" : "Couldn't create the show")]).join("\n"));
       if (!editShowId) localStorage.removeItem(DRAFT_KEY);
       setDirty(false);
-      router.push(`/shows/${editShowId ?? data.show.id}`);
+      router.push(editShowId ? `/shows/${editShowId}?saved=1` : `/shows/${data.show.id}`);
       router.refresh();
     } catch (err) {
       setErrors((err instanceof Error ? err.message : String(err)).split("\n").map(friendly));
@@ -212,12 +229,16 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
 
   return (
     <div className="panel">
-      <h2>{editing ? "Change your show's setup" : "Start a new show"}</h2>
-      <p className="muted">
-        {editing
-          ? "Everything you picked is here. Change what you like, then press Save changes. Episodes you already made keep their audio; use Redo audio on an episode to re-voice it."
-          : "Answer a few questions. You can change any of it later."}
-      </p>
+      <h2>{editing ? "Edit your show" : "Start a new show"}</h2>
+      {editing ? (
+        <div className="notice-safe" role="note">
+          <strong>Your episodes are safe.</strong> This is not starting over. Your answers are already filled in.
+          Change only what you want, then press Save changes. Nothing here deletes episodes. Changes only shape
+          new episodes.
+        </div>
+      ) : (
+        <p className="muted">Answer a few questions. You can change any of it later.</p>
+      )}
       <input
         ref={fileRef}
         type="file"
@@ -255,8 +276,9 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
         </p>
 
         <label htmlFor="spec-audience">3. Who&apos;s it for?</label>
-        <input
+        <textarea
           id="spec-audience"
+          rows={2}
           value={answers.audience}
           onChange={(e) => answer("audience", e.target.value)}
           disabled={rawBody !== null}
@@ -264,8 +286,9 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
         />
 
         <label htmlFor="spec-tone">4. How should it sound?</label>
-        <input
+        <textarea
           id="spec-tone"
+          rows={2}
           value={answers.tone}
           onChange={(e) => answer("tone", e.target.value)}
           disabled={rawBody !== null}
@@ -282,8 +305,9 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
         ) : null}
 
         <label htmlFor="spec-important">What is the most important part of this podcast to you? (optional)</label>
-        <input
+        <textarea
           id="spec-important"
+          rows={2}
           value={answers.important ?? ""}
           onChange={(e) => answer("important", e.target.value)}
           disabled={rawBody !== null}
@@ -303,6 +327,8 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
           Leave it blank if your own files are enough. Each look-up costs about a cent. Add a &quot;Sites:&quot; line to only use the sites you trust.
         </p>
 
+        <div id="schedule" style={{ scrollMarginTop: 16 }}>
+        {editing ? <h3 style={{ marginTop: 20 }}>Schedule</h3> : null}
         <div className="row">
           <div>
             <label htmlFor="spec-cadence">5. How often?</label>
@@ -377,6 +403,7 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
         ) : (
           <p className="muted" style={{ marginTop: 4 }}>Manual means episodes are made only when you press Generate.</p>
         )}
+        </div>
 
         <details open={moreOpen} onToggle={(e) => setMoreOpen((e.target as HTMLDetailsElement).open)} style={{ marginTop: 16 }}>
           <summary>More options (all optional)</summary>
@@ -521,7 +548,7 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
                 className="linklike"
                 onClick={() => {
                   setDirty(true);
-                  setRawBody([composeBody(answers), BODY_TEMPLATE].filter(Boolean).join("\n\n"));
+                  setRawBody([body, BODY_TEMPLATE].filter(Boolean).join("\n\n"));
                 }}
               >
                 Add the detailed template (segments, sources, rules)
@@ -530,7 +557,7 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
           </p>
 
           <p className="muted" style={{ marginTop: 12 }}>
-            Show file (.md): a copy of everything on this page that you can keep or reuse.{" "}
+            Show file: a copy of everything on this page that you can keep or reuse.{" "}
             <button type="button" className="linklike" onClick={() => fileRef.current?.click()}>
               Fill in from a show file
             </button>{" "}
@@ -564,7 +591,7 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
           </button>
           {editing ? (
             <a className="btn secondary" style={{ marginLeft: 8 }} href={`/shows/${editShowId}`}>
-              Cancel
+              Cancel, change nothing
             </a>
           ) : null}
         </div>

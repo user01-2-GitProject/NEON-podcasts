@@ -7,8 +7,8 @@ import ShowSpecForm from "@/components/ShowSpecForm";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Go back and change any earlier choice for a show: the setup form, filled in
-// with what the show has now. Saving goes through PUT /api/shows/[id]/spec,
+// Edit a show: the same questions as a new show, filled in with what the show
+// has now. Saving never touches episodes. Saving goes through PUT /api/shows/[id]/spec,
 // which is owner-only (middleware) and validates like create.
 export default async function EditShowPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
