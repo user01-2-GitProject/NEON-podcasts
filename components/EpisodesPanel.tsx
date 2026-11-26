@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import type { Episode, Run } from "@/lib/types";
@@ -241,6 +242,11 @@ export default function EpisodesPanel({
                 <a className="btn secondary" href={`/api/episodes/${ep.id}/script`}>
                   Download script (.md)
                 </a>
+                {owner && ep.audio_url && ep.script ? (
+                  <Link href={`/episodes/${ep.id}/edit`} className="btn secondary">
+                    ✏️ Fix a sentence
+                  </Link>
+                ) : null}
                 {ep.audio_url ? (
                   <>
                     <a className="btn" href={`${ep.audio_url}?download=1`}>
