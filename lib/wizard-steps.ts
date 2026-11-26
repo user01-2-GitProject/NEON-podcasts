@@ -207,6 +207,20 @@ export const WIZARD_STEPS: WizardStep[] = [
     choices: ["Always", "Sometimes", "Never"],
     section: "Facts & sources",
   },
+  // Follow-up: which sources, if any. Shown only when the owner wants
+  // citations at all (Always or Sometimes). Leave blank = let NEON pick.
+  {
+    id: "cite_sources_which",
+    type: "textarea",
+    question: "Which sources should the host name?",
+    help: "One per line. Leave blank and NEON picks from the look-up results.",
+    placeholder: "AP\nReuters\nThe Commanders' official site",
+    when: (d) => {
+      const v = (d.answers.cite_sources || "").toLowerCase();
+      return v === "always" || v === "sometimes";
+    },
+    section: "Facts & sources",
+  },
   // #19 "True or made up?" — OUT (repetitive once topics drive source quality).
 
   // --- News-specific ---
