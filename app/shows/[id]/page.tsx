@@ -14,12 +14,27 @@ import ShowSpecPanel from "@/components/ShowSpecPanel";
 import { auth } from "@/auth";
 
 export const runtime = "nodejs";
+
+// "18:00" → "6:00 PM"
+function friendlyTime(hhmm: string): string {
+  const [h, m = "00"] = hhmm.split(":");
+  const hour = Number(h);
+  if (!Number.isFinite(hour)) return hhmm;
+  return `${hour % 12 || 12}:${m.slice(0, 2)} ${hour < 12 ? "AM" : "PM"}`;
+}
 export const dynamic = "force-dynamic";
 
-export default async function ShowPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ShowPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ saved?: string }>;
+}) {
   const session = await auth();
   const owner = (session?.user as { role?: string } | undefined)?.role === "owner";
   const { id } = await params;
+  const justSaved = (await searchParams).saved === "1";
 
   const shows = (await sql`select * from shows where id = ${id}`) as Show[];
   const show = shows[0];
@@ -60,14 +75,29 @@ export default async function ShowPage({ params }: { params: Promise<{ id: strin
           <h2>{show.title}</h2>
           <p className="muted">{show.description || "No description."}</p>
           <p className="muted">
-            {cadenceLabel(show.cadence, show.air_days)} · ~{show.target_minutes} min · timezone {show.timezone}
+            {cadenceLabel(show.cadence, show.air_days)}
+            {show.cadence !== "manual" && show.schedule_time ? ` at ${friendlyTime(show.schedule_time)}` : ""} · ~
+            {show.target_minutes} min · timezone {show.timezone}
           </p>
+          {owner && justSaved ? (
+            <div className="notice-safe" role="status">
+              <strong>Saved.</strong> Your episodes are all still here. New episodes will use your changes.
+            </div>
+          ) : null}
           {owner ? (
-            <p>
-              <Link href={`/shows/${id}/edit`} className="btn secondary">
-                ← Change setup
-              </Link>
-            </p>
+            <>
+              <div className="edit-actions">
+                <Link href={`/shows/${id}/edit`} className="btn secondary">
+                  ✏️ Edit show
+                </Link>
+                <Link href={`/shows/${id}/edit#schedule`} className="btn secondary">
+                  🗓️ Edit schedule
+                </Link>
+              </div>
+              <p className="muted" style={{ marginTop: 4 }}>
+                Editing is safe. You won&apos;t start over, and your episodes stay put.
+              </p>
+            </>
           ) : null}
           {owner ? <ShowArtworkForm showId={id} initialImageUrl={show.image_url ?? null} /> : null}
           {owner ? <DeleteShowButton showId={id} showTitle={show.title} /> : null}

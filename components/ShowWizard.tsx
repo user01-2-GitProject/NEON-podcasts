@@ -5,7 +5,7 @@
 // file. Each screen is small, finger-friendly and carries Back + Skip +
 // Next; Save goes to localStorage on every keystroke so a closed tab
 // doesn't lose progress. Finish creates the show from the answers and
-// redirects to Change-setup where the owner can keep editing.
+// redirects to the show page, whose Edit show button keeps editing.
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";

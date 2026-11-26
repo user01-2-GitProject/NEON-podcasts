@@ -285,3 +285,25 @@ button.linklike {
 .wizard-scale-dot:hover { background: rgba(255,255,255,0.08); }
 .wizard-scale-dot-selected { border-color: var(--brand, #c8a2ff); background: rgba(200,162,255,0.14); }
 .linklike { background: none; border: none; color: var(--brand, #c8a2ff); cursor: pointer; padding: 0; text-decoration: underline; font: inherit; }
+
+/* Friendly "nothing bad will happen" note on the edit page and after saving. */
+.notice-safe {
+  border: 1px solid var(--accent);
+  background: rgba(94, 234, 212, 0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 8px 0 12px;
+}
+
+/* Edit buttons on the show page: big enough for a thumb, wrap on phones. */
+.edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+.edit-actions .btn {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
