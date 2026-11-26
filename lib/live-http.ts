@@ -12,11 +12,11 @@ export async function liveRoute(
   handler: (caller: Caller) => Promise<Response>,
 ): Promise<Response> {
   const caller = await currentCaller({ session: await auth(), authHeader: req.headers.get("authorization"), db: sql });
-  if (!caller) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!caller) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
   // Middleware already gates owner routes; this keeps the handler safe on its own.
-  if (opts.ownerOnly && !isLiveOwner(caller)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (opts.ownerOnly && !isLiveOwner(caller)) return NextResponse.json({ error: "You don't have permission to do that." }, { status: 403 });
   if (opts.sessionId !== undefined && !UUID_RE.test(opts.sessionId)) {
-    return NextResponse.json({ error: "session not found" }, { status: 404 });
+    return NextResponse.json({ error: "We couldn't find that live show." }, { status: 404 });
   }
   try {
     return await handler(caller);

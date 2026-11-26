@@ -1,5 +1,6 @@
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { ListMessage } from "../../components";
+import { ShowName } from "../../components/OfficialBadge";
 import { useDownloads, type DownloadedEpisode } from "../../lib/downloads";
 import { usePlayer } from "../../lib/player";
 import { colors } from "../../lib/theme";
@@ -21,10 +22,10 @@ export default function Downloads() {
         <View style={[styles.card, current?.id === episode.id && { borderColor: colors.accent }]}>
           <Pressable onPress={() => play(episode)} style={{ flex: 1 }}>
             <Text style={styles.title}>{episode.title}</Text>
-            <Text style={styles.sub}>
+            <ShowName official={episode.show_is_official} style={styles.sub}>
               {episode.show_title}
               {episode.published_at ? ` · ${new Date(episode.published_at).toLocaleDateString()}` : ""}
-            </Text>
+            </ShowName>
           </Pressable>
           <Pressable
             onPress={() => remove(episode.id)}

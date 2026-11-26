@@ -43,7 +43,17 @@ and subscriptions.
    npm run db:migrate
    ```
 
-4. **Run**
+4. **Seed the worked examples (optional, repeatable)**
+   ```bash
+   npm run seed:examples
+   ```
+   Adds two inactive, NEON-owned example shows with a published three-minute
+   sample episode each: "Sterling Reads the News" (news brief) and "Rarely Made
+   History" (narrative essay). They appear first on `/browse` with an Example
+   chip; re-running updates the same rows. The silent mp3 fixture and its
+   ffmpeg command are documented in `scripts/fixtures/README.md`.
+
+5. **Run**
    ```bash
    npm run dev
    ```
@@ -59,6 +69,31 @@ immediately.
 Run `npm run db:migrate` before deploying this change. The old `APP_PASSWORD`
 cookie cannot authenticate to the new app. The cron endpoint still uses
 `CRON_SECRET`, and RSS/listen pages and feed-token audio remain public.
+
+### Fix one sentence in an episode (TTS re-splice)
+
+On a show page, an owner can open **✏️ Fix a sentence** on an episode with audio,
+edit one sentence in the transcript, and submit that sentence. The app re-reads
+only that sentence and the ones after it in the show's voice, then uses ffmpeg to
+join the untouched beginning to the new reading with a short crossfade. The
+corrected text is saved back into the episode's script; the episode keeps its
+published/draft status.
+
+This needs the `ffmpeg` executable on the server (and `ffprobe` for an exact
+input length; without it the length is estimated from the script). Both are
+installed in the current Linux dev container (`/usr/bin/ffmpeg`,
+`/usr/bin/ffprobe`). On Vercel or another serverless host, provide ffmpeg in the
+runtime image or this endpoint will answer 502 — no script or audio is changed
+when the splice fails.
+
+**Accuracy limit:** the current TTS providers return audio bytes but no
+per-sentence timestamps, so the join point is *stubbed*: the stored script is
+split into sentences and the word count before the chosen sentence is used to
+estimate where it starts in the mp3. Pauses, numbers and unusual pacing can move
+the join by a fraction of a second. The API response includes
+`"stubbed": true` and the page shows the same warning. Listen to the result
+before publishing. A provider that returns word timings can replace the
+word-count estimate without changing the splice.
 
 Neon Auth was considered first, but its current SDK requires Next.js 16 while
 this app is on Next.js 15. Auth.js works with the current stack.

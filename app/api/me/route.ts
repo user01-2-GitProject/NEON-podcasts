@@ -12,7 +12,7 @@ export async function DELETE(req: Request) {
     authHeader: req.headers.get("authorization"),
     db: sql,
   });
-  if (!caller) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!caller) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
 
   const blocked = accountDeletionBlock(caller.role, caller.tokenLabel);
   if (blocked) return NextResponse.json({ error: blocked.error }, { status: blocked.status });

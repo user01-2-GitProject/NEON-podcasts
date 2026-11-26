@@ -12,7 +12,7 @@ type Params = { params: Promise<{ id: string }> };
 export async function GET(req: Request, { params }: Params) {
   const { id } = await params;
   return liveRoute(req, { sessionId: id }, async () => {
-    if (!(await getSession(sql, id))) return NextResponse.json({ error: "session not found" }, { status: 404 });
+    if (!(await getSession(sql, id))) return NextResponse.json({ error: "We couldn't find that live show." }, { status: 404 });
     const turns = await listTurns(sql, id, new URL(req.url).searchParams.get("after"));
     return NextResponse.json({ turns });
   });

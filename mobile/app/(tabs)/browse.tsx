@@ -1,6 +1,7 @@
 import { Link } from "expo-router";
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { ErrorBanner, ListMessage } from "../../components";
+import { OfficialBadge } from "../../components/OfficialBadge";
 import { api, type BrowseShow } from "../../lib/api";
 import { colors } from "../../lib/theme";
 import { useApi } from "../../lib/useApi";
@@ -43,7 +44,10 @@ export default function Browse() {
         <View style={styles.card}>
           <Link href={{ pathname: "/show/[token]", params: { token: item.rss_token, title: item.title } }} asChild>
             <Pressable style={{ flex: 1 }}>
-              <Text style={styles.title}>{item.title}</Text>
+              <View style={styles.titleRow}>
+                {item.is_official ? <OfficialBadge /> : null}
+                <Text style={[styles.title, { flexShrink: 1 }]}>{item.title}</Text>
+              </View>
               {item.description ? <Text style={styles.sub} numberOfLines={2}>{item.description}</Text> : null}
               <Text style={styles.meta}>{item.published_count} episodes</Text>
             </Pressable>
@@ -62,6 +66,7 @@ export default function Browse() {
 const styles = StyleSheet.create({
   card: { backgroundColor: colors.card, padding: 14, borderRadius: 10, flexDirection: "row", alignItems: "center", gap: 12 },
   title: { color: colors.text, fontWeight: "600", fontSize: 16 },
+  titleRow: { flexDirection: "row", alignItems: "center" },
   sub: { color: colors.muted, marginTop: 4 },
   meta: { color: colors.muted, marginTop: 6, fontSize: 12 },
   follow: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.accent },

@@ -16,10 +16,10 @@ export async function GET(req: Request, { params }: Params) {
     authHeader: req.headers.get("authorization"),
     db: sql,
   });
-  if (!email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!email) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
   const { token } = await params;
-  if (!/^[A-Za-z0-9_-]{8,128}$/.test(token)) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (!/^[A-Za-z0-9_-]{8,128}$/.test(token)) return NextResponse.json({ error: "We couldn't find that show." }, { status: 404 });
   const detail = await getShowByToken(sql, token);
-  if (!detail) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (!detail) return NextResponse.json({ error: "We couldn't find that show." }, { status: 404 });
   return NextResponse.json(detail);
 }
