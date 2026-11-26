@@ -12,6 +12,8 @@ import type { Show, Briefing, Episode, NarrationMode, Pronunciation } from "@/li
 
 export const MAX_SCHEDULED_ATTEMPTS = 5;
 
+const SHOW_DELETED_MID_RUN = "This show was deleted while the episode was being made.";
+
 // A voice failure explained in words a show owner can act on. Provider
 // details stay in the server log and the runs table.
 export function friendlyVoiceError(err: unknown): string {
@@ -295,7 +297,13 @@ export async function generateEpisode(
           where id = ${showId} and next_run_at = ${scheduledRun.scheduledFor}::timestamptz
         `,
       ]);
-      return finish({ episode: (results[0] as Episode[])[0], runId });
+      const published = (results[0] as Episode[])[0];
+      if (!published) {
+        // The show (and so this episode) was deleted while audio uploaded.
+        await storage.delete(episodeId);
+        throw new Error(SHOW_DELETED_MID_RUN);
+      }
+      return finish({ episode: published, runId });
     }
 
     const storage = getStorage();
@@ -312,7 +320,15 @@ export async function generateEpisode(
 
     const audioPath = storage.url(episode.id);
     await storage.put(episode.id, tts.audio, tts.contentType);
-    await sql`update episodes set audio_url = ${audioPath}, status = 'published', published_at = now() where id = ${episode.id}`;
+    const publishedRows = (await sql`
+      update episodes set audio_url = ${audioPath}, status = 'published', published_at = now()
+      where id = ${episode.id} returning id
+    `) as { id: string }[];
+    if (!publishedRows[0]) {
+      // The show (and so this episode) was deleted while audio uploaded.
+      await storage.delete(episode.id);
+      throw new Error(SHOW_DELETED_MID_RUN);
+    }
     episode.audio_url = audioPath;
 
     await sql`
