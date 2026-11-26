@@ -6,7 +6,7 @@ import { ownerId } from "@/lib/token-owner";
 export const runtime = "nodejs";
 
 export async function GET() {
-  if (!(await ownerId())) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!(await ownerId())) return NextResponse.json({ error: "You don't have permission to do that." }, { status: 403 });
   const tokens = await sql`
     select id, label, scope, created_by, created_at, last_used_at, revoked_at
     from api_tokens order by created_at desc
@@ -16,12 +16,12 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const createdBy = await ownerId();
-  if (!createdBy) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!createdBy) return NextResponse.json({ error: "You don't have permission to do that." }, { status: 403 });
   const body = await req.json().catch(() => null);
   const label = typeof body?.label === "string" ? body.label.trim() : "";
   const scope = body?.scope;
   if (!label || label.length > 100 || (scope !== "read_only" && scope !== "read_write")) {
-    return NextResponse.json({ error: "label and scope are required" }, { status: 400 });
+    return NextResponse.json({ error: "Give the key a name and pick read-only or read-write." }, { status: 400 });
   }
   const token = newApiToken();
   const rows = (await sql`

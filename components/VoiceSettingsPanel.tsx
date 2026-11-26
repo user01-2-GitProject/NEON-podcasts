@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import VoiceAudition from "@/components/VoiceAudition";
 
 type VoiceView = {
   provider: "openai" | "elevenlabs" | "local" | "edge";
@@ -135,6 +136,7 @@ export default function VoiceSettingsPanel() {
           ) : null}
         </div>
       </form>
+      {view ? <VoiceAudition /> : null}
     </div>
   );
 }

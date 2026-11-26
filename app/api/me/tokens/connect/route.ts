@@ -13,12 +13,12 @@ export const runtime = "nodejs";
 export async function POST(req: Request) {
   const session = await auth();
   const email = session?.user?.email?.toLowerCase();
-  if (!email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!email) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
   const form = await req.formData().catch(() => null);
   const redirect = allowedAppRedirect(form?.get("redirect"));
-  if (!redirect) return NextResponse.json({ error: "invalid redirect" }, { status: 400 });
+  if (!redirect) return NextResponse.json({ error: "That sign-in link isn't one we trust. Start signing in again from the app." }, { status: 400 });
   const rows = (await sql`select id from users where email = ${email} limit 1`) as { id: string }[];
-  if (!rows[0]) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!rows[0]) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
   const token = newApiToken();
   await createMyDeviceToken(sql, rows[0].id, email, token, await tokenHash(token));
   return NextResponse.redirect(withToken(redirect, token), {

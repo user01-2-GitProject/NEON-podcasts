@@ -13,6 +13,8 @@ export type BrowseShow = {
   latest_at: string | null;
   following: boolean;
   image_url: string | null;
+  // NEON-official shows get the spinning-N badge beside their title.
+  is_official: boolean;
 };
 
 export type FeedEpisode = {
@@ -25,6 +27,8 @@ export type FeedEpisode = {
   audio_url: string | null;
   // The show's artwork, for players' lock-screen art.
   show_image_url: string | null;
+  // NEON-official show: the app puts the spinning-N badge beside the show name.
+  show_is_official: boolean;
 };
 
 // Audio stored behind our own stream route is public only with the show's
@@ -48,6 +52,7 @@ export function publicAudioPath(audioUrl: string | null, rssToken: string): stri
 export async function listBrowse(db: SqlFn, email: string): Promise<BrowseShow[]> {
   const rows = (await db`
     select s.id, s.title, s.description, s.rss_token,
+           coalesce(s.is_official, false) as is_official,
            (select to_jsonb(x) ->> 'image_url' from shows x where x.id = s.id) as image_url,
            count(e.*) filter (where e.status = 'published')::int as published_count,
            max(e.published_at) as latest_at,
@@ -67,6 +72,7 @@ export async function listBrowse(db: SqlFn, email: string): Promise<BrowseShow[]
     image_url: artworkPath(r),
     published_count: Number(r.published_count),
     following: Boolean(r.following),
+    is_official: Boolean(r.is_official),
   }));
 }
 
@@ -75,7 +81,8 @@ export async function listFollowingFeed(db: SqlFn, email: string, limit = 100): 
   const rows = (await db`
     select e.id, e.title, e.published_at, e.audio_url,
            s.id as show_id, s.title as show_title, s.rss_token,
-           to_jsonb(s) ->> 'image_url' as show_image_url
+           to_jsonb(s) ->> 'image_url' as show_image_url,
+           coalesce(s.is_official, false) as show_is_official
     from episodes e
     join shows s on s.id = e.show_id
     join subscriptions sub on sub.show_id = s.id
@@ -86,24 +93,27 @@ export async function listFollowingFeed(db: SqlFn, email: string, limit = 100): 
   return rows.map((r) => ({
     ...r,
     show_image_url: artworkPath({ id: r.show_id, title: r.show_title, image_url: r.show_image_url }),
+    show_is_official: Boolean(r.show_is_official),
     audio_url: publicAudioPath(r.audio_url, r.rss_token),
   }));
 }
 
 export type ShowDetail = {
-  show: { id: string; title: string; description: string | null; rss_token: string; image_url: string | null };
+  show: { id: string; title: string; description: string | null; rss_token: string; image_url: string | null; is_official: boolean };
   episodes: FeedEpisode[];
 };
 
 // One show's published episodes, looked up by its rss_token (the same handle /listen uses).
 export async function getShowByToken(db: SqlFn, rssToken: string): Promise<ShowDetail | null> {
   const shows = (await db`
-    select id, title, description, rss_token, to_jsonb(shows) ->> 'image_url' as image_url
+    select id, title, description, rss_token, to_jsonb(shows) ->> 'image_url' as image_url,
+           coalesce(is_official, false) as is_official
     from shows where rss_token = ${rssToken} and is_active limit 1
   `) as ShowDetail["show"][];
   const show = shows[0];
   if (!show) return null;
   show.image_url = artworkPath(show);
+  show.is_official = Boolean(show.is_official);
   const rows = (await db`
     select e.id, e.title, e.published_at, e.audio_url
     from episodes e
@@ -119,6 +129,7 @@ export async function getShowByToken(db: SqlFn, rssToken: string): Promise<ShowD
       show_title: show.title,
       rss_token: show.rss_token,
       show_image_url: show.image_url,
+      show_is_official: show.is_official,
       audio_url: publicAudioPath(r.audio_url, show.rss_token),
     })),
   };

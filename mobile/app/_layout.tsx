@@ -1,3 +1,4 @@
+import "../sentry"; // production-only Sentry init (no-op without a DSN)
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";

@@ -34,7 +34,7 @@ test("owner account deletion is blocked to protect shared shows", async () => {
   const { accountDeletionBlock } = await import("../lib/account.ts");
   assert.deepEqual(accountDeletionBlock("owner", null), {
     status: 409,
-    error: "owners must transfer or delete shows first",
+    error: "Owners need to hand off or delete their shows before deleting the account.",
   });
 });
 
@@ -42,7 +42,7 @@ test("agent token deletion is forbidden while mobile and cookie callers may proc
   const { accountDeletionBlock } = await import("../lib/account.ts");
   assert.deepEqual(accountDeletionBlock("member", "agent:research"), {
     status: 403,
-    error: "agents can't delete the account",
+    error: "An app key can't delete the account. Sign in on the website to do it.",
   });
   assert.equal(accountDeletionBlock("member", "mobile:phone"), null);
   assert.equal(accountDeletionBlock("member", null), null);

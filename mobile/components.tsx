@@ -4,6 +4,7 @@ import { PRIVACY_URL, TERMS_URL } from "./lib/config";
 import { useDownloads } from "./lib/downloads";
 import { usePlayer } from "./lib/player";
 import { colors } from "./lib/theme";
+import { ShowName } from "./components/OfficialBadge";
 
 // Download toggle for an episode row: Download → 42% (in flight) → Saved.
 export function DownloadButton({ episode }: { episode: FeedEpisode }) {
@@ -38,7 +39,7 @@ export function MiniPlayer() {
     <View style={styles.bar}>
       <View style={{ flex: 1 }}>
         <Text style={styles.title} numberOfLines={1}>{current.title}</Text>
-        <Text style={styles.sub} numberOfLines={1}>{current.show_title}</Text>
+        <ShowName official={current.show_is_official} style={styles.sub}>{current.show_title}</ShowName>
       </View>
       <Pressable onPress={() => seekBy(-15)} style={styles.skip} accessibilityRole="button" accessibilityLabel="Back 15 seconds">
         <Text style={styles.skipText}>⟲15</Text>

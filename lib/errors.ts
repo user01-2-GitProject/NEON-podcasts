@@ -12,7 +12,7 @@ export function sanitizeError(err: unknown, context?: string): string {
   );
 
   // Return generic message to client — no internal details
-  return "An error occurred. Please try again later.";
+  return "Something went wrong on our end. Try again in a minute.";
 }
 
 // For expected/validation errors that are safe to expose

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { askModel } from "@/lib/claude";
 import { spotTrickyWords, type TrickySpot } from "@/lib/tricky-words";
+import { sanitizeError } from "@/lib/errors";
 
 export const runtime = "nodejs";
 
@@ -59,8 +60,9 @@ export async function POST(req: Request) {
     const smart = await askAi(text, quick, have);
     return NextResponse.json({ words: merge(quick, smart, have) });
   } catch (err) {
-    const why = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ words: quick, note: `Only the quick check ran. ${why}` });
+    // The provider's raw error stays in the server log, not in the owner's note.
+    sanitizeError(err, "tricky-words ai");
+    return NextResponse.json({ words: quick, note: "Only the quick check ran. The smart check didn't work just now; try again in a minute." });
   }
 }
 

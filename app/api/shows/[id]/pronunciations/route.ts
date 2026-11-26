@@ -21,12 +21,12 @@ export async function POST(req: Request, { params }: Params) {
   const term = body.term !== undefined ? body.term.toString().trim() : "";
   const sayAs = body.say_as !== undefined ? body.say_as.toString().trim() : "";
   if (!term || !sayAs) {
-    return NextResponse.json({ error: "term and say_as are required" }, { status: 400 });
+    return NextResponse.json({ error: "Fill in both the word and how to say it." }, { status: 400 });
   }
 
   const matchMode = body.match_mode === undefined ? "word" : body.match_mode;
   if (matchMode !== "word" && matchMode !== "substring") {
-    return NextResponse.json({ error: "invalid match_mode" }, { status: 400 });
+    return NextResponse.json({ error: "Pick whether it matches the whole word or any part of a word." }, { status: 400 });
   }
 
   const rows = (await sql`

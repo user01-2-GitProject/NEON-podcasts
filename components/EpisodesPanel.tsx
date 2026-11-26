@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import type { Episode, Run } from "@/lib/types";
@@ -114,6 +115,56 @@ function MakeAudioButton({ episodeId, redo = false }: { episodeId: string; redo?
   );
 }
 
+function RegenerateButton({ episodeId }: { episodeId: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [armed, setArmed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function regenerate() {
+    // This replaces the script and the mp3 at the same URL, so take two taps.
+    if (!armed) {
+      setArmed(true);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/episodes/${episodeId}/regenerate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "We couldn't make a new episode");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+      setArmed(false);
+    }
+  }
+
+  return (
+    <span>
+      <button
+        className={armed ? "btn" : "btn secondary"}
+        disabled={busy}
+        onClick={regenerate}
+        title="Use the show's current setup to write and voice this episode again"
+      >
+        {busy
+          ? "Making a new version… (about a minute)"
+          : armed
+            ? "Tap again to replace this episode"
+            : "Regenerate with the latest setup"}
+      </button>
+      {error ? <span className="error" style={{ marginLeft: 8 }}>{error}</span> : null}
+    </span>
+  );
+}
+
 function PublishButton({ episode }: { episode: Episode }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -191,6 +242,11 @@ export default function EpisodesPanel({
                 <a className="btn secondary" href={`/api/episodes/${ep.id}/script`}>
                   Download script (.md)
                 </a>
+                {owner && ep.audio_url && ep.script ? (
+                  <Link href={`/episodes/${ep.id}/edit`} className="btn secondary">
+                    ✏️ Fix a sentence
+                  </Link>
+                ) : null}
                 {ep.audio_url ? (
                   <>
                     <a className="btn" href={`${ep.audio_url}?download=1`}>
@@ -204,6 +260,7 @@ export default function EpisodesPanel({
                     <UploadAudio episodeId={ep.id} />
                   </>
                 ) : null}
+                {owner ? <RegenerateButton episodeId={ep.id} /> : null}
                 {owner ? <PublishButton episode={ep} /> : null}
                 {ep.status === "published" ? (
                   <a className="btn secondary" href={`/listen/${rssToken}`}>Public page</a>
