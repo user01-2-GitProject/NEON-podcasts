@@ -65,6 +65,8 @@ export interface Episode {
   duration_seconds: number | null;
   byte_size: number | null;
   status: EpisodeStatus;
+  /** True for episodes marked NEON-official by the owner — shows a badge next to the title. */
+  is_official?: boolean;
   scheduled_for: string | null;
   published_at: string | null;
   created_at: string;
