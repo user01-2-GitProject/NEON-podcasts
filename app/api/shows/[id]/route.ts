@@ -88,11 +88,22 @@ export async function PATCH(req: Request, { params }: Params) {
 
 export async function DELETE(_req: Request, { params }: Params) {
   const { id } = await params;
-  const episodes = (await sql`select id from episodes where show_id = ${id}`) as { id: string }[];
+  // Delete the show row first, in one statement that also reports its episode ids.
+  // The cascade takes its runs (queued or in flight), episodes and next_run_at with it,
+  // so the scheduler can't start a new run while we clean up audio. A run already in
+  // flight notices its episode is gone and removes its own audio (lib/generate.ts).
+  // TODO(D4): api_tokens have no per-show scope yet; when they do, revoke those here.
+  const rows = (await sql`
+    with eps as (select id from episodes where show_id = ${id}),
+         gone as (delete from shows where id = ${id} returning id)
+    select (select count(*) from gone)::int as deleted,
+           coalesce((select array_agg(id) from eps), '{}') as episode_ids
+  `) as { deleted: number; episode_ids: string[] }[];
+  const result = rows[0];
+  if (!result?.deleted) return NextResponse.json({ error: "We couldn't find that show." }, { status: 404 });
   const storage = getStorage();
-  for (const episode of episodes) {
-    await storage.delete(episode.id);
+  for (const episodeId of result.episode_ids) {
+    await storage.delete(episodeId);
   }
-  await sql`delete from shows where id = ${id}`;
   return NextResponse.json({ ok: true });
 }
