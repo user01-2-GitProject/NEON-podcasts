@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 // (null for owners, who are unlimited). A read, so any valid token may call it.
 export async function GET(req: Request) {
   const caller = await currentCaller({ session: await auth(), authHeader: req.headers.get("authorization"), db: sql });
-  if (!caller) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!caller) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
   const isOwner = caller.role === "owner" && caller.ownerApproved;
   const [usage, limits] = await Promise.all([getUsage(sql, caller.userId), isOwner ? null : getLimits(sql)]);
   return NextResponse.json(

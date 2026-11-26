@@ -10,7 +10,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   return liveRoute(req, { sessionId: id }, async (caller) => {
     if (!(await leaveSession(sql, caller, id))) {
-      return NextResponse.json({ error: "you are not in this session" }, { status: 404 });
+      return NextResponse.json({ error: "You're not in this live show." }, { status: 404 });
     }
     return NextResponse.json({ ok: true });
   });

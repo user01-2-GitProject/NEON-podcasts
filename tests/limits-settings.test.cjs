@@ -60,7 +60,7 @@ test("caps must be non-negative integers; 0 and positives are accepted", async (
   ];
   for (const body of bad) assert.ok("error" in parseLimitsInput(body), JSON.stringify(body));
   assert.ok("error" in parseLimitsInput(null));
-  assert.match(parseLimitsInput({ episodes_per_day: -1, cost_cents_per_day: 5 }).error, /episodes_per_day must be a non-negative integer/);
+  assert.match(parseLimitsInput({ episodes_per_day: -1, cost_cents_per_day: 5 }).error, /episodes_per_day needs to be a whole number, 0 or more/);
 });
 
 test("saveLimits upserts exactly the two limit keys", async () => {

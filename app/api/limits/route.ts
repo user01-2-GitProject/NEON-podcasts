@@ -16,13 +16,13 @@ function view(limits: Limits) {
 
 // Owner-only: the daily generation caps for non-owners (defaults when unset).
 export async function GET() {
-  if (!(await ownerId())) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!(await ownerId())) return NextResponse.json({ error: "You don't have permission to do that." }, { status: 403 });
   return NextResponse.json(view(await getLimits(sql)), { headers: { "Cache-Control": "no-store" } });
 }
 
 // Owner-only: { episodes_per_day, cost_cents_per_day }, both non-negative integers.
 export async function POST(req: Request) {
-  if (!(await ownerId())) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!(await ownerId())) return NextResponse.json({ error: "You don't have permission to do that." }, { status: 403 });
   const input = parseLimitsInput(await req.json().catch(() => null));
   if ("error" in input) return NextResponse.json({ error: input.error }, { status: 400 });
   await saveLimits(sql, input.limits);

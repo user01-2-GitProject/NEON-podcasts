@@ -18,7 +18,7 @@ interface ScheduledRun {
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
   }
 
   // Vercel can terminate work at maxDuration. Release abandoned claims after a safe buffer.

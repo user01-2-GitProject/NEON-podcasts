@@ -13,9 +13,9 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ showI
     authHeader: req.headers.get("authorization"),
     db: sql,
   });
-  if (!email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!email) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
   if (!/^[0-9a-f-]{36}$/i.test(showId)) {
-    return NextResponse.json({ error: "show_id is required" }, { status: 400 });
+    return NextResponse.json({ error: "Pick a show first." }, { status: 400 });
   }
   await unfollow(sql, email, showId);
   return NextResponse.json({ ok: true });

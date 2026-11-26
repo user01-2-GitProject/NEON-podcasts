@@ -16,7 +16,7 @@ type Params = { params: Promise<{ id: string }> };
 export async function POST(req: Request, { params }: Params) {
   const { id } = await params;
   const caller = await currentCaller({ session: await auth(), authHeader: req.headers.get("authorization"), db: sql });
-  if (!caller) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!caller) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
   // Cost guardrail: owners are unlimited, everyone else has a daily cap.
   const decision = await checkGeneration(sql, {
     userId: caller.userId,

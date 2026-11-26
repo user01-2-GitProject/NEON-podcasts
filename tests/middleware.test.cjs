@@ -72,7 +72,7 @@ test("live sessions: members participate, only owners create and moderate", asyn
 test("a bearer token cannot mint tokens, even on the member mint route", async () => {
   const res = await request("/api/me/tokens", { method: "POST", authorization: "Bearer npt_" + "e".repeat(64) });
   assert.equal(res.status, 403);
-  assert.equal((await res.json()).error, "session required");
+  assert.equal((await res.json()).error, "Please sign in on the website to do this. An app key can't.");
   // a cookie session may mint
   const cookie = await request("/api/me/tokens", { email: "member@example.com", role: "member", method: "POST" });
   assert.equal(cookie.headers.get("x-middleware-next"), "1");

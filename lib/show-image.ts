@@ -26,17 +26,17 @@ export function isTrustedArtworkUrl(raw: string | null | undefined): boolean {
 
 export function parseImageUrl(input: unknown): { value: string | null } | { error: string } {
   if (input === null) return { value: null };
-  if (typeof input !== "string") return { error: "image_url must be a string" };
+  if (typeof input !== "string") return { error: "The picture link needs to be a web address." };
   const value = input.trim();
   if (!value) return { value: null };
-  if (value.length > IMAGE_URL_MAX) return { error: `image_url is limited to ${IMAGE_URL_MAX} characters` };
+  if (value.length > IMAGE_URL_MAX) return { error: `That picture link is too long (over ${IMAGE_URL_MAX} characters).` };
   let url: URL;
   try {
     url = new URL(value);
   } catch {
-    return { error: "image_url must be an http(s) URL" };
+    return { error: "The picture link needs to start with https://." };
   }
-  if (url.protocol !== "http:" && url.protocol !== "https:") return { error: "image_url must be an http(s) URL" };
+  if (url.protocol !== "http:" && url.protocol !== "https:") return { error: "The picture link needs to start with https://." };
   if (!isTrustedArtworkUrl(url.href)) return { error: ARTWORK_LINKS_OFF };
   return { value: url.href };
 }
