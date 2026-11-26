@@ -52,3 +52,15 @@ test("show detail returns null for an unknown token and only published episodes 
   assert.equal(detail.episodes[0].audio_url, "/api/episodes/e1/audio?feed=r");
   assert.equal(detail.episodes[0].show_title, "S");
 });
+
+test("browse and show detail say whether a show is NEON-official", async () => {
+  const { listBrowse, getShowByToken } = await import("../lib/catalog.ts");
+  const db = fakeSql([{ id: "s1", title: "T", description: null, rss_token: "r", published_count: "1", latest_at: null, following: false, is_official: true }]);
+  const shows = await listBrowse(db, "a@x.com");
+  assert.match(db.calls[0].text, /is_official/);
+  assert.equal(shows[0].is_official, true);
+  let n = 0;
+  const db2 = async () => (n++ === 0 ? [{ id: "s1", title: "S", description: null, rss_token: "r", is_official: null }] : []);
+  const detail = await getShowByToken(db2, "r");
+  assert.equal(detail.show.is_official, false);
+});

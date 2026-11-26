@@ -13,6 +13,8 @@ export type BrowseShow = {
   latest_at: string | null;
   following: boolean;
   image_url: string | null;
+  // NEON-official shows get the spinning-N badge beside their title.
+  is_official: boolean;
 };
 
 export type FeedEpisode = {
@@ -48,6 +50,7 @@ export function publicAudioPath(audioUrl: string | null, rssToken: string): stri
 export async function listBrowse(db: SqlFn, email: string): Promise<BrowseShow[]> {
   const rows = (await db`
     select s.id, s.title, s.description, s.rss_token,
+           coalesce(s.is_official, false) as is_official,
            (select to_jsonb(x) ->> 'image_url' from shows x where x.id = s.id) as image_url,
            count(e.*) filter (where e.status = 'published')::int as published_count,
            max(e.published_at) as latest_at,
@@ -66,6 +69,7 @@ export async function listBrowse(db: SqlFn, email: string): Promise<BrowseShow[]
     image_url: artworkPath(r),
     published_count: Number(r.published_count),
     following: Boolean(r.following),
+    is_official: Boolean(r.is_official),
   }));
 }
 
@@ -90,19 +94,21 @@ export async function listFollowingFeed(db: SqlFn, email: string, limit = 100): 
 }
 
 export type ShowDetail = {
-  show: { id: string; title: string; description: string | null; rss_token: string; image_url: string | null };
+  show: { id: string; title: string; description: string | null; rss_token: string; image_url: string | null; is_official: boolean };
   episodes: FeedEpisode[];
 };
 
 // One show's published episodes, looked up by its rss_token (the same handle /listen uses).
 export async function getShowByToken(db: SqlFn, rssToken: string): Promise<ShowDetail | null> {
   const shows = (await db`
-    select id, title, description, rss_token, to_jsonb(shows) ->> 'image_url' as image_url
+    select id, title, description, rss_token, to_jsonb(shows) ->> 'image_url' as image_url,
+           coalesce(is_official, false) as is_official
     from shows where rss_token = ${rssToken} limit 1
   `) as ShowDetail["show"][];
   const show = shows[0];
   if (!show) return null;
   show.image_url = artworkPath(show);
+  show.is_official = Boolean(show.is_official);
   const rows = (await db`
     select e.id, e.title, e.published_at, e.audio_url
     from episodes e

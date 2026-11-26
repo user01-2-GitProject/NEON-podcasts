@@ -9,6 +9,8 @@ export type BrowseShow = {
   latest_at: string | null;
   following: boolean;
   image_url?: string | null;
+  // Optional: servers before the NEON-official badge don't send it.
+  is_official?: boolean;
 };
 
 export type FeedEpisode = {
@@ -121,7 +123,7 @@ export const api = {
 };
 
 export type ShowDetail = {
-  show: { id: string; title: string; description: string | null; rss_token: string; image_url?: string | null };
+  show: { id: string; title: string; description: string | null; rss_token: string; image_url?: string | null; is_official?: boolean };
   episodes: FeedEpisode[];
 };
 
