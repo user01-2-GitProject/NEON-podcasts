@@ -27,6 +27,8 @@ export type FeedEpisode = {
   audio_url: string | null;
   // The show's artwork, for players' lock-screen art.
   show_image_url: string | null;
+  // NEON-official show: the app puts the spinning-N badge beside the show name.
+  show_is_official: boolean;
 };
 
 // Audio stored behind our own stream route is public only with the show's
@@ -78,7 +80,8 @@ export async function listFollowingFeed(db: SqlFn, email: string, limit = 100): 
   const rows = (await db`
     select e.id, e.title, e.published_at, e.audio_url,
            s.id as show_id, s.title as show_title, s.rss_token,
-           to_jsonb(s) ->> 'image_url' as show_image_url
+           to_jsonb(s) ->> 'image_url' as show_image_url,
+           coalesce(s.is_official, false) as show_is_official
     from episodes e
     join shows s on s.id = e.show_id
     join subscriptions sub on sub.show_id = s.id
@@ -89,6 +92,7 @@ export async function listFollowingFeed(db: SqlFn, email: string, limit = 100): 
   return rows.map((r) => ({
     ...r,
     show_image_url: artworkPath({ id: r.show_id, title: r.show_title, image_url: r.show_image_url }),
+    show_is_official: Boolean(r.show_is_official),
     audio_url: publicAudioPath(r.audio_url, r.rss_token),
   }));
 }
@@ -124,6 +128,7 @@ export async function getShowByToken(db: SqlFn, rssToken: string): Promise<ShowD
       show_title: show.title,
       rss_token: show.rss_token,
       show_image_url: show.image_url,
+      show_is_official: show.is_official,
       audio_url: publicAudioPath(r.audio_url, show.rss_token),
     })),
   };

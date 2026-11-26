@@ -24,6 +24,8 @@ export type FeedEpisode = {
   // Show artwork (lock-screen art). Optional: older servers and episodes saved
   // in the downloads index before this field existed don't carry it.
   show_image_url?: string | null;
+  // Optional for the same reason: older servers and saved downloads lack it.
+  show_is_official?: boolean;
 };
 
 // Live API shapes mirror lib/live.ts on the server (snake_case on the wire).

@@ -64,3 +64,11 @@ test("browse and show detail say whether a show is NEON-official", async () => {
   const detail = await getShowByToken(db2, "r");
   assert.equal(detail.show.is_official, false);
 });
+
+test("episode rows carry show_is_official so the app can badge the show name", async () => {
+  const { listFollowingFeed } = await import("../lib/catalog.ts");
+  const db = fakeSql([{ id: "e1", title: "Ep", published_at: null, audio_url: null, show_id: "s1", show_title: "S", rss_token: "r", show_is_official: true }]);
+  const eps = await listFollowingFeed(db, "a@x.com");
+  assert.match(db.calls[0].text, /show_is_official/);
+  assert.equal(eps[0].show_is_official, true);
+});
