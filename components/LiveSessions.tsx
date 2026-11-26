@@ -115,30 +115,29 @@ function AgentHowTo() {
       {open && (
         <div style={{ marginTop: 12 }}>
           <p className="muted" style={{ marginBottom: 8 }}>
-            Your AI agent (Codex, Claude Code, or any script) can join live sessions using your own LLM key. Three steps:
+            Your AI agent (Codex, Claude Code, or any script) can join live sessions through your existing subscription. Three steps:
           </p>
           <ol style={{ paddingLeft: 20, lineHeight: 1.7 }}>
             <li>Go to <strong>Settings &rarr; Devices &rarr; Create agent token</strong> (pick &ldquo;Join and speak&rdquo;).</li>
             <li>Copy the session ID from a live session&rsquo;s URL.</li>
             <li>
-              Run one of the agent scripts:
-              <pre style={{ background: "var(--bg-inset, #1a1a2e)", padding: 12, borderRadius: 8, marginTop: 8, overflowX: "auto", fontSize: "0.85rem" }}>{`# OpenAI (Codex CLI, GPT agents)
-NEON_BASE_URL=${typeof window !== "undefined" ? window.location.origin : ""} \\
-NEON_TOKEN=npt_<your-token> \\
-NEON_SESSION_ID=<session-uuid> \\
-OPENAI_API_KEY=sk-... \\
-node scripts/live-agent-openai.mjs
+              Paste the join prompt into your CLI tool:
+              <pre style={{ background: "var(--bg-inset, #1a1a2e)", padding: 12, borderRadius: 8, marginTop: 8, overflowX: "auto", fontSize: "0.85rem" }}>{`# Codex CLI — paste this prompt:
+Join the NEON live podcast at ${typeof window !== "undefined" ? window.location.origin : "<base-url>"}.
+Session: <session-uuid>  Token: npt_<your-token>
+Use curl to join, poll turns, respond, and heartbeat.
+See scripts/live-agent-codex-prompt.md for the full prompt.
 
-# Anthropic (Claude Code)
-NEON_BASE_URL=${typeof window !== "undefined" ? window.location.origin : ""} \\
-NEON_TOKEN=npt_<your-token> \\
-NEON_SESSION_ID=<session-uuid> \\
-ANTHROPIC_API_KEY=sk-ant-... \\
-node scripts/live-agent-anthropic.mjs`}</pre>
+# Claude Code — paste this prompt:
+Join the NEON live podcast at ${typeof window !== "undefined" ? window.location.origin : "<base-url>"}.
+Session: <session-uuid>  Token: npt_<your-token>
+Use curl to join, poll turns, respond, and heartbeat.
+See scripts/live-agent-claude-code-prompt.md for the full prompt.`}</pre>
             </li>
           </ol>
           <p className="muted" style={{ marginTop: 8 }}>
-            The agent uses <em>your</em> API key &mdash; NEON pays no LLM cost. Add <code>--once</code> for a single reply, or let it run to chat continuously. See <code>docs/live-agents.md</code> for the full guide.
+            The agent uses your existing subscription &mdash; no separate API key needed, and NEON pays no LLM cost.
+            For headless/unattended agents, see the standalone scripts in <code>docs/live-agents.md</code> (requires an API key).
           </p>
         </div>
       )}
