@@ -187,14 +187,14 @@ export default function ShowWizard() {
           ) : (
             <p className="muted">You skipped every question — we'll use sensible defaults.</p>
           )}
-          <hr style={{ margin: "16px 0", borderColor: "rgba(255,255,255,0.08)" }} />
+          <hr style={{ margin: "16px 0", borderColor: "var(--tint-2)" }} />
           <ShowPreview
             draft={draft}
             hostName={previewHost}
             voice={previewVoice}
             onVoiceChange={(v) => setAnswer("host1_voice", v)}
           />
-          <hr style={{ margin: "16px 0", borderColor: "rgba(255,255,255,0.08)" }} />
+          <hr style={{ margin: "16px 0", borderColor: "var(--tint-2)" }} />
           <h3 style={{ marginTop: 0 }}>Make the first full episode now?</h3>
           <p className="muted">You can also do this later from the show page.</p>
           <div className="wizard-choices wizard-choices-row">

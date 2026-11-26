@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import ShowWizard from "@/components/ShowWizard";
 import { auth } from "@/auth";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +20,7 @@ export default async function NewShowPage() {
           <span className="brand">NEON</span> Podcasts
         </h1>
         <Link href="/" className="btn secondary">Cancel</Link>
+        <ThemeToggle />
       </header>
       <ShowWizard />
     </>

@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import OfficialBadge from "@/components/OfficialBadge";
 import { sql } from "@/lib/db";
 import { subscriberEmail } from "@/lib/subscriptions";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,6 +59,7 @@ export default async function SubscriptionsPage() {
           <Link href="/browse" className="btn secondary">Browse</Link>
           <Link href="/subscriptions" className="btn secondary">Following</Link>
         </div>
+        <ThemeToggle />
       </header>
 
       <div className="container">

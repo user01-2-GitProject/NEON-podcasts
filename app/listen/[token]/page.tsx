@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import AudioPlayer from "@/components/AudioPlayer";
 import { sql } from "@/lib/db";
 import type { Show, Episode } from "@/lib/types";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -70,6 +71,7 @@ export default async function ListenPage({ params }: Params) {
         <Link href={`/feed/${token}`} className="btn secondary">
           RSS feed
         </Link>
+        <ThemeToggle />
       </header>
 
       <div className="container">

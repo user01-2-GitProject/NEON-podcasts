@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import LiveRoom from "@/components/LiveRoom";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,6 +35,7 @@ export default async function LiveSessionPage({ params }: { params: Promise<{ se
           <span className="brand">NEON</span> Podcasts · Live
         </h1>
         <Link href="/live" className="btn secondary">← Live sessions</Link>
+        <ThemeToggle />
       </header>
 
       <div className="container">
