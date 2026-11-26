@@ -77,6 +77,31 @@ header.topbar .brand {
   font-size: 16px;
 }
 
+/* Show titles — big enough that the NEON-official badge gif reads as a
+   sibling, not an older sibling. (jimmy, Nov 26: titles were being dwarfed
+   by the gif.) The badge sizes we pass are:
+   - list rows (Browse, home dashboard): 22-28px
+   - show page hero: 32px
+*/
+.panel .list-item h2 {
+  font-size: 22px;
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+}
+.panel > h2.show-title {
+  font-size: 28px;
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+}
+.show-title-link {
+  font-size: 20px;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+}
+
 label {
   display: block;
   font-size: 13px;
