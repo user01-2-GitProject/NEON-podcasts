@@ -20,8 +20,8 @@ Fields marked **(decide)** need a call from Jimmy before submission.
 | Marketing URL (Apple, optional) | https://needlesslyengineeredonlinenetwork.com |
 | Privacy policy URL | https://neon-podcasts.vercel.app/privacy **(decide: confirm this host is public at submit time, or move it under needlesslyengineeredonlinenetwork.com/privacy)** |
 | Terms URL | https://neon-podcasts.vercel.app/terms |
-| Support email | **(decide)**: Apple shows it publicly; Play requires one |
-| Copyright (Apple) | © 2026 Needlessly Engineered Online Network LLC **(decide: confirm the legal entity name)** |
+| Support email | jimmy@needlesslyengineeredonlinenetwork.com (the public contact on the brand sheet) |
+| Copyright (Apple) | © 2026 Needlessly Engineered Online Network **(decide: add "LLC" if that's the registered name)** |
 | Price | Free, no in-app purchases |
 
 ## Apple App Store
@@ -146,4 +146,6 @@ Take each on a phone with a real account that follows 2–3 shows that have artw
 5. **Live tab**: a show live now. *"Join live shows as they happen."*
 6. **Browse tab**: the network's shows with Follow buttons. *"Find your next show."*
 
-Play also needs a **feature graphic** (1024×500): circle-N logo on `#0b0d12` with "NEON Podcasts".
+Play also needs a **feature graphic** (1024×500): the canonical `neon-logo-circle.png` on Cream `#F9F2E2` with "NEON Podcasts" in the Didone display face (per `Art Department/brand-assets/BRAND.md`). Use the file from iggy's branding shelf; don't redraw it.
+
+Show names in screenshots and copy must match the brand sheet exactly (e.g. **5:01 Diamond Hands**, **District Daily Dose**). Don't show the paused shows (Unsuspected Killers, The Going Rate).
