@@ -28,6 +28,7 @@ import {
   composeWizardBody,
   formatIdFromLabel,
   grayedChoices,
+  hostPreset,
   minutesFromLengthAnswer,
   readMulti,
   reviewLines,
@@ -254,6 +255,27 @@ export default function ShowWizard() {
       <WizardProgress current={clampedIdx + 1} total={flat.length} />
       <div className="wizard-card">
         <StepView step={step} value={valueFor(step)} onChange={(v) => setAnswer(step.id, v)} firstRef={firstInput} />
+        {(step.id === "host1_preset" || step.id === "host2_preset") && valueFor(step) && valueFor(step) !== CUSTOM_HOST ? (
+          // Hear the picked host right here, before moving on (jimmy, Nov 26).
+          // The preview uses whatever's filled in so far; onVoiceChange lets
+          // you A/B voices without leaving the host step.
+          (() => {
+            const slot = step.id === "host1_preset" ? 1 : 2;
+            const host = wizardHost(draft, slot);
+            const voiceKey = slot === 1 ? "host1_voice" : "host2_voice";
+            const picked = hostPreset(valueFor(step));
+            return (
+              <div style={{ marginTop: 16 }}>
+                <ShowPreview
+                  draft={draft}
+                  hostName={picked?.name || host.name}
+                  voice={draft.answers[voiceKey] || host.voice}
+                  onVoiceChange={(v) => setAnswer(voiceKey, v)}
+                />
+              </div>
+            );
+          })()
+        ) : null}
         {step.id === "tricky_words" ? (
           // Look through what they've typed so far (no show exists yet).
           <TrickyWordsFinder

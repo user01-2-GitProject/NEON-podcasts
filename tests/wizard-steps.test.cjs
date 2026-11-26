@@ -149,6 +149,19 @@ test("reviewLines: shows filled answers only, with short previews", async () => 
   assert.ok(!("audience" in byId));
 });
 
+test("length step is back on the Show tab and minutesFromLengthAnswer still parses it", async () => {
+  const w = await import("../lib/wizard-steps.ts");
+  const length = w.WIZARD_STEPS.find((s) => s.id === "length");
+  assert.ok(length, "length step exists");
+  assert.equal(length.section, "Episode shape");
+  assert.ok((length.choices || []).includes("About 10 minutes"));
+  assert.equal(w.minutesFromLengthAnswer("About 20 minutes"), 20);
+  // It belongs to the Show tab (no explicit tab => defaults to show).
+  const tabs = w.stepsByTab({ ...w.EMPTY_WIZARD, host_count: 1, format: "news" });
+  const showIds = (tabs.find((t) => t.tab.id === "show")?.steps || []).map((s) => s.id);
+  assert.ok(showIds.includes("length"));
+});
+
 test("who's going lands in the brief under its own heading", async () => {
   const w = await import("../lib/wizard-steps.ts");
   const body = w.composeWizardBody({ ...w.EMPTY_WIZARD, title: "T", answers: { whos_going: "Me, Sarah, Ava and Leo" } });

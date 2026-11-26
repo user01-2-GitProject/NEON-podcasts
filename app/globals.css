@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark;
   --bg: #0b0d12;
   --panel: #151a23;
   --panel-2: #1b2230;
@@ -8,6 +9,13 @@
   --accent: #5eead4;
   --accent-2: #7c9cff;
   --danger: #ff6b6b;
+}
+
+/* Native <select> dropdowns: force dark options so the OS doesn't paint
+   them white-on-white against our dark theme (jimmy, Nov 26). */
+select option {
+  background: var(--panel-2);
+  color: var(--text);
 }
 
 * {
