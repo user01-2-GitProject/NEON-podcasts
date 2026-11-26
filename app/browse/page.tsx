@@ -5,6 +5,7 @@ import OfficialBadge from "@/components/OfficialBadge";
 import { EXAMPLE_SHOWS, isExampleShow } from "@/lib/example-shows";
 import { sql } from "@/lib/db";
 import { listFollows, subscriberEmail } from "@/lib/subscriptions";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -66,6 +67,7 @@ export default async function BrowsePage() {
           <Link href="/browse" className="btn secondary">Browse</Link>
           <Link href="/subscriptions" className="btn secondary">Following</Link>
         </div>
+        <ThemeToggle />
       </header>
 
       <div className="container">

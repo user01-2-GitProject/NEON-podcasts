@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { splitIntoSentences } from "@/lib/audio-splice";
 import { sql } from "@/lib/db";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,6 +55,7 @@ export default async function EditEpisodePage({
         <Link href={`/shows/${episode.show_id}`} className="btn secondary">
           ← Back to {episode.show_title}
         </Link>
+        <ThemeToggle />
       </header>
       <div className="container">
         <div className="panel">
@@ -97,7 +99,7 @@ export default async function EditEpisodePage({
                   method="post"
                   action={`/api/episodes/${episode.id}/splice`}
                   className="panel"
-                  style={{ padding: 12, border: i === fixed ? "2px solid var(--accent, #4dd0e1)" : undefined }}
+                  style={{ padding: 12, border: i === fixed ? "2px solid var(--accent)" : undefined }}
                 >
                   <input type="hidden" name="sentenceIndex" value={i} />
                   <label htmlFor={`sentence-${i}`}>

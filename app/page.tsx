@@ -7,6 +7,7 @@ import ShowSpecForm from "@/components/ShowSpecForm";
 import SignOutButton from "@/components/SignOutButton";
 import UsageMeter from "@/components/UsageMeter";
 import { auth } from "@/auth";
+import ThemeToggle from "@/components/ThemeToggle";
 import { sql } from "@/lib/db";
 import { getHomeRails } from "@/lib/home-rails";
 import { subscriberEmail } from "@/lib/subscriptions";
@@ -46,6 +47,7 @@ export default async function DashboardPage() {
           {owner ? <Link href="/settings" className="btn secondary">Settings</Link> : null}
           <SignOutButton />
         </nav>
+        <ThemeToggle />
       </header>
 
       <main className="container home-container">
