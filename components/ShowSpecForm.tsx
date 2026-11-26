@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CADENCES, CADENCE_LABELS, DAY_SHORT } from "@/lib/cadence";
-import { OPENAI_VOICE_OPTIONS, TIMEZONE_OPTIONS, HOST_PRESETS } from "@/lib/voices";
+import { EDGE_VOICES, KOKORO_VOICES, OPENAI_CATALOG, TIMEZONE_OPTIONS, HOST_PRESETS, VOICE_CATALOG } from "@/lib/voices";
 import {
   BODY_TEMPLATE,
   emptyShowSpec,
@@ -437,7 +437,7 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
               <label htmlFor="spec-voice">Voice</label>
               {(() => {
                 const v = host(0).voice;
-                const isKnown = !v || OPENAI_VOICE_OPTIONS.some((o) => o.id === v);
+                const isKnown = !v || VOICE_CATALOG.some((o) => o.id === v);
                 const CUSTOM = "__custom__";
                 return (
                   <>
@@ -450,9 +450,21 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
                       }}
                     >
                       <option value="">Default (your Settings voice)</option>
-                      {OPENAI_VOICE_OPTIONS.map((o) => (
-                        <option key={o.id} value={o.id}>{o.label}</option>
-                      ))}
+                      <optgroup label="Free voices">
+                        {EDGE_VOICES.map((o) => (
+                          <option key={o.id} value={o.id}>{o.label}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="OpenAI voices (paid, needs your key)">
+                        {OPENAI_CATALOG.map((o) => (
+                          <option key={o.id} value={o.id}>{o.label}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Free, on your own computer (Kokoro)">
+                        {KOKORO_VOICES.map((o) => (
+                          <option key={o.id} value={o.id}>{o.label}</option>
+                        ))}
+                      </optgroup>
                       <option value={CUSTOM}>Custom (type a voice name below)</option>
                     </select>
                     {!isKnown ? (
@@ -467,7 +479,7 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
                 );
               })()}
               <p className="muted" style={{ marginTop: 4, fontSize: 12 }}>
-                Pick a hosted voice, or Custom to type your local or ElevenLabs voice name.
+                Free voices cost nothing. OpenAI voices need your key. Custom is for your own cloned voice.
               </p>
             </div>
           </div>

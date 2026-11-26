@@ -15,6 +15,9 @@ export const MAX_SCHEDULED_ATTEMPTS = 5;
 // details stay in the server log and the runs table.
 export function friendlyVoiceError(err: unknown): string {
   const message = err instanceof Error ? err.message : String(err);
+  if (/^Free voice failed/.test(message)) {
+    return "The script is saved, but the free voice didn't answer. Press Make audio on the episode to try again, or pick another voice in Edit show.";
+  }
   if (/^No OpenAI voice key/.test(message)) {
     return "The script is saved, but there's no voice key yet. Add one under Settings → Voice, then press Make audio on the episode.";
   }

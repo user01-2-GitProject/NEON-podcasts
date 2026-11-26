@@ -16,9 +16,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SHOW_FORMATS } from "@/lib/show-formats";
-import { OPENAI_VOICE_OPTIONS } from "@/lib/voices";
+import { HOST_PRESETS } from "@/lib/voices";
 import {
+  CUSTOM_HOST,
   EMPTY_WIZARD,
   brandedTitle,
   cadenceFromAnswer,
@@ -30,6 +30,7 @@ import {
   reviewLines,
   stepsByTab,
   writeMulti,
+  wizardHost,
   type WizardDraft,
   type WizardStep,
 } from "@/lib/wizard-steps";
@@ -102,14 +103,10 @@ export default function ShowWizard() {
     setBusy(true);
     setError(null);
     try {
-      const format = SHOW_FORMATS.find((f) => f.id === draft.format);
-      const voice = format?.defaultVoice && OPENAI_VOICE_OPTIONS.some((v) => v.id === format.defaultVoice) ? format.defaultVoice : "";
-      // Hosts must have a name (lib/show-spec.ts validateShowSpec); the wizard
-      // doesn't ask for the second host's name yet, so we give sensible fallbacks.
-      const firstName = format?.defaultHostName || "Host";
-      const hosts = draft.host_count === 2
-        ? [{ name: firstName, voice }, { name: "Co-host", voice: "" }]
-        : [{ name: firstName, voice }];
+      // Hosts must have a name (lib/show-spec.ts validateShowSpec). wizardHost
+      // uses the one-tap host (or the preview's voice pick), else the
+      // format's default host, so a skipped step still gets a free voice.
+      const hosts = draft.host_count === 2 ? [wizardHost(draft, 1), wizardHost(draft, 2)] : [wizardHost(draft, 1)];
       const cadence = cadenceFromAnswer(draft.answers.cadence);
       const body = composeWizardBody(draft);
       const spec = {
@@ -392,6 +389,32 @@ function StepView({ step, value, onChange, firstRef }: {
               );
             });
           })()}
+        </div>
+      ) : step.type === "host" ? (
+        <div className="wizard-choices">
+          {HOST_PRESETS.map((h, i) => (
+            <button
+              key={h.id}
+              ref={i === 0 ? ((el) => { firstRef.current = el; }) : undefined}
+              type="button"
+              className={`wizard-choice${value === h.id ? " wizard-choice-selected" : ""}`}
+              aria-pressed={value === h.id}
+              onClick={() => onChange(h.id)}
+            >
+              <span className="wizard-choice-title">{h.name}</span>
+              <span className="muted" style={{ fontSize: 13 }}>{h.blurb}</span>
+            </button>
+          ))}
+          <button
+            type="button"
+            className={`wizard-choice${value === CUSTOM_HOST ? " wizard-choice-selected" : ""}`}
+            aria-pressed={value === CUSTOM_HOST}
+            onClick={() => onChange(CUSTOM_HOST)}
+          >
+            <span className="wizard-choice-title">Build my own</span>
+            <span className="muted" style={{ fontSize: 13 }}>Give them a name, then tell us about them.</span>
+          </button>
+          <p className="muted" style={{ fontSize: 12, margin: "4px 0 0" }}>All of these voices are free.</p>
         </div>
       ) : step.type === "scale" ? (
         <div className="wizard-scale">

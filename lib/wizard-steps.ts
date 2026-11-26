@@ -17,6 +17,7 @@
 //   cadence, time, sources — set on the show page after Create).
 
 import { SHOW_FORMATS } from "@/lib/show-formats";
+import { HOST_PRESETS, type HostPreset } from "@/lib/voices";
 
 export type WizardType =
   | "text"
@@ -24,7 +25,8 @@ export type WizardType =
   | "choice"
   | "scale"
   | "yesno"
-  | "multi";
+  | "multi"
+  | "host";
 
 export interface WizardStep {
   id: string;
@@ -265,6 +267,9 @@ export const WIZARD_STEPS: WizardStep[] = [
   // #60–63 OUT for MVP (inspired-by, catchphrases, never-say, backstory).
 
   // --- Two-host specifics (Host 2 tab) ---
+  // One-tap hosts (jimmy + Matt, Nov 24): pick a ready-made host or build one.
+  { id: "host2_preset", type: "host", question: "Who's the second host?", help: "Tap one to use them as they are. You can change anything later.", when: (d) => d.host_count === 2, tab: "host2", section: "Host 2" },
+  { id: "host2_name", type: "text", question: "What's the second host's name?", placeholder: "e.g. Maya", maxLength: 40, when: (d) => d.host_count === 2 && d.answers.host2_preset === CUSTOM_HOST, tab: "host2" },
   // #75 — add "Professional" and "Mentor / student" (transcript).
   {
     id: "hosts_dynamic",
@@ -321,8 +326,33 @@ export const WIZARD_STEPS: WizardStep[] = [
   // --- Host 1 tab ---
   // (The host2 steps — hosts_dynamic, hosts_disagree, hosts_segments,
   // anything_host2 — live earlier in this array and carry tab: "host2".)
+  // One-tap hosts (jimmy + Matt, Nov 24): Sterling first, or build your own.
+  { id: "host1_preset", type: "host", question: "Pick your host", help: "Tap one to use them as they are. You can change anything later.", tab: "host1", section: "Host 1" },
+  { id: "host1_name", type: "text", question: "What's your host's name?", placeholder: "e.g. Maya", maxLength: 40, when: (d) => d.answers.host1_preset === CUSTOM_HOST, tab: "host1" },
   { id: "anything_host1", type: "textarea", question: "Anything else about host 1?", help: "Backstory, voice tweaks, a catchphrase — anything the writer should know.", placeholder: "e.g. Grew up in Detroit, finance background, dry wit. Loves a short pause for effect.", maxLength: 5000, tab: "host1", section: "Host 1" },
 ];
+
+// The "host" step's value: a HOST_PRESETS id, or CUSTOM_HOST to build one.
+export const CUSTOM_HOST = "custom";
+
+export function hostPreset(id: string | undefined): HostPreset | undefined {
+  return id ? HOST_PRESETS.find((h) => h.id === id) : undefined;
+}
+
+// The host a wizard draft ends up with, for slot 1 or 2. Order: the voice the
+// preview screen picked (answers.hostN_voice), then the one-tap host, then the
+// format's default host. A skipped host step still gets a free voice.
+export function wizardHost(draft: WizardDraft, slot: 1 | 2): { name: string; voice: string } {
+  const a = draft.answers;
+  const picked = a[`host${slot}_preset`];
+  const preset = hostPreset(picked);
+  const format = SHOW_FORMATS.find((f) => f.id === draft.format);
+  const fallback = slot === 1 ? hostPreset(format?.defaultHostName?.toLowerCase()) ?? HOST_PRESETS[0] : undefined;
+  const custom = picked === CUSTOM_HOST;
+  const name = (custom ? a[`host${slot}_name`]?.trim() : "") || preset?.name || (custom ? "" : fallback?.name) || (slot === 1 ? "Host" : "Co-host");
+  const voice = a[`host${slot}_voice`]?.trim() || preset?.voice || (slot === 1 ? fallback?.voice ?? "" : "");
+  return { name, voice };
+}
 
 export function visibleSteps(draft: WizardDraft): WizardStep[] {
   return WIZARD_STEPS.filter((s) => !s.when || s.when(draft));
@@ -358,6 +388,7 @@ function previewLine(step: WizardStep, v: string): string {
   if (step.type === "yesno") return val === "yes" ? "Yes" : "No";
   if (step.type === "scale") return `${val} out of ${step.max ?? 5}${step.maxLabel ? ` (${step.minLabel} → ${step.maxLabel})` : ""}`;
   if (step.type === "multi") return val;
+  if (step.type === "host") return val === CUSTOM_HOST ? "Building my own" : hostPreset(val)?.label ?? val;
   // text / textarea / choice — clip to one short sentence.
   const first = val.split(/(?<=[.!?])\s+/)[0] || val;
   return first.length > 140 ? first.slice(0, 137) + "…" : first;
@@ -415,6 +446,7 @@ export function composeWizardBody(draft: WizardDraft): string {
     const v = draft.answers[step.id];
     if (!v || !v.trim()) continue;
     const line = formatAnswer(step, v);
+    if (!line) continue;
     const arr = bySection.get(step.section) ?? [];
     arr.push(line);
     bySection.set(step.section, arr);
@@ -434,6 +466,7 @@ function formatAnswer(step: WizardStep, v: string): string {
   if (step.type === "yesno") return `- ${step.question} ${val === "yes" ? "Yes" : "No"}`;
   if (step.type === "scale") return `- ${step.question} ${val}/${step.max ?? 5}${step.maxLabel ? ` (${step.minLabel} to ${step.maxLabel})` : ""}`;
   if (step.type === "multi") return `- ${step.question} ${val}`;
+  if (step.type === "host") return hostPreset(val)?.persona ?? "";
   // Most text answers drop the question and read as a short paragraph.
   if (step.type === "textarea") return val;
   return `- ${step.question} ${val}`;
