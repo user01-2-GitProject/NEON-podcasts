@@ -11,7 +11,6 @@ if (sentryEnabled) {
     dsn,
     // Errors only: keep the free-tier 5k events/month budget for issues.
     tracesSampleRate: 0,
-    sendDefaultPii: false,
   });
 }
 
