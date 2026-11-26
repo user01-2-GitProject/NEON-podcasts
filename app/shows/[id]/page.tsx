@@ -73,7 +73,7 @@ export default async function ShowPage({
       <div className="container">
         <div className="panel">
           <img className="show-art" src={artworkPath(show)} alt={`${show.title} artwork`} />
-          <h2>{show.is_official ? <OfficialBadge size={32} /> : null}{show.title}</h2>
+          <h2 className="show-title">{show.is_official ? <OfficialBadge size={32} /> : null}{show.title}</h2>
           <p className="muted">{show.description || "No description."}</p>
           <p className="muted">
             {cadenceLabel(show.cadence, show.air_days)}

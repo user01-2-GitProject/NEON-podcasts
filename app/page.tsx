@@ -64,8 +64,8 @@ export default async function DashboardPage() {
                 return (
                   <div className="list-item" key={show.id}>
                     <div>
-                      <Link href={`/shows/${show.id}`} style={{ fontWeight: 600 }}>
-                        {show.is_official ? <OfficialBadge size={22} /> : null}
+                      <Link href={`/shows/${show.id}`} className="show-title-link" style={{ fontWeight: 600 }}>
+                        {show.is_official ? <OfficialBadge size={24} /> : null}
                         {show.title}
                       </Link>
                       <div className="muted">
