@@ -199,6 +199,32 @@ button:disabled {
   color: var(--danger);
   border-color: var(--danger);
 }
+/* B1: yellow QA pill on an episode card. Click to read the notes. */
+.tag.qa {
+  color: #fbbf24;
+  border-color: #d97706;
+  background: rgba(251, 191, 36, 0.1);
+}
+.qa-notes {
+  display: inline-block;
+  vertical-align: middle;
+}
+.qa-notes > summary {
+  cursor: pointer;
+  list-style: none;
+}
+.qa-notes > summary::-webkit-details-marker {
+  display: none;
+}
+.qa-notes ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  max-width: 640px;
+}
+.qa-notes li + li {
+  margin-top: 4px;
+}
 
 audio {
   width: 100%;

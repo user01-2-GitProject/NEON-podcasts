@@ -58,6 +58,13 @@ export default async function ShowPage({
     select * from runs where show_id = ${id} order by started_at desc limit 10
   `) as Run[];
 
+  // QA notes belong to the episode card, which outlives the run-history limit.
+  const qaRuns = (await sql`
+    select episode_id, script_qa from runs
+    where show_id = ${id} and episode_id is not null and script_qa is not null
+    order by started_at desc
+  `) as Pick<Run, "episode_id" | "script_qa">[];
+
   const activeBriefings = briefings.filter((b) => b.is_active).length;
 
   return (
@@ -126,7 +133,13 @@ export default async function ShowPage({
 
         {owner ? <SteeringPanel showId={id} initialStyleGuide={show.style_guide} initialRules={pronunciations} /> : null}
 
-        <EpisodesPanel initialEpisodes={episodes} runs={runs} owner={owner} rssToken={show.rss_token} />
+        <EpisodesPanel
+          initialEpisodes={episodes}
+          runs={runs}
+          qaRuns={qaRuns}
+          owner={owner}
+          rssToken={show.rss_token}
+        />
       </div>
     </>
   );

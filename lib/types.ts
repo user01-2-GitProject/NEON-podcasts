@@ -1,5 +1,6 @@
 export type { Cadence } from "./cadence";
 import type { Cadence } from "./cadence";
+import type { ScriptQa } from "./script-qa";
 export type NarrationMode = "auto" | "external";
 export type EpisodeStatus = "draft" | "published" | "failed";
 export type RunStatus = "queued" | "running" | "done" | "failed";
@@ -82,6 +83,8 @@ export interface Run {
   tts_provider: string | null;
   cost_cents: number | null;
   error: string | null;
+  /** B1 QA notes for the owner, written when the finished script was checked. */
+  script_qa: ScriptQa | null;
   scheduled_for: string | null;
   attempt_count: number;
   next_attempt_at: string | null;

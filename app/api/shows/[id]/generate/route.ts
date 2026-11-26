@@ -31,8 +31,13 @@ export async function POST(req: Request, { params }: Params) {
     const mode: NarrationMode | undefined =
       raw === "external" ? "external" : raw === "auto" ? "auto" : undefined;
 
-    const { episode, runId, voiceError } = await generateEpisode(id, mode);
-    return NextResponse.json({ episode, runId, voice_error: voiceError ?? null }, { status: 201 });
+    const { episode, runId, voiceError, scriptQa } = await generateEpisode(id, mode);
+    // QA notes are also stored on runs.script_qa (jsonb); echoing them here
+    // lets the panel show the count as soon as generation finishes.
+    return NextResponse.json(
+      { episode, runId, voice_error: voiceError ?? null, script_qa: scriptQa ?? null },
+      { status: 201 },
+    );
   } catch (err) {
     sanitizeError(err, "generateEpisode"); // logs the full details
     captureServerException(err, "generateEpisode"); // reports to Sentry in prod only
