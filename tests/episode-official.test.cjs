@@ -167,14 +167,14 @@ function render(owner, official) {
 
 test("only official episodes show the badge, beside the title", () => {
   const html = render(false, true);
-  const badges = html.match(/src="\/neon-official\.gif"/g) || [];
+  const badges = html.match(/src="\/brand\/neon-logo-orbit-360-clean\.gif"/g) || [];
   assert.equal(badges.length, 1);
-  assert.ok(html.indexOf("/neon-official.gif") < html.indexOf("Markets today"));
-  assert.ok(html.indexOf("/neon-official.gif") < html.indexOf("Plain episode"));
+  assert.ok(html.indexOf("/brand/neon-logo-orbit-360-clean.gif") < html.indexOf("Markets today"));
+  assert.ok(html.indexOf("/brand/neon-logo-orbit-360-clean.gif") < html.indexOf("Plain episode"));
   assert.doesNotMatch(html, /NEON-official/); // no owner toggle for members
 
   const unchanged = render(false, false);
-  assert.doesNotMatch(unchanged, /neon-official\.gif/);
+  assert.doesNotMatch(unchanged, /neon-logo-orbit-360-clean\.gif/);
   assert.equal(unchanged.includes("Markets today"), true);
 });
 
