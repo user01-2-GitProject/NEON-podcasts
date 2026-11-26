@@ -148,3 +148,9 @@ test("reviewLines: shows filled answers only, with short previews", async () => 
   // Empty ids never appear.
   assert.ok(!("audience" in byId));
 });
+
+test("who's going lands in the brief under its own heading", async () => {
+  const w = await import("../lib/wizard-steps.ts");
+  const body = w.composeWizardBody({ ...w.EMPTY_WIZARD, title: "T", answers: { whos_going: "Me, Sarah, Ava and Leo" } });
+  assert.match(body, /## Who's going\nMe, Sarah, Ava and Leo/);
+});

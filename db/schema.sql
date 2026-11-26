@@ -30,7 +30,7 @@ create table if not exists shows (
   description    text not null default '',
   voice_id       text,
   narration_mode text not null default 'auto',        -- auto (app renders TTS) | external (script-only, e.g. Muse)
-  cadence        text not null default 'weekly',      -- daily | weekly | manual
+  cadence        text not null default 'weekly',      -- twice_daily | daily | weekdays | twice_weekly | weekly | days | manual
   schedule_time  text not null default '09:00',       -- HH:MM local
   timezone       text not null default 'UTC',
   target_minutes integer not null default 5,
@@ -44,6 +44,7 @@ create table if not exists shows (
 
 alter table shows add column if not exists style_guide text not null default '';
 alter table shows add column if not exists image_url text;
+alter table shows add column if not exists air_days smallint[];   -- ISO weekdays (1 = Mon … 7 = Sun) for cadence 'days'
 
 create table if not exists show_briefings (
   id          uuid primary key default gen_random_uuid(),

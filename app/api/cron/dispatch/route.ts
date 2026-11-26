@@ -43,6 +43,7 @@ export async function GET(req: Request) {
       when 'weekdays' then (((next_run_at at time zone timezone) + (case extract(isodow from (next_run_at at time zone timezone)) when 5 then 3 when 6 then 2 else 1 end) * interval '1 day') at time zone timezone)
       when 'twice_weekly' then (((next_run_at at time zone timezone) + (case when extract(isodow from (next_run_at at time zone timezone)) < 4 then 4 - extract(isodow from (next_run_at at time zone timezone)) else 8 - extract(isodow from (next_run_at at time zone timezone)) end) * interval '1 day') at time zone timezone)
       when 'weekly' then (((next_run_at at time zone timezone) + interval '7 days') at time zone timezone)
+      when 'days' then (((next_run_at at time zone timezone) + (select min(n) from generate_series(1, 7) n where extract(isodow from (next_run_at at time zone timezone) + n * interval '1 day')::int = any(air_days)) * interval '1 day') at time zone timezone)
       else null
     end
     from stale
@@ -53,11 +54,11 @@ export async function GET(req: Request) {
 
   // Shows without a slot yet (older shows, or ones just switched on) get their first future slot.
   const unscheduled = (await sql`
-    select id, cadence, schedule_time, timezone from shows
+    select id, cadence, schedule_time, timezone, air_days from shows
     where next_run_at is null and is_active = true and cadence = any(${SCHEDULED_CADENCES})
-  `) as { id: string; cadence: string; schedule_time: string; timezone: string }[];
+  `) as { id: string; cadence: string; schedule_time: string; timezone: string; air_days: number[] | null }[];
   for (const show of unscheduled) {
-    const slot = firstSlot(show.cadence, show.schedule_time, show.timezone);
+    const slot = firstSlot(show.cadence, show.schedule_time, show.timezone, new Date(), show.air_days);
     if (!slot) continue;
     await sql`update shows set next_run_at = ${slot.toISOString()} where id = ${show.id} and next_run_at is null`;
   }

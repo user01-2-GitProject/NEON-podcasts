@@ -58,3 +58,29 @@ test("the wizard's 'most important' and 'look up' answers become sections the ap
   assert.deepEqual(researchSites(researchBrief(body)), ["espn.com"]);
   assert.equal(composeBody({ about: "x", audience: "", tone: "", important: " ", lookup: "" }), "## About the show\nx");
 });
+
+test("editing: a saved brief splits back into filled-in answers", async () => {
+  const { composeBody, splitBrief, joinBrief } = await import("../lib/show-wizard.ts");
+  const a = { about: "Stocks and memes.", audience: "Casual investors", tone: "Casual", important: "Never take sides", lookup: "Top movers\nSites: cnbc.com" };
+  const body = composeBody(a);
+  const { answers, layout } = splitBrief(body);
+  assert.deepEqual(answers, a);
+  assert.equal(joinBrief(layout, answers), body);
+});
+
+test("editing: sections the questions don't cover are kept in place", async () => {
+  const { splitBrief, joinBrief } = await import("../lib/show-wizard.ts");
+  const body = "## Format\nNews\n\n## About the show\n- Topic: USA news\n- Unbiased\n\n## Hosts\n- Sterling\n\n## Hard rules\nNo swearing";
+  const { answers, layout } = splitBrief(body);
+  assert.equal(answers.about, "- Topic: USA news\n- Unbiased");
+  assert.equal(answers.tone, "");
+  assert.equal(joinBrief(layout, answers), body);
+  const edited = joinBrief(layout, { ...answers, about: "USA news, straight.", tone: "Calm" });
+  assert.equal(edited, "## Format\nNews\n\n## About the show\nUSA news, straight.\n\n## Hosts\n- Sterling\n\n## Hard rules\nNo swearing\n\n## Voice & style\nCalm");
+});
+
+test("editing: text before any heading is reported so the form keeps the full brief", async () => {
+  const { splitBrief } = await import("../lib/show-wizard.ts");
+  assert.equal(splitBrief("Just some notes\n\n## About the show\nX").layout.preamble, "Just some notes");
+  assert.equal(splitBrief("").layout.preamble, "");
+});

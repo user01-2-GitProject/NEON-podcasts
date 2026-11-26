@@ -9,7 +9,9 @@
 // The walk is grouped into tabs (Show / Host 1 / Host 2 if two hosts), with a
 // review screen at the very end showing every filled answer as a one-sentence
 // preview. Create requires a two-click confirm ("are you sure?") because
-// changes after Create start costing money.
+// changes after Create start costing money. Finish creates the show from
+// the answers and redirects to the show page, whose Edit show button keeps
+// editing.
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
