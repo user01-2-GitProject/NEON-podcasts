@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 type VoiceView = {
-  provider: "openai" | "elevenlabs" | "local";
+  provider: "openai" | "elevenlabs" | "local" | "edge";
   openai_voice: string;
   voices: string[];
   openai_key_set: boolean;
@@ -16,6 +16,7 @@ type VoiceView = {
 export default function VoiceSettingsPanel() {
   const [view, setView] = useState<VoiceView | null>(null);
   const [voice, setVoice] = useState("alloy");
+  const [source, setSource] = useState<"edge" | "openai">("edge");
   const [apiKey, setApiKey] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +28,7 @@ export default function VoiceSettingsPanel() {
     if (!res.ok) throw new Error(data.error || "Request failed");
     setView(data);
     setVoice(data.openai_voice);
+    setSource(data.provider === "openai" ? "openai" : "edge");
   }
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export default function VoiceSettingsPanel() {
 
   function save(e: React.FormEvent) {
     e.preventDefault();
-    const payload: Record<string, unknown> = { provider: "openai", openai_voice: voice };
+    const payload: Record<string, unknown> = { provider: source, openai_voice: voice };
     if (apiKey.trim()) payload.openai_api_key = apiKey.trim();
     void post(payload);
   }
@@ -66,17 +68,39 @@ export default function VoiceSettingsPanel() {
     <div className="panel">
       <h2>Voice</h2>
       <p className="muted">
-        Paste an OpenAI API key so shows set to <strong>Auto</strong> narration come out as an mp3, with no local voice
-        server or Muse needed. Roughly $0.15–0.20 for a 12-minute episode. Shows set to Script only are unaffected.
+        Which voices read shows set to <strong>Auto</strong>. A show that picked a free voice always uses it for free,
+        whatever you choose here. Shows set to Script only are unaffected.
       </p>
       {view === null && !error ? <p className="muted">Loading…</p> : null}
-      {view && view.provider !== "openai" ? (
+      {view && view.provider !== "openai" && view.provider !== "edge" ? (
         <p className="muted">
-          Currently using <code>{view.provider}</code> voices. Saving here switches to OpenAI.
+          Currently using <code>{view.provider}</code> voices. Saving here switches away from them.
         </p>
       ) : null}
       <form onSubmit={save}>
-        <label htmlFor="voice-key">OpenAI API key</label>
+        <div className="wizard-choices" style={{ marginBottom: 12 }}>
+          <button
+            type="button"
+            className={`wizard-choice${source === "edge" ? " wizard-choice-selected" : ""}`}
+            aria-pressed={source === "edge"}
+            onClick={() => setSource("edge")}
+          >
+            <span className="wizard-choice-title">Free voices</span>
+            <span className="muted" style={{ display: "block", fontSize: 13 }}>25 voices, no key, costs nothing.</span>
+          </button>
+          <button
+            type="button"
+            className={`wizard-choice${source === "openai" ? " wizard-choice-selected" : ""}`}
+            aria-pressed={source === "openai"}
+            onClick={() => setSource("openai")}
+          >
+            <span className="wizard-choice-title">OpenAI voices</span>
+            <span className="muted" style={{ display: "block", fontSize: 13 }}>
+              Needs your key. Roughly $0.15–0.20 for a 12-minute episode.
+            </span>
+          </button>
+        </div>
+        <label htmlFor="voice-key">OpenAI API key (only for OpenAI voices)</label>
         <input
           id="voice-key"
           type="password"
@@ -86,7 +110,7 @@ export default function VoiceSettingsPanel() {
           placeholder={placeholder}
         />
         <label htmlFor="voice-name" style={{ marginTop: 12 }}>
-          Default voice
+          Default OpenAI voice
         </label>
         <select id="voice-name" value={voice} onChange={(e) => setVoice(e.target.value)}>
           {(view?.voices ?? ["alloy"]).map((v) => (
