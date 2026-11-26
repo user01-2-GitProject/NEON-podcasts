@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SHOW_FORMATS } from "@/lib/show-formats";
 import { OPENAI_VOICE_OPTIONS } from "@/lib/voices";
+import ShowPreview from "@/components/ShowPreview";
 import {
   EMPTY_WIZARD,
   brandedTitle,
@@ -103,7 +104,9 @@ export default function ShowWizard() {
     setError(null);
     try {
       const format = SHOW_FORMATS.find((f) => f.id === draft.format);
-      const voice = format?.defaultVoice && OPENAI_VOICE_OPTIONS.some((v) => v.id === format.defaultVoice) ? format.defaultVoice : "";
+      // The voice picked on the preview, else the format's default voice.
+      const voice = draft.answers.host1_voice?.trim()
+        || (format?.defaultVoice && OPENAI_VOICE_OPTIONS.some((v) => v.id === format.defaultVoice) ? format.defaultVoice : "");
       // Hosts must have a name (lib/show-spec.ts validateShowSpec); the wizard
       // doesn't ask for the second host's name yet, so we give sensible fallbacks.
       const firstName = format?.defaultHostName || "Host";
@@ -156,6 +159,9 @@ export default function ShowWizard() {
   // ---- Review phase: shown after the last step. ----
   if (reviewing) {
     const lines = reviewLines(draft);
+    const previewFormat = SHOW_FORMATS.find((f) => f.id === draft.format);
+    const previewHost = previewFormat?.defaultHostName || "Sterling";
+    const previewVoice = draft.answers.host1_voice || previewFormat?.defaultVoice || "onyx";
     const previewAnswer = draft.answers.preview ?? "";
     return (
       <div className="wizard">
@@ -181,6 +187,13 @@ export default function ShowWizard() {
           ) : (
             <p className="muted">You skipped every question — we'll use sensible defaults.</p>
           )}
+          <hr style={{ margin: "16px 0", borderColor: "rgba(255,255,255,0.08)" }} />
+          <ShowPreview
+            draft={draft}
+            hostName={previewHost}
+            voice={previewVoice}
+            onVoiceChange={(v) => setAnswer("host1_voice", v)}
+          />
           <hr style={{ margin: "16px 0", borderColor: "rgba(255,255,255,0.08)" }} />
           <h3 style={{ marginTop: 0 }}>Make the first full episode now?</h3>
           <p className="muted">You can also do this later from the show page.</p>

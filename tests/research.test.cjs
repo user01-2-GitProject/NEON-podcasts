@@ -136,6 +136,7 @@ test("a show that asks for it gets its look-up as a briefing, sources in the not
   const script = "Good evening. ".repeat(80).trim();
   const gen = load("lib/generate.ts", {
     "@/lib/db": { sql, getSql: () => ({ transaction: async () => [[]] }) },
+    "@/lib/episode-title": require("../lib/episode-title.ts"),
     "@/lib/claude": {
       generateScript: async (args) => { writerDocs = args.briefings; return { result: { title: "T", script, show_notes: "notes" }, model: "m", inputTokens: 1, outputTokens: 1 }; },
       estimateCostCents: () => 2,

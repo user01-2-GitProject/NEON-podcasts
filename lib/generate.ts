@@ -1,3 +1,4 @@
+import { cleanEpisodeTitle, shortDateLabel } from "@/lib/episode-title";
 import { randomUUID } from "node:crypto";
 import { getSql, sql } from "@/lib/db";
 import { generateScript, estimateCostCents, mostImportant } from "@/lib/claude";
@@ -149,8 +150,13 @@ export async function generateEpisode(
     }
     const checkNote = issues.length ? `Script check: ${issues.map((i) => i.message).join(" ")}` : null;
 
-    // A planned episode keeps the title it was planned with.
+    // A planned episode keeps the title it was planned with; otherwise the
+    // writer's title is tidied into a clean automatic one (lib/episode-title).
     if (selection.plan?.title) result.title = selection.plan.title;
+    else result.title = cleanEpisodeTitle(result.title, {
+      showTitle: show.title,
+      dateLabel: shortDateLabel(new Date(), show.timezone),
+    });
     if (research) {
       inputTokens += research.inputTokens;
       outputTokens += research.outputTokens;
