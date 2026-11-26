@@ -5,6 +5,7 @@ import { sql } from "@/lib/db";
 import { generateEpisode } from "@/lib/generate";
 import { friendlyGenerateError, sanitizeError } from "@/lib/errors";
 import { checkGeneration } from "@/lib/limits";
+import { captureServerException } from "@/sentry.server.config";
 import type { NarrationMode } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -34,6 +35,7 @@ export async function POST(req: Request, { params }: Params) {
     return NextResponse.json({ episode, runId, voice_error: voiceError ?? null }, { status: 201 });
   } catch (err) {
     sanitizeError(err, "generateEpisode"); // logs the full details
+    captureServerException(err, "generateEpisode"); // reports to Sentry in prod only
     const { message, status } = friendlyGenerateError(err);
     return NextResponse.json({ error: message }, { status });
   }
