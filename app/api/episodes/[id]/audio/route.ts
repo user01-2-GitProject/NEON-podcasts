@@ -83,7 +83,7 @@ export async function POST(req: Request, { params }: Params) {
   const { id } = await params;
 
   const episodeRows = (await sql`select id from episodes where id = ${id}`) as { id: string }[];
-  if (!episodeRows[0]) return NextResponse.json({ error: "Episode not found" }, { status: 404 });
+  if (!episodeRows[0]) return NextResponse.json({ error: "We couldn't find that episode." }, { status: 404 });
 
   let bytes: Buffer;
   let contentType = "audio/mpeg";
@@ -94,7 +94,7 @@ export async function POST(req: Request, { params }: Params) {
       const form = await req.formData();
       const file = form.get("file");
       if (!(file instanceof File)) {
-        return NextResponse.json({ error: "No file provided" }, { status: 400 });
+        return NextResponse.json({ error: "Pick an audio file to upload." }, { status: 400 });
       }
       if (file.type) contentType = file.type;
       bytes = Buffer.from(await file.arrayBuffer());
@@ -111,7 +111,7 @@ export async function POST(req: Request, { params }: Params) {
   }
 
   if (bytes.length === 0) {
-    return NextResponse.json({ error: "Empty upload" }, { status: 400 });
+    return NextResponse.json({ error: "That file is empty. Pick another one." }, { status: 400 });
   }
 
   const storage = getStorage();

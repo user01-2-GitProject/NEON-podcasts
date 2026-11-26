@@ -10,15 +10,15 @@ export async function POST(req: Request) {
   const session = await auth();
   const email = session?.user?.email;
   if (typeof email !== "string" || email.length === 0) {
-    return NextResponse.json({ error: "session required" }, { status: 403 });
+    return NextResponse.json({ error: "Please sign in on the website to do this. An app key can't." }, { status: 403 });
   }
 
   const users = (await sql`select id from users where email = ${email} limit 1`) as { id: string }[];
   const userId = users[0]?.id;
-  if (!userId) return NextResponse.json({ error: "session required" }, { status: 403 });
+  if (!userId) return NextResponse.json({ error: "Please sign in on the website to do this. An app key can't." }, { status: 403 });
 
   const input = parseAgentTokenInput(await req.json().catch(() => null));
-  if (!input) return NextResponse.json({ error: "invalid label or scope" }, { status: 400 });
+  if (!input) return NextResponse.json({ error: "Give the device a name and pick read-only or read-write." }, { status: 400 });
 
   const token = await createAgentToken(sql, userId, input.label, input.scope);
   return NextResponse.json(token, {
@@ -29,14 +29,14 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   const userId = await currentUserId(req);
-  if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!userId) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
   const tokens = await listMyTokens(sql, userId);
   return NextResponse.json({ tokens }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function DELETE(req: Request) {
   const userId = await currentUserId(req);
-  if (!userId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!userId) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
   const revoked = await revokeAllMyTokens(sql, userId);
   return NextResponse.json({ ok: true, revoked }, { headers: { "Cache-Control": "no-store" } });
 }

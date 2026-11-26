@@ -13,7 +13,7 @@ type Params = { params: Promise<{ id: string }> };
 export async function GET(_req: Request, { params }: Params) {
   const { id } = await params;
   const rows = (await sql`select * from shows where id = ${id}`) as Show[];
-  if (!rows[0]) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (!rows[0]) return NextResponse.json({ error: "We couldn't find that show." }, { status: 404 });
   return NextResponse.json({ show: rows[0] });
 }
 
@@ -23,7 +23,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
   const existing = (await sql`select * from shows where id = ${id}`) as Show[];
   const show = existing[0];
-  if (!show) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (!show) return NextResponse.json({ error: "We couldn't find that show." }, { status: 404 });
 
   const title = body.title !== undefined ? body.title.toString().trim() || show.title : show.title;
   const description = body.description !== undefined ? body.description.toString() : show.description;

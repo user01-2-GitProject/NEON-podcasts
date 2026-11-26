@@ -14,6 +14,6 @@ export async function GET(req: Request) {
     authHeader: req.headers.get("authorization"),
     db: sql,
   });
-  if (!email) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!email) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
   return NextResponse.json({ shows: await listBrowse(sql, email) });
 }

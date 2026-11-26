@@ -16,7 +16,7 @@ export async function GET() {
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const title = (body.title || "").toString().trim();
-  if (!title) return NextResponse.json({ error: "title is required" }, { status: 400 });
+  if (!title) return NextResponse.json({ error: "Give the show a name first." }, { status: 400 });
 
   const description = (body.description || "").toString();
   const voiceId = body.voice_id ? body.voice_id.toString() : null;
