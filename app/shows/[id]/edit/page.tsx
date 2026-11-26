@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { sql } from "@/lib/db";
 import { auth } from "@/auth";
 import ShowSpecForm from "@/components/ShowSpecForm";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,6 +28,7 @@ export default async function EditShowPage({ params }: { params: Promise<{ id: s
         <Link href={`/shows/${id}`} className="btn secondary">
           ← Back to {rows[0].title}
         </Link>
+        <ThemeToggle />
       </header>
       <div className="container">
         <ShowSpecForm editShowId={id} />

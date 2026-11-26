@@ -7,6 +7,7 @@ import TokenAdmin from "@/components/TokenAdmin";
 import DeleteAccountPanel from "@/components/DeleteAccountPanel";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,6 +25,7 @@ export default async function SettingsPage() {
         <Link href="/" className="btn secondary">
           ← All shows
         </Link>
+        <ThemeToggle />
       </header>
 
       <div className="container">

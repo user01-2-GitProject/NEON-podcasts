@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import LiveSessions from "@/components/LiveSessions";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ export default async function LivePage() {
           <Link href="/" className="btn secondary">All shows</Link>
           <Link href="/settings" className="btn secondary">Settings</Link>
         </div>
+        <ThemeToggle />
       </header>
 
       <div className="container">

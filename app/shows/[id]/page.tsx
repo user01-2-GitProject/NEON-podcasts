@@ -14,6 +14,7 @@ import OfficialToggle from "@/components/OfficialToggle";
 import ShowArtworkForm from "@/components/ShowArtworkForm";
 import ShowSpecPanel from "@/components/ShowSpecPanel";
 import { auth } from "@/auth";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export const runtime = "nodejs";
 
@@ -76,6 +77,7 @@ export default async function ShowPage({
         <Link href="/" className="btn secondary">
           ← All shows
         </Link>
+        <ThemeToggle />
       </header>
 
       <div className="container">

@@ -9,6 +9,7 @@ import ShowSpecForm from "@/components/ShowSpecForm";
 import SignOutButton from "@/components/SignOutButton";
 import UsageMeter from "@/components/UsageMeter";
 import { auth } from "@/auth";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,6 +42,7 @@ export default async function DashboardPage() {
           {owner ? <Link href="/settings" className="btn secondary">Settings</Link> : null}
           <SignOutButton />
         </nav>
+        <ThemeToggle />
       </header>
 
       <main className="container home-container">
