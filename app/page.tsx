@@ -1,14 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { cadenceLabel } from "@/lib/cadence";
-import { artworkPath } from "@/lib/cover";
-import { sql } from "@/lib/db";
-import type { Show } from "@/lib/types";
 import OfficialBadge from "@/components/OfficialBadge";
+import ShowRail, { episodeCards, showCards } from "@/components/ShowRail";
 import ShowSpecForm from "@/components/ShowSpecForm";
 import SignOutButton from "@/components/SignOutButton";
 import UsageMeter from "@/components/UsageMeter";
 import { auth } from "@/auth";
+import { sql } from "@/lib/db";
+import { getHomeRails } from "@/lib/home-rails";
+import { subscriberEmail } from "@/lib/subscriptions";
+
+import "./home-rails.css";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,19 +19,21 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const session = await auth();
   const owner = (session?.user as { role?: string } | undefined)?.role === "owner";
-  let shows: (Show & { episode_count: number })[] = [];
+  const email = subscriberEmail(session);
+  let rails = {
+    your_shows: [],
+    official: [],
+    fresh_episodes: [],
+    everything: [],
+  } as Awaited<ReturnType<typeof getHomeRails>>;
   let dbError: string | null = null;
   try {
-    shows = (await sql`
-      select s.*,
-        (select count(*) from episodes e where e.show_id = s.id) as episode_count
-      from shows s order by s.created_at desc
-    `) as (Show & { episode_count: number })[];
+    rails = await getHomeRails(sql, email);
   } catch (err) {
     dbError = err instanceof Error ? err.message : String(err);
   }
 
-  const featured = shows[0];
+  const featured = rails.everything[0];
 
   return (
     <>
@@ -55,41 +60,47 @@ export default async function DashboardPage() {
 
         {featured ? (
           <section className="featured-show" aria-labelledby="featured-heading">
-            <Image className="featured-art" src={artworkPath(featured)} alt={`${featured.title} cover art`} width={360} height={360} unoptimized priority />
+            <Image className="featured-art" src={featured.image_url} alt={`${featured.title} cover art`} width={360} height={360} unoptimized priority />
             <div className="featured-copy">
               <p className="eyebrow">Featured podcast</p>
               <h2 id="featured-heading" className="home-show-title">
                 <OfficialBadge size={30} label={featured.is_official ? "NEON official" : "Featured podcast"} />
                 {featured.title}
               </h2>
-              <p className="muted">{cadenceLabel(featured.cadence, featured.air_days)} · ~{featured.target_minutes} min · {Number(featured.episode_count)} episode{Number(featured.episode_count) === 1 ? "" : "s"}</p>
+              <p className="muted">{cadenceLabel(featured.cadence, featured.air_days)} · ~{featured.target_minutes} min · {featured.episode_count} episode{featured.episode_count === 1 ? "" : "s"}</p>
               <Link href={`/shows/${featured.id}`} className="btn primary">Open show</Link>
             </div>
           </section>
         ) : null}
 
-        <section className="home-section" aria-labelledby="shows-heading">
-          <div className="home-section-heading">
-            <h2 id="shows-heading">Shows</h2>
-            <Link href="/browse">Browse all</Link>
-          </div>
-          {shows.length === 0 ? (
-            <div className="panel"><p className="muted">No shows yet. Create your first show to get started.</p></div>
-          ) : (
-            <div className="show-grid">
-              {shows.map((show) => (
-                <Link href={`/shows/${show.id}`} className="show-card" key={show.id}>
-                  <Image className="show-card-art" src={artworkPath(show)} alt="" width={320} height={320} unoptimized />
-                  <h3 className="home-show-title">
-                    {show.is_official ? <OfficialBadge size={22} /> : null}
-                    {show.title}
-                  </h3>
-                  <p className="muted">{cadenceLabel(show.cadence, show.air_days)} · ~{show.target_minutes} min</p>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
+        <ShowRail
+          id="your-shows"
+          title="Your shows"
+          href="/subscriptions"
+          cards={showCards(rails.your_shows)}
+          empty={email ? "Follow a show and it will show up here." : "Sign in to see the shows you follow."}
+        />
+        <ShowRail
+          id="official"
+          title="NEON Official"
+          href="/browse"
+          cards={showCards(rails.official)}
+          empty="No official shows have published episodes yet."
+        />
+        <ShowRail
+          id="fresh"
+          title="Fresh episodes"
+          href="/browse"
+          cards={episodeCards(rails.fresh_episodes)}
+          empty="No episodes published yet."
+        />
+        <ShowRail
+          id="everything"
+          title="Browse everything"
+          href="/browse"
+          cards={showCards(rails.everything)}
+          empty="No shows yet. Create your first show to get started."
+        />
 
         {owner ? (
           <section className="panel home-owner-tools">
