@@ -26,7 +26,7 @@ export async function POST(req: Request, { params }: Params) {
     where e.id = ${id}
   `) as { id: string; show_id: string; script: string | null; audio_url: string | null; voice_id: string | null }[];
   const ep = rows[0];
-  if (!ep) return NextResponse.json({ error: "Episode not found" }, { status: 404 });
+  if (!ep) return NextResponse.json({ error: "We couldn't find that episode." }, { status: 404 });
   if (ep.audio_url && !redo) return NextResponse.json({ error: "This episode already has audio" }, { status: 409 });
   if (!ep.script?.trim()) return NextResponse.json({ error: "This episode has no script to read" }, { status: 400 });
 

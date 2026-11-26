@@ -189,9 +189,11 @@ button:disabled {
   border: 1px solid var(--border);
   color: var(--muted);
 }
-.tag.active {
+.tag.active,
+.tag.example {
   color: var(--accent);
   border-color: var(--accent);
+  margin-left: 8px;
 }
 .tag.failed {
   color: var(--danger);

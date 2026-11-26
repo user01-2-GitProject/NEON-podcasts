@@ -24,7 +24,7 @@ function filename(title: string): string {
 export async function GET(req: Request, { params }: Params) {
   const { id } = await params;
   const shows = (await sql`select * from shows where id = ${id}`) as Show[];
-  if (!shows[0]) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (!shows[0]) return NextResponse.json({ error: "We couldn't find that show." }, { status: 404 });
   const prons = (await sql`
     select * from show_pronunciations where show_id = ${id} order by created_at asc, term asc
   `) as Pronunciation[];
@@ -48,13 +48,13 @@ export async function PUT(req: Request, { params }: Params) {
   const { id } = await params;
   const raw = await req.text();
   if (raw.length > MAX_SPEC_BYTES * 2) {
-    return NextResponse.json({ error: "request too large" }, { status: 413 });
+    return NextResponse.json({ error: "That's too big to send. Try something smaller." }, { status: 413 });
   }
   let body: { markdown?: unknown; spec?: unknown } = {};
   try {
     body = JSON.parse(raw);
   } catch {
-    return NextResponse.json({ error: "invalid JSON" }, { status: 400 });
+    return NextResponse.json({ error: "That request didn't come through right. Try again." }, { status: 400 });
   }
   let spec;
   let errors: string[];
@@ -64,7 +64,7 @@ export async function PUT(req: Request, { params }: Params) {
     spec = coerceShowSpec(body.spec);
     errors = validateShowSpec(spec);
   } else {
-    return NextResponse.json({ error: "send { markdown } or { spec }" }, { status: 400 });
+    return NextResponse.json({ error: "Send the show setup as { markdown } or { spec }." }, { status: 400 });
   }
   if (errors.length) return NextResponse.json({ error: errors[0], errors }, { status: 400 });
 
@@ -112,6 +112,6 @@ export async function PUT(req: Request, { params }: Params) {
     )
     select * from s
   `) as Show[];
-  if (!rows[0]) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (!rows[0]) return NextResponse.json({ error: "We couldn't find that show." }, { status: 404 });
   return NextResponse.json({ show: rows[0] });
 }

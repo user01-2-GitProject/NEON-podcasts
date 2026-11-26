@@ -26,7 +26,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
   if (body?.status !== "published" && body?.status !== "draft") {
     return NextResponse.json(
-      { error: safeErrorMessage("Status must be published or draft") },
+      { error: safeErrorMessage("An episode can only be published or a draft.") },
       { status: 400 }
     );
   }
@@ -43,7 +43,7 @@ export async function PATCH(req: Request, { params }: Params) {
         `) as Episode[];
 
     if (!rows[0]) {
-      return NextResponse.json({ error: "Episode not found" }, { status: 404 });
+      return NextResponse.json({ error: "We couldn't find that episode." }, { status: 404 });
     }
     return NextResponse.json({ episode: rows[0] }, { status: 200 });
   } catch (err) {

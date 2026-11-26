@@ -13,13 +13,13 @@ export const runtime = "nodejs";
 export async function POST(req: Request) {
   const raw = await req.text();
   if (raw.length > MAX_SPEC_BYTES * 2) {
-    return NextResponse.json({ error: "request too large" }, { status: 413 });
+    return NextResponse.json({ error: "That's too big to send. Try something smaller." }, { status: 413 });
   }
   let body: { markdown?: unknown; spec?: unknown } = {};
   try {
     body = JSON.parse(raw);
   } catch {
-    return NextResponse.json({ error: "invalid JSON" }, { status: 400 });
+    return NextResponse.json({ error: "That request didn't come through right. Try again." }, { status: 400 });
   }
 
   let spec;
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     spec = coerceShowSpec(body.spec);
     errors = validateShowSpec(spec);
   } else {
-    return NextResponse.json({ error: "send { markdown } or { spec }" }, { status: 400 });
+    return NextResponse.json({ error: "Send the show setup as { markdown } or { spec }." }, { status: 400 });
   }
   if (errors.length) {
     return NextResponse.json({ error: errors[0], errors }, { status: 400 });

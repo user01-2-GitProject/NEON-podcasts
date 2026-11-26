@@ -49,24 +49,24 @@ export async function exchangeGoogleIdToken(opts: {
   const genToken = opts.genToken ?? newApiToken;
 
   if (typeof idToken !== "string" || idToken.length === 0) {
-    return { status: 400, body: { error: "id_token is required" } };
+    return { status: 400, body: { error: "The sign-in didn't come through. Try again." } };
   }
   if (allowedAudiences.length === 0) {
-    return { status: 500, body: { error: "google client id not configured" } };
+    return { status: 500, body: { error: "Google sign-in isn't set up for the app yet." } };
   }
 
   const info = await verify(idToken);
-  if (!info) return { status: 401, body: { error: "invalid id_token" } };
+  if (!info) return { status: 401, body: { error: "Google couldn't confirm that sign-in. Try again." } };
 
   // tokeninfo returns aud and email_verified as strings; accept string or boolean.
   if (typeof info.aud !== "string" || !allowedAudiences.includes(info.aud)) {
-    return { status: 401, body: { error: "audience mismatch" } };
+    return { status: 401, body: { error: "That sign-in came from an app we don't know." } };
   }
   const verified = info.email_verified === true || info.email_verified === "true";
   const email =
     typeof info.email === "string" ? info.email.trim().toLowerCase() : null;
   if (!verified || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { status: 401, body: { error: "email not verified" } };
+    return { status: 401, body: { error: "Your Google email isn't verified yet. Verify it with Google, then try again." } };
   }
 
   const role = roleForEmail(email);
