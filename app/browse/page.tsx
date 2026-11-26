@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import FollowButton from "@/components/FollowButton";
 import OfficialBadge from "@/components/OfficialBadge";
+import { EXAMPLE_SHOWS, isExampleShow } from "@/lib/example-shows";
 import { sql } from "@/lib/db";
 import { listFollows, subscriberEmail } from "@/lib/subscriptions";
 
@@ -43,7 +44,11 @@ export default async function BrowsePage() {
       left join episodes e on e.show_id = s.id
       group by s.id
       having count(e.*) filter (where e.status = 'published') > 0
-      order by latest_at desc nulls last
+      order by case s.id
+        when ${EXAMPLE_SHOWS[0].id} then 0
+        when ${EXAMPLE_SHOWS[1].id} then 1
+        else 2
+      end, latest_at desc nulls last
     `) as BrowseShow[];
     followed = email ? await listFollows(sql, email) : [];
   } catch (err) {
@@ -73,7 +78,11 @@ export default async function BrowsePage() {
             shows.map((show) => (
               <div className="list-item" key={show.id}>
                 <div>
-                  <h2>{show.is_official ? <OfficialBadge /> : null}{show.title}</h2>
+                  <h2>
+                    {show.is_official ? <OfficialBadge /> : null}
+                    {show.title}
+                    {isExampleShow(show.id) ? <span className="tag example">Example</span> : null}
+                  </h2>
                   <p className="muted">{show.description || "No description."}</p>
                   <p className="muted">
                     {Number(show.published_count)} episodes · {formatDate(show.latest_at)}

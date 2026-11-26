@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { HOST_PRESETS } from "@/lib/voices";
+import { exampleForFormat, exampleListenPath } from "@/lib/example-shows";
 import { parseTrickyWords } from "@/lib/pronounce";
 import TrickyWordsFinder from "@/components/TrickyWordsFinder";
 import ShowPreview from "@/components/ShowPreview";
@@ -255,6 +256,20 @@ export default function ShowWizard() {
       <WizardProgress current={clampedIdx + 1} total={flat.length} />
       <div className="wizard-card">
         <StepView step={step} value={valueFor(step)} onChange={(v) => setAnswer(step.id, v)} firstRef={firstInput} />
+        {step.id === "title" || step.id === "format" ? (
+          // A finished show to copy the feel of. The draft saves as you type,
+          // so leaving for /listen doesn't lose their answers.
+          (() => {
+            const example = exampleForFormat(draft.format);
+            return (
+              <p className="muted" style={{ marginTop: 16 }}>
+                Want a model?{" "}
+                <Link href={exampleListenPath(example)}>See a show like this</Link>
+                {" — "}{example.title} ({example.formatLabel}).
+              </p>
+            );
+          })()
+        ) : null}
         {(step.id === "host1_preset" || step.id === "host2_preset") && valueFor(step) && valueFor(step) !== CUSTOM_HOST ? (
           // Hear the picked host right here, before moving on (jimmy, Nov 26).
           // The preview uses whatever's filled in so far; onVoiceChange lets
