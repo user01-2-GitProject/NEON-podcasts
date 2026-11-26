@@ -10,6 +10,7 @@ import SteeringPanel from "@/components/SteeringPanel";
 import EpisodesPanel from "@/components/EpisodesPanel";
 import DeleteShowButton from "@/components/DeleteShowButton";
 import OfficialBadge from "@/components/OfficialBadge";
+import OfficialToggle from "@/components/OfficialToggle";
 import ShowArtworkForm from "@/components/ShowArtworkForm";
 import ShowSpecPanel from "@/components/ShowSpecPanel";
 import { auth } from "@/auth";
@@ -101,12 +102,21 @@ export default async function ShowPage({
             </>
           ) : null}
           {owner ? <ShowArtworkForm showId={id} initialImageUrl={show.image_url ?? null} /> : null}
+          {owner ? (
+            <div style={{ margin: "12px 0" }}>
+              <OfficialToggle showId={id} initialOfficial={!!show.is_official} />
+            </div>
+          ) : null}
           {owner ? <DeleteShowButton showId={id} showTitle={show.title} /> : null}
         </div>
 
         <BriefingsPanel showId={id} initialBriefings={briefings} owner={owner} />
 
-        {owner ? <GeneratePanel
+        {/* Make an episode now: always visible to owners; also shown when the
+            show's cadence is manual, so a non-owner reading a manual show
+            sees the "generate now" option (jimmy, 2026-11-26). The API still
+            owner-gates the POST at middleware. */}
+        {owner || show.cadence === "manual" ? <GeneratePanel
           showId={id}
           activeBriefings={activeBriefings}
           narrationMode={show.narration_mode === "external" ? "external" : "auto"}
