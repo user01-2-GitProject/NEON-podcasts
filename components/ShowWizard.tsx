@@ -171,7 +171,7 @@ export default function ShowWizard() {
         <div className="wizard-card">
           <h2>Your show so far</h2>
           <p className="muted">
-            It'll be called <strong>{brandedTitle(draft.title || "(untitled)")}</strong>.
+            It'll be called <strong>{brandedTitle(draft.title) || "(untitled)"}</strong>.
             Tap <em>Back</em> to change anything, or create the show below.
           </p>
           {lines.length ? (
