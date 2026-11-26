@@ -65,7 +65,10 @@ export async function GET(req: Request, { params }: Params) {
 
   const origin = new URL(req.url).origin;
   const feedUrl = new URL(`/feed/${token}`, origin).href;
-  const items = episodes.map((episode) => {
+  // Episodes are numbered oldest = 1 in <itunes:episode>, so titles never
+  // need "Episode 12:" in them (Apple asks for the number in the tag).
+  const items = episodes.map((episode, index) => {
+    const episodeNumber = episodes.length - index;
     const audio = new URL(episode.audio_url, origin);
     const episodeDuration = duration(episode.duration_seconds);
     if (audio.origin === origin && /^\/api\/episodes\/[^/]+\/audio$/.test(audio.pathname)) {
@@ -77,6 +80,9 @@ export async function GET(req: Request, { params }: Params) {
       <pubDate>${new Date(episode.published_at).toUTCString()}</pubDate>
       <guid isPermaLink="false">${xml(episode.id)}</guid>
       <enclosure url="${xml(audio.href)}" length="${episode.byte_size}" type="audio/mpeg" />
+      <itunes:title>${xml(episode.title)}</itunes:title>
+      <itunes:episode>${episodeNumber}</itunes:episode>
+      <itunes:episodeType>full</itunes:episodeType>
       <itunes:explicit>${explicit}</itunes:explicit>
       ${episodeDuration == null ? "" : `<itunes:duration>${episodeDuration}</itunes:duration>`}
     </item>`;

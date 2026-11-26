@@ -93,7 +93,7 @@ export function buildPrompt(args: GenerateArgs): { system: string; userText: str
     "- The show style guidance (its rules, favorite things, segments and host notes) is direction for you, the writer. Act on it; never read it out or talk about it. Don't say things like \"the rule on this show is\", \"as instructed\" or \"my style guide says\". If a rule says to cover something every day, just cover it naturally.",
     "- If the source material is thin or missing, build the episode from the show's title, description and style guidance using well-known background. Do not invent specific current events, prices, quotes or statistics.",
     "Rules for show_notes: concise markdown summary with a one-line hook and 3-6 bullet takeaways.",
-    "Rules for title: a specific, engaging episode title (no date unless relevant).",
+    "Rules for title: a specific, engaging episode title of 3 to 10 words about this episode's main story. Don't include the show name, the word \"Episode\", an episode number, quotes or emojis, and no date unless the date is the point.",
   ];
   const styleGuide = args.styleGuide?.trim();
   const priority = mostImportant(styleGuide);
@@ -245,4 +245,61 @@ export function estimateCostCents(inputTokens: number, outputTokens: number): nu
   // returning a fractional value (e.g. 1.07) makes the run INSERT fail with
   // "invalid input syntax for type integer", which 500s every generation.
   return Math.round(cents);
+}
+
+// A short free-text completion (no JSON), for small jobs like the wizard's
+// 30-second voice preview. Same provider routing as generateScript().
+export async function completeText(opts: {
+  system: string;
+  user: string;
+  maxTokens: number;
+}): Promise<{ text: string; model: string; inputTokens: number; outputTokens: number }> {
+  const cfg = await resolveLlmConfig();
+  if (cfg.provider === "openrouter") {
+    const apiKey = cfg.openRouterApiKey || process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error("OpenRouter API key is not set — add it in Settings, or set OPENROUTER_API_KEY");
+    const model = cfg.openRouterModel || process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL;
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://neon-podcasts.vercel.app",
+        "X-Title": "NEON Podcasts",
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: opts.maxTokens,
+        messages: [
+          { role: "system", content: opts.system },
+          { role: "user", content: opts.user },
+        ],
+      }),
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "<no body>");
+      throw new Error(`OpenRouter request failed (${res.status}): ${detail.slice(0, 500)}`);
+    }
+    const data = (await res.json()) as {
+      choices?: { message?: { content?: string } }[];
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    };
+    const text = data.choices?.[0]?.message?.content;
+    if (!text) throw new Error("OpenRouter returned no content");
+    return { text, model, inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 };
+  }
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
+  const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
+  const message = await new Anthropic({ apiKey }).messages.create({
+    model,
+    max_tokens: opts.maxTokens,
+    system: opts.system,
+    messages: [{ role: "user", content: opts.user }],
+  });
+  const text = message.content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("");
+  return { text, model, inputTokens: message.usage.input_tokens, outputTokens: message.usage.output_tokens };
 }

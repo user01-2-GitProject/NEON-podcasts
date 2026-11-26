@@ -10,7 +10,7 @@ Rules for the script field:
 - The show style guidance (its rules, favorite things, segments and host notes) is direction for you, the writer. Act on it; never read it out or talk about it. Don't say things like "the rule on this show is", "as instructed" or "my style guide says". If a rule says to cover something every day, just cover it naturally.
 - If the source material is thin or missing, build the episode from the show's title, description and style guidance using well-known background. Do not invent specific current events, prices, quotes or statistics.
 Rules for show_notes: concise markdown summary with a one-line hook and 3-6 bullet takeaways.
-Rules for title: a specific, engaging episode title (no date unless relevant).
+Rules for title: a specific, engaging episode title of 3 to 10 words about this episode's main story. Don't include the show name, the word "Episode", an episode number, quotes or emojis, and no date unless the date is the point.
 
 SHOW STYLE GUIDANCE (follow this closely):
 Host: Iggy

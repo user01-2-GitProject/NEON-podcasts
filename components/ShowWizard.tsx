@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { HOST_PRESETS } from "@/lib/voices";
+import ShowPreview from "@/components/ShowPreview";
 import {
   CUSTOM_HOST,
   EMPTY_WIZARD,
@@ -153,6 +154,10 @@ export default function ShowWizard() {
   // ---- Review phase: shown after the last step. ----
   if (reviewing) {
     const lines = reviewLines(draft);
+    // Same host and voice that Create will save (wizardHost).
+    const host1 = wizardHost(draft, 1);
+    const previewHost = host1.name;
+    const previewVoice = host1.voice;
     const previewAnswer = draft.answers.preview ?? "";
     return (
       <div className="wizard">
@@ -178,6 +183,13 @@ export default function ShowWizard() {
           ) : (
             <p className="muted">You skipped every question — we'll use sensible defaults.</p>
           )}
+          <hr style={{ margin: "16px 0", borderColor: "rgba(255,255,255,0.08)" }} />
+          <ShowPreview
+            draft={draft}
+            hostName={previewHost}
+            voice={previewVoice}
+            onVoiceChange={(v) => setAnswer("host1_voice", v)}
+          />
           <hr style={{ margin: "16px 0", borderColor: "rgba(255,255,255,0.08)" }} />
           <h3 style={{ marginTop: 0 }}>Make the first full episode now?</h3>
           <p className="muted">You can also do this later from the show page.</p>
