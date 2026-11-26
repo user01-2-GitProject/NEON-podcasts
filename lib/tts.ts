@@ -1,8 +1,15 @@
-// Text-to-speech abstraction. Supports OpenAI, ElevenLabs, and local/self-hosted.
-// Long scripts are chunked and the resulting mp3 buffers concatenated.
+// Text-to-speech abstraction. Supports OpenAI, ElevenLabs, local/self-hosted,
+// and free Microsoft Edge voices. Long scripts are chunked and the resulting
+// mp3 buffers concatenated.
+//
+// The show's voice id picks the engine first ("edge:..." is always Edge,
+// "kokoro:..." is always the local server), so a free voice stays free even
+// when the app-wide setting is OpenAI. Anything else uses the app-wide
+// provider from Settings → Voice.
 
 import { joinMp3 } from "@/lib/mp3";
-import { pickOpenAiVoice, resolveTtsConfig, type TtsConfig } from "@/lib/settings";
+import { pickOpenAiVoice, resolveTtsConfig, type TtsConfig, type TtsProvider } from "@/lib/settings";
+import { DEFAULT_EDGE_VOICE, voiceName, voiceSource } from "@/lib/voices";
 
 const MAX_CHARS_PER_CHUNK = 3500;
 
@@ -14,23 +21,70 @@ export interface TtsResult {
 
 export async function synthesize(script: string, voiceOverride?: string | null): Promise<TtsResult> {
   const config = await resolveTtsConfig();
-  const provider = config.provider;
-  const chunks = chunkText(script, MAX_CHARS_PER_CHUNK);
+  const provider = providerFor(voiceOverride, config.provider);
+  const voice = voiceOverride ? voiceName(voiceOverride) : voiceOverride;
+  const chunks = chunkText(script, provider === "edge" ? EDGE_MAX_CHARS : MAX_CHARS_PER_CHUNK);
   const buffers: Buffer[] = [];
 
   for (const chunk of chunks) {
-    if (provider === "elevenlabs") {
-      buffers.push(await elevenLabs(chunk, voiceOverride));
+    if (provider === "edge") {
+      buffers.push(await edgeTts(chunk, voiceSource(voiceOverride) === "edge" ? voice : null));
+    } else if (provider === "elevenlabs") {
+      buffers.push(await elevenLabs(chunk, voice));
     } else if (provider === "local") {
-      buffers.push(await localOpenAICompatible(chunk, voiceOverride));
+      buffers.push(await localOpenAICompatible(chunk, voice));
     } else {
-      buffers.push(await openai(chunk, voiceOverride, config));
+      buffers.push(await openai(chunk, voice, config));
     }
   }
 
   // Joined without each piece's length header, so players don't stop or skip
   // where the first piece ends.
   return { audio: joinMp3(buffers), contentType: "audio/mpeg", provider };
+}
+
+/** Which engine reads this show: the voice id's own source wins over the app setting. */
+export function providerFor(voiceId: string | null | undefined, appProvider: TtsProvider): TtsProvider {
+  const source = voiceSource(voiceId);
+  if (source === "edge") return "edge";
+  if (source === "kokoro") return "local";
+  return appProvider;
+}
+
+// Free Microsoft Edge "Read aloud" voices: no key, no account. This is the
+// same service the Edge browser uses, reached through the msedge-tts package.
+// It's unofficial, so if Microsoft changes it the error below says so plainly
+// and the script is kept (lib/generate.ts).
+const EDGE_MAX_CHARS = 2500;
+
+async function edgeTts(text: string, voice: string | null | undefined): Promise<Buffer> {
+  const { MsEdgeTTS, OUTPUT_FORMAT } = await import("msedge-tts");
+  const tts = new MsEdgeTTS();
+  try {
+    await tts.setMetadata(voice || DEFAULT_EDGE_VOICE, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
+    const { audioStream } = tts.toStream(escapeXml(text));
+    const parts: Buffer[] = [];
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("timed out after 90 seconds")), 90_000);
+      audioStream.on("data", (c: Buffer) => parts.push(Buffer.from(c)));
+      audioStream.on("end", () => { clearTimeout(timer); resolve(); });
+      audioStream.on("close", () => { clearTimeout(timer); resolve(); });
+      audioStream.on("error", (e: Error) => { clearTimeout(timer); reject(e); });
+    });
+    const audio = Buffer.concat(parts);
+    if (!audio.length) throw new Error("no audio came back");
+    return audio;
+  } catch (err) {
+    const why = err instanceof Error ? err.message : String(err);
+    throw new Error(`Free voice failed (Microsoft Edge): ${why}`);
+  } finally {
+    try { tts.close(); } catch {}
+  }
+}
+
+// The Edge service reads SSML, so <, > and & in a script must be escaped.
+function escapeXml(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 // Local / self-hosted voices via any OpenAI-compatible speech endpoint.

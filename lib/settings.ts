@@ -13,8 +13,9 @@ export const SETTING_KEYS = {
   openAiTtsModel: "openai_tts_model",
 } as const;
 
-export type TtsProvider = "openai" | "elevenlabs" | "local";
-export const TTS_PROVIDERS: TtsProvider[] = ["openai", "elevenlabs", "local"];
+// "edge" = free Microsoft Edge voices (no key). See lib/voices.ts.
+export type TtsProvider = "openai" | "elevenlabs" | "local" | "edge";
+export const TTS_PROVIDERS: TtsProvider[] = ["openai", "elevenlabs", "local", "edge"];
 
 // OpenAI's built-in speech voices. A show voice_id outside this list (e.g. a
 // local cloned-voice name) falls back to the default voice with OpenAI.
