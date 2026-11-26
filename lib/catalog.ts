@@ -62,6 +62,7 @@ export async function listBrowse(db: SqlFn, email: string): Promise<BrowseShow[]
            ) as following
     from shows s
     left join episodes e on e.show_id = s.id
+    where s.is_active
     group by s.id
     having count(e.*) filter (where e.status = 'published') > 0
     order by latest_at desc nulls last
@@ -107,7 +108,7 @@ export async function getShowByToken(db: SqlFn, rssToken: string): Promise<ShowD
   const shows = (await db`
     select id, title, description, rss_token, to_jsonb(shows) ->> 'image_url' as image_url,
            coalesce(is_official, false) as is_official
-    from shows where rss_token = ${rssToken} limit 1
+    from shows where rss_token = ${rssToken} and is_active limit 1
   `) as ShowDetail["show"][];
   const show = shows[0];
   if (!show) return null;

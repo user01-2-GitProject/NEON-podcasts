@@ -51,7 +51,7 @@ function formatDuration(seconds: number | null): string | null {
 export default async function ListenPage({ params }: Params) {
   const { token } = await params;
 
-  const shows = (await sql`select * from shows where rss_token = ${token} limit 1`) as Show[];
+  const shows = (await sql`select * from shows where rss_token = ${token} and is_active limit 1`) as Show[];
   const show = shows[0];
   if (!show) notFound();
 

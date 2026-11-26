@@ -53,6 +53,23 @@ test("show detail returns null for an unknown token and only published episodes 
   assert.equal(detail.episodes[0].show_title, "S");
 });
 
+test("inactive shows are hidden from browse and from token lookups", async () => {
+  const { listBrowse, getShowByToken } = await import("../lib/catalog.ts");
+  const db = fakeSql([]);
+  await listBrowse(db, "a@x.com");
+  assert.match(db.calls[0].text, /s\.is_active/);
+  const db2 = fakeSql([]);
+  await getShowByToken(db2, "r");
+  assert.match(db2.calls[0].text, /is_active/);
+});
+
+test("the RSS feed and the browse page only read active shows", () => {
+  const { readFileSync } = require("node:fs");
+  assert.match(readFileSync("app/feed/[token]/route.ts", "utf8"), /rss_token = \$\{token\} and is_active/);
+  assert.match(readFileSync("app/browse/page.tsx", "utf8"), /where s\.is_active/);
+  assert.match(readFileSync("app/listen/[token]/page.tsx", "utf8"), /is_active/);
+});
+
 test("browse and show detail say whether a show is NEON-official", async () => {
   const { listBrowse, getShowByToken } = await import("../lib/catalog.ts");
   const db = fakeSql([{ id: "s1", title: "T", description: null, rss_token: "r", published_count: "1", latest_at: null, following: false, is_official: true }]);
