@@ -2,6 +2,7 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import { useCallback } from "react";
 import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { DownloadButton } from "../../components";
+import { OfficialBadge } from "../../components/OfficialBadge";
 import { absoluteUrl, showByToken, type FeedEpisode } from "../../lib/api";
 import { usePlayer } from "../../lib/player";
 import { colors } from "../../lib/theme";
@@ -15,7 +16,19 @@ export default function ShowScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: data?.show.title ?? title ?? "Show" }} />
+      <Stack.Screen
+        options={{
+          title: data?.show.title ?? title ?? "Show",
+          headerTitle: data?.show.is_official
+            ? () => (
+                <View style={styles.headerTitle}>
+                  <OfficialBadge size={24} />
+                  <Text style={styles.headerTitleText} numberOfLines={1}>{data.show.title}</Text>
+                </View>
+              )
+            : undefined,
+        }}
+      />
       <FlatList<FeedEpisode>
         style={{ backgroundColor: colors.bg }}
         contentContainerStyle={{ padding: 12, gap: 8 }}
@@ -62,6 +75,8 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
   },
   title: { color: colors.text, fontWeight: "600", fontSize: 16 },
+  headerTitle: { flexDirection: "row", alignItems: "center", maxWidth: 260 },
+  headerTitleText: { color: colors.text, fontWeight: "600", fontSize: 17, flexShrink: 1 },
   sub: { color: colors.muted, marginTop: 4 },
   empty: { color: colors.muted, textAlign: "center", marginTop: 48 },
 });

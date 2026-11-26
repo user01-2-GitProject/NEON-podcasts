@@ -16,7 +16,7 @@ export async function PATCH(req: Request, { params }: Params) {
     where id = ${briefingId} and show_id = ${id}
     returning *
   `) as Briefing[];
-  if (!rows[0]) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (!rows[0]) return NextResponse.json({ error: "We couldn't find that briefing." }, { status: 404 });
   return NextResponse.json({ briefing: rows[0] });
 }
 

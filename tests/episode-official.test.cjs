@@ -131,6 +131,7 @@ test("PATCH reports a missing episode in plain words", async () => {
 const badge = compile("components/OfficialBadge.tsx", {}, true).default;
 const EpisodesPanel = compile("components/EpisodesPanel.tsx", {
   react: React,
+  "next/link": { default: ({ children, ...props }) => React.createElement("a", props, children) },
   "next/navigation": { useRouter: () => ({ refresh() {} }) },
   "@/components/OfficialBadge": { default: badge },
 }, true).default;

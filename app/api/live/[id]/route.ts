@@ -13,7 +13,7 @@ export async function GET(req: Request, { params }: Params) {
   const { id } = await params;
   return liveRoute(req, { sessionId: id }, async () => {
     const session = await getSession(sql, id);
-    if (!session) return NextResponse.json({ error: "session not found" }, { status: 404 });
+    if (!session) return NextResponse.json({ error: "We couldn't find that live show." }, { status: 404 });
     return NextResponse.json({ session, participants: await listParticipants(sql, id) });
   });
 }
