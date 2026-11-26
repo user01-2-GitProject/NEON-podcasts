@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from "../lib/auth";
 import { DownloadsProvider } from "../lib/downloads";
 import { PlayerProvider } from "../lib/player";
 import { registerPushToken } from "../lib/push";
-import { colors } from "../lib/theme";
+import { useTheme, ThemeProvider } from "../lib/theme-context";
 
 function AuthGate() {
   const { token, loading } = useAuth();
@@ -22,27 +22,31 @@ function AuthGate() {
     else if (token && onLogin) router.replace("/");
   }, [token, loading, segments, router]);
 
+  const { colors: c, theme } = useTheme();
   if (loading) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bg }}>
-        <ActivityIndicator color={colors.accent} />
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.bg }}>
+        <ActivityIndicator color={c.accent} />
       </View>
     );
   }
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.bg },
-        headerTintColor: colors.text,
-        contentStyle: { backgroundColor: colors.bg },
-      }}
-    >
+    <>
+      <StatusBar style={theme === "dark" ? "light" : "dark"} />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: c.bg },
+          headerTintColor: c.text,
+          contentStyle: { backgroundColor: c.bg },
+        }}
+      >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="about" options={{ title: "About NEON" }} />
       <Stack.Screen name="show/[token]" options={{ title: "Show" }} />
       <Stack.Screen name="live/[id]" options={{ title: "Live session" }} />
-    </Stack>
+      </Stack>
+    </>
   );
 }
 
@@ -65,15 +69,16 @@ function PushRegistration() {
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <PushRegistration />
-        <DownloadsProvider>
-          <PlayerProvider>
-            <StatusBar style="light" />
-            <AuthGate />
-          </PlayerProvider>
-        </DownloadsProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <PushRegistration />
+          <DownloadsProvider>
+            <PlayerProvider>
+              <AuthGate />
+            </PlayerProvider>
+          </DownloadsProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
