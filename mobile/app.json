@@ -26,7 +26,8 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      ["expo-audio", { "enableBackgroundPlayback": true }]
+      ["expo-audio", { "enableBackgroundPlayback": true }],
+      "expo-asset"
     ],
     "experiments": { "typedRoutes": false },
     "extra": {
