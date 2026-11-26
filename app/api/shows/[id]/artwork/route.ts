@@ -13,9 +13,9 @@ const MISSING_TABLE = "Cover uploads aren't switched on yet (the database needs 
 // before it's stored, then served from /art/[id].
 export async function POST(req: Request, { params }: Params) {
   const { id } = await params;
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Show not found" }, { status: 404 });
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "We couldn't find that show." }, { status: 404 });
   const shows = (await sql`select id from shows where id = ${id}`) as { id: string }[];
-  if (!shows[0]) return NextResponse.json({ error: "Show not found" }, { status: 404 });
+  if (!shows[0]) return NextResponse.json({ error: "We couldn't find that show." }, { status: 404 });
 
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");
@@ -45,7 +45,7 @@ export async function POST(req: Request, { params }: Params) {
 // Go back to the free cover made from the show's name.
 export async function DELETE(_req: Request, { params }: Params) {
   const { id } = await params;
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Show not found" }, { status: 404 });
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "We couldn't find that show." }, { status: 404 });
   await sql`delete from show_artwork where show_id = ${id}`.catch(() => undefined);
   await sql`update shows set image_url = null where id = ${id}`;
   return NextResponse.json({ image_url: null });

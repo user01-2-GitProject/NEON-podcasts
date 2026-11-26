@@ -48,9 +48,9 @@ export const LIMIT_INPUT_MAX = 1_000_000;
 
 function capInput(value: unknown, field: string): { value: number } | { error: string } {
   if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
-    return { error: `${field} must be a non-negative integer` };
+    return { error: `${field} needs to be a whole number, 0 or more.` };
   }
-  if (value > LIMIT_INPUT_MAX) return { error: `${field} must be at most ${LIMIT_INPUT_MAX}` };
+  if (value > LIMIT_INPUT_MAX) return { error: `${field} can be ${LIMIT_INPUT_MAX} at most.` };
   return { value };
 }
 

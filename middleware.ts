@@ -18,10 +18,10 @@ export default auth(async (req) => {
   const authorization = req.headers.get("authorization");
   if (pathname.startsWith("/api/") && authorization) {
     if (bearerForbiddenPath(pathname, req.method)) {
-      return NextResponse.json({ error: "session required" }, { status: 403 });
+      return NextResponse.json({ error: "Please sign in on the website to do this. An app key can't." }, { status: 403 });
     }
     const raw = bearerToken(authorization);
-    if (!raw) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    if (!raw) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
     try {
       const rows = (await sql`
         update api_tokens t set last_used_at = now()
@@ -30,7 +30,7 @@ export default auth(async (req) => {
         returning t.scope as scope, u.role as role, u.owner_approved as owner_approved
       `) as { scope: ApiTokenScope; role: string; owner_approved: boolean }[];
       const row = rows[0];
-      if (!row) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+      if (!row) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
       if (
         !bearerRequestAllowed({
           scope: row.scope,
@@ -40,17 +40,17 @@ export default auth(async (req) => {
           pathname,
         })
       ) {
-        return NextResponse.json({ error: "forbidden" }, { status: 403 });
+        return NextResponse.json({ error: "You don't have permission to do that." }, { status: 403 });
       }
       return NextResponse.next();
     } catch {
-      return NextResponse.json({ error: "token validation unavailable" }, { status: 503 });
+      return NextResponse.json({ error: "We couldn't check your sign-in just now. Try again in a minute." }, { status: 503 });
     }
   }
 
   const email = req.auth?.user?.email;
   if (!email) {
-    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
     const loginUrl = req.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", pathname + req.nextUrl.search);
@@ -64,7 +64,7 @@ export default auth(async (req) => {
   const allowedOwner = (req.auth?.user as { role?: string } | undefined)?.role === "owner" && (process.env.OWNER_EMAILS || "")
     .split(",").some((owner) => owner.trim().toLowerCase() === email.toLowerCase());
   if (pathname.startsWith("/api/") && !["GET", "HEAD", "OPTIONS"].includes(req.method) && !allowedOwner) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    return NextResponse.json({ error: "You don't have permission to do that." }, { status: 403 });
   }
   return NextResponse.next();
 });

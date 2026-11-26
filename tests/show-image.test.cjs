@@ -89,7 +89,7 @@ test("PATCH rejects a non-http(s) image and leaves image_url alone when it isn't
   const sql = recordingSql((text) => (text.includes("select * from shows") ? [existing] : [existing]));
   const bad = await patch(sql, { image_url: "javascript:alert(1)" });
   assert.equal(bad.status, 400);
-  assert.match((await bad.json()).error, /http\(s\) URL/);
+  assert.match((await bad.json()).error, /needs to start with https:\/\//);
   assert.equal(sql.calls.some((c) => /image_url/.test(c.text)), false);
 
   // other edits never touch image_url, so they keep working before migration 009

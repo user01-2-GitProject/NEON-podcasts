@@ -1,0 +1,48 @@
+# D1 — Daily Neon backup → R2.
+#
+# Secret-name contract (Settings → Secrets and variables → Actions):
+#   DATABASE_URL                  Neon connection string to dump
+#   R2_BACKUP_ACCOUNT_ID          Cloudflare account id (builds the S3 endpoint)
+#   R2_BACKUP_BUCKET              Backup bucket (separate from the S3_* audio bucket)
+#   R2_BACKUP_ACCESS_KEY_ID       R2 API token / access key id
+#   R2_BACKUP_SECRET_ACCESS_KEY   R2 API token / secret access key
+#
+# Retention: configure an R2 bucket lifecycle rule that expires `backups/*`
+# after 30 days. That rule lives in Cloudflare; this workflow does not enforce it.
+name: Neon backup
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      R2_BACKUP_ACCOUNT_ID: ${{ secrets.R2_BACKUP_ACCOUNT_ID }}
+      R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+      R2_BACKUP_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
+      R2_BACKUP_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check required secrets
+        run: |
+          missing=0
+          for name in DATABASE_URL R2_BACKUP_ACCOUNT_ID R2_BACKUP_BUCKET R2_BACKUP_ACCESS_KEY_ID R2_BACKUP_SECRET_ACCESS_KEY; do
+            if [ -z "${!name:-}" ]; then
+              printf 'Missing required secret: %s\n' "$name" >&2
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            printf 'See the secret-name contract at the top of this workflow.\n' >&2
+            exit 1
+          fi
+      - name: Dump Neon to R2
+        run: bash scripts/backup-db.sh
