@@ -1,5 +1,6 @@
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { DownloadButton, ErrorBanner, ListMessage } from "../../components";
+import { ShowName } from "../../components/OfficialBadge";
 import { api, type FeedEpisode } from "../../lib/api";
 import { usePlayer } from "../../lib/player";
 import { colors } from "../../lib/theme";
@@ -32,10 +33,10 @@ export default function Following() {
         <View style={[styles.card, current?.id === item.id && { borderColor: colors.accent }]}>
           <Pressable onPress={() => play(item)} disabled={!item.audio_url} style={{ flex: 1 }}>
             <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.sub}>
+            <ShowName official={item.show_is_official} style={styles.sub}>
               {item.show_title}
               {item.published_at ? ` · ${new Date(item.published_at).toLocaleDateString()}` : ""}
-            </Text>
+            </ShowName>
           </Pressable>
           <DownloadButton episode={item} />
         </View>
