@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import FollowButton from "@/components/FollowButton";
+import OfficialBadge from "@/components/OfficialBadge";
 import { sql } from "@/lib/db";
 import { listFollows, subscriberEmail } from "@/lib/subscriptions";
 
@@ -12,6 +13,7 @@ type BrowseShow = {
   title: string;
   description: string;
   rss_token: string;
+  is_official: boolean;
   published_count: string;
   latest_at: string | null;
 };
@@ -34,7 +36,7 @@ export default async function BrowsePage() {
   let dbError: string | null = null;
   try {
     shows = (await sql`
-      select s.id, s.title, s.description, s.rss_token,
+      select s.id, s.title, s.description, s.rss_token, coalesce(s.is_official, false) as is_official,
         count(e.*) filter (where e.status = 'published') as published_count,
         max(e.published_at) as latest_at
       from shows s
@@ -71,7 +73,7 @@ export default async function BrowsePage() {
             shows.map((show) => (
               <div className="list-item" key={show.id}>
                 <div>
-                  <h2>{show.title}</h2>
+                  <h2>{show.is_official ? <OfficialBadge /> : null}{show.title}</h2>
                   <p className="muted">{show.description || "No description."}</p>
                   <p className="muted">
                     {Number(show.published_count)} episodes · {formatDate(show.latest_at)}

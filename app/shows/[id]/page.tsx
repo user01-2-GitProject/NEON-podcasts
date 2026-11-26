@@ -9,6 +9,7 @@ import GeneratePanel from "@/components/GeneratePanel";
 import SteeringPanel from "@/components/SteeringPanel";
 import EpisodesPanel from "@/components/EpisodesPanel";
 import DeleteShowButton from "@/components/DeleteShowButton";
+import OfficialBadge from "@/components/OfficialBadge";
 import ShowArtworkForm from "@/components/ShowArtworkForm";
 import ShowSpecPanel from "@/components/ShowSpecPanel";
 import { auth } from "@/auth";
@@ -72,7 +73,7 @@ export default async function ShowPage({
       <div className="container">
         <div className="panel">
           <img className="show-art" src={artworkPath(show)} alt={`${show.title} artwork`} />
-          <h2>{show.title}</h2>
+          <h2>{show.is_official ? <OfficialBadge size={32} /> : null}{show.title}</h2>
           <p className="muted">{show.description || "No description."}</p>
           <p className="muted">
             {cadenceLabel(show.cadence, show.air_days)}

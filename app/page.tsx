@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cadenceLabel } from "@/lib/cadence";
 import { sql } from "@/lib/db";
 import type { Show } from "@/lib/types";
+import OfficialBadge from "@/components/OfficialBadge";
 import ShowSpecForm from "@/components/ShowSpecForm";
 import SignOutButton from "@/components/SignOutButton";
 import UsageMeter from "@/components/UsageMeter";
@@ -64,6 +65,7 @@ export default async function DashboardPage() {
                   <div className="list-item" key={show.id}>
                     <div>
                       <Link href={`/shows/${show.id}`} style={{ fontWeight: 600 }}>
+                        {show.is_official ? <OfficialBadge size={22} /> : null}
                         {show.title}
                       </Link>
                       <div className="muted">
