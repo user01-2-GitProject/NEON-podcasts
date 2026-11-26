@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { auth } from "@/auth";
+import OfficialBadge from "@/components/OfficialBadge";
 import { sql } from "@/lib/db";
 import { subscriberEmail } from "@/lib/subscriptions";
 
@@ -11,6 +12,7 @@ type FollowedEpisode = {
   title: string;
   published_at: string | null;
   show_title: string;
+  show_is_official: boolean;
   rss_token: string;
 };
 
@@ -32,7 +34,8 @@ export default async function SubscriptionsPage() {
   try {
     if (email) {
       episodes = (await sql`
-        select e.id, e.title, e.published_at, s.title as show_title, s.rss_token
+        select e.id, e.title, e.published_at, s.title as show_title,
+          coalesce(s.is_official, false) as show_is_official, s.rss_token
         from episodes e
         join shows s on s.id = e.show_id
         join subscriptions sub on sub.show_id = s.id
@@ -75,6 +78,7 @@ export default async function SubscriptionsPage() {
                     {episode.title}
                   </Link>
                   <div className="muted">
+                    {episode.show_is_official ? <OfficialBadge size={18} /> : null}
                     {episode.show_title} · {formatDate(episode.published_at)}
                   </div>
                 </div>
