@@ -36,6 +36,7 @@ const okScript = async () => ({ result: { title: "Ep 1", script: "Hello listener
 function generate(db, synthesize, generateScript = okScript) {
   return load("lib/generate.ts", {
     "@/lib/db": { sql: db.sql, getSql: () => ({ transaction: async () => [[]] }) },
+    "@/lib/episode-title": require("../lib/episode-title.ts"),
     "@/lib/claude": {
       generateScript,
       estimateCostCents: () => 3,
