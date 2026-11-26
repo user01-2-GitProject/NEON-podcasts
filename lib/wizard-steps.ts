@@ -421,13 +421,12 @@ function previewLine(step: WizardStep, v: string): string {
   return first.length > 140 ? first.slice(0, 137) + "…" : first;
 }
 
-// The owner's title gets a hardcoded "N.E.O.N. - " prefix so Apple/Spotify
-// listings all carry the brand (jimmy + Matt, Nov 25). Already-prefixed
-// titles are left alone, case-insensitive.
+// The owner's title is used as-is (jimmy, Nov 26: the N.E.O.N. prefix looked
+// stupid in listings). We also strip a "N.E.O.N. -" dash-prefix if one slipped
+// in from the old behavior, so edits of older shows come out clean. A title
+// that just starts with "NEON" (no dash) is left alone.
 export function brandedTitle(raw: string): string {
-  const title = raw.trim();
-  if (/^N\.?\s*E\.?\s*O\.?\s*N\.?\s*(-|–|—)?\s*/i.test(title)) return title;
-  return `N.E.O.N. - ${title}`;
+  return raw.replace(/^\s*N\.?\s*E\.?\s*O\.?\s*N\.?\s*[-–—]\s*/i, "").trim();
 }
 
 // Which choices on a `multi` step should be grayed out, given the current pick.

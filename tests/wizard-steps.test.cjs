@@ -101,13 +101,16 @@ test("composeWizardBody includes the format header even with no content answers"
   assert.match(body, /^## Format\nHistory\b/);
 });
 
-test("brandedTitle: adds the N.E.O.N. prefix idempotently", async () => {
+test("brandedTitle: no N.E.O.N. prefix; strips a stray dash-prefix from old shows", async () => {
   const w = await import("../lib/wizard-steps.ts");
-  assert.equal(w.brandedTitle("Sunday Morning Markets"), "N.E.O.N. - Sunday Morning Markets");
-  assert.equal(w.brandedTitle("  Sunday Morning Markets  "), "N.E.O.N. - Sunday Morning Markets");
-  // Already prefixed titles are left alone, case- and spacing-insensitive.
-  assert.equal(w.brandedTitle("N.E.O.N. - Sunday Morning Markets"), "N.E.O.N. - Sunday Morning Markets");
-  assert.equal(w.brandedTitle("neon - rebel news"), "neon - rebel news");
+  // The owner's title is used as-is now (jimmy, Nov 26).
+  assert.equal(w.brandedTitle("Sunday Morning Markets"), "Sunday Morning Markets");
+  assert.equal(w.brandedTitle("  Sunday Morning Markets  "), "Sunday Morning Markets");
+  // Old N.E.O.N. - dash prefixes get cleaned off.
+  assert.equal(w.brandedTitle("N.E.O.N. - Sunday Morning Markets"), "Sunday Morning Markets");
+  assert.equal(w.brandedTitle("neon - rebel news"), "rebel news");
+  assert.equal(w.brandedTitle("NEON — Daily"), "Daily");
+  // "NEON Daily" has no dash — it's a real title the owner wrote, keep it.
   assert.equal(w.brandedTitle("NEON Daily"), "NEON Daily");
 });
 
