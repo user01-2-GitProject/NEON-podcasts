@@ -112,7 +112,11 @@ export default async function ShowPage({
 
         <BriefingsPanel showId={id} initialBriefings={briefings} owner={owner} />
 
-        {owner ? <GeneratePanel
+        {/* Make an episode now: always visible to owners; also shown when the
+            show's cadence is manual, so a non-owner reading a manual show
+            sees the "generate now" option (jimmy, 2026-11-26). The API still
+            owner-gates the POST at middleware. */}
+        {owner || show.cadence === "manual" ? <GeneratePanel
           showId={id}
           activeBriefings={activeBriefings}
           narrationMode={show.narration_mode === "external" ? "external" : "auto"}
