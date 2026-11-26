@@ -111,7 +111,7 @@ export default function ShowWizard() {
       const cadence = cadenceFromAnswer(draft.answers.cadence);
       const body = composeWizardBody(draft);
       const spec = {
-        // "N.E.O. - " prefix is hardcoded so every show carries the brand
+        // "N.E.O.N. - " prefix is hardcoded so every show carries the brand
         // through to Apple and Spotify (jimmy + Matt, Nov 25).
         title: brandedTitle(draft.title),
         tagline: "",

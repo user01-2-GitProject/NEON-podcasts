@@ -101,14 +101,14 @@ test("composeWizardBody includes the format header even with no content answers"
   assert.match(body, /^## Format\nHistory\b/);
 });
 
-test("brandedTitle: adds the N.E.O. prefix idempotently", async () => {
+test("brandedTitle: adds the N.E.O.N. prefix idempotently", async () => {
   const w = await import("../lib/wizard-steps.ts");
-  assert.equal(w.brandedTitle("Sunday Morning Markets"), "N.E.O. - Sunday Morning Markets");
-  assert.equal(w.brandedTitle("  Sunday Morning Markets  "), "N.E.O. - Sunday Morning Markets");
+  assert.equal(w.brandedTitle("Sunday Morning Markets"), "N.E.O.N. - Sunday Morning Markets");
+  assert.equal(w.brandedTitle("  Sunday Morning Markets  "), "N.E.O.N. - Sunday Morning Markets");
   // Already prefixed titles are left alone, case- and spacing-insensitive.
-  assert.equal(w.brandedTitle("N.E.O. - Sunday Morning Markets"), "N.E.O. - Sunday Morning Markets");
-  assert.equal(w.brandedTitle("neo - rebel news"), "neo - rebel news");
-  assert.equal(w.brandedTitle("NEO Daily"), "NEO Daily");
+  assert.equal(w.brandedTitle("N.E.O.N. - Sunday Morning Markets"), "N.E.O.N. - Sunday Morning Markets");
+  assert.equal(w.brandedTitle("neon - rebel news"), "neon - rebel news");
+  assert.equal(w.brandedTitle("NEON Daily"), "NEON Daily");
 });
 
 test("stepsByTab: 1 host hides host2; 2 hosts shows all three tabs", async () => {
