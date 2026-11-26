@@ -1,11 +1,12 @@
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "../lib/auth";
 import { DownloadsProvider } from "../lib/downloads";
 import { PlayerProvider } from "../lib/player";
+import { registerPushToken } from "../lib/push";
 import { colors } from "../lib/theme";
 
 function AuthGate() {
@@ -44,10 +45,27 @@ function AuthGate() {
   );
 }
 
+// Registers the device for push once per signed-in token (also on app restart
+// with a stored token). registerPushToken is a no-op on web / Expo Go and
+// swallows its own errors, so this never affects navigation.
+function PushRegistration() {
+  const { token } = useAuth();
+  const registeredFor = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!token || registeredFor.current === token) return;
+    registeredFor.current = token;
+    void registerPushToken(token);
+  }, [token]);
+
+  return null;
+}
+
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
+        <PushRegistration />
         <DownloadsProvider>
           <PlayerProvider>
             <StatusBar style="light" />
