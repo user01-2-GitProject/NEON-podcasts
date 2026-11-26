@@ -30,6 +30,13 @@ export interface ScheduledRunContext {
   scheduledFor: string;
 }
 
+// A regeneration reuses an existing episode row (and its id, so RSS listeners
+// keep getting the same URL) and an existing run row created by the API route.
+export interface RegenerateTarget {
+  episodeId: string;
+  runId: string;
+}
+
 // One run = one episode for a show. Reads active briefings and writes a script
 // via Claude, then either:
 //   - "auto":     renders audio via TTS, stores the mp3 → a published episode.
@@ -40,6 +47,7 @@ export async function generateEpisode(
   showId: string,
   modeOverride?: NarrationMode,
   scheduledRun?: ScheduledRunContext,
+  target?: RegenerateTarget,
 ): Promise<{ episode: Episode; runId: string; voiceError?: string }> {
   const showRows = (await sql`select * from shows where id = ${showId}`) as Show[];
   const show = showRows[0];
@@ -74,7 +82,8 @@ export async function generateEpisode(
     return result;
   };
 
-  let runId = scheduledRun?.id;
+  // A regeneration already has both rows; everything else makes its own run.
+  let runId = target?.runId ?? scheduledRun?.id;
   if (!runId) {
     const runRows = (await sql`
       insert into runs (show_id, status, briefing_snapshot)
@@ -206,15 +215,28 @@ export async function generateEpisode(
       }
 
       // Script-only: create a draft episode, no TTS. The user uploads the mp3.
-      const episodeRows = (await sql`
-        insert into episodes
-          (show_id, title, script, show_notes, duration_seconds, status)
-        values
-          (${showId}, ${result.title}, ${result.script}, ${result.show_notes},
-           ${duration}, 'draft')
-        returning *
-      `) as Episode[];
+      // A regeneration keeps the old id (and drops any audio it had) so links
+      // stay stable while the new script waits to be narrated.
+      const episodeRows = target
+        ? (await sql`
+            update episodes set
+              title = ${result.title}, script = ${result.script},
+              show_notes = ${result.show_notes}, duration_seconds = ${duration},
+              audio_url = null, byte_size = null, audio_content_type = null,
+              status = 'draft', published_at = null
+            where id = ${target.episodeId}
+            returning *
+          `) as Episode[]
+        : (await sql`
+            insert into episodes
+              (show_id, title, script, show_notes, duration_seconds, status)
+            values
+              (${showId}, ${result.title}, ${result.script}, ${result.show_notes},
+               ${duration}, 'draft')
+            returning *
+          `) as Episode[];
       const episode = episodeRows[0];
+      if (target) await getStorage().delete(target.episodeId);
 
       await sql`
         update runs set
@@ -240,13 +262,25 @@ export async function generateEpisode(
       // Scheduled runs retry the whole run. A run someone pressed keeps the
       // script as a draft, so a voice problem never throws away the writing.
       if (scheduledRun) throw voiceErr;
+      const raw = voiceErr instanceof Error ? voiceErr.message : String(voiceErr);
+      console.error(`[voice] ${raw}`);
+      if (target) {
+        // Leave the existing episode exactly as it was: a regeneration that
+        // couldn't make audio must not take a working mp3 offline.
+        const oldRows = (await sql`select * from episodes where id = ${target.episodeId}`) as Episode[];
+        await sql`
+          update runs set
+            status = 'failed', episode_id = ${target.episodeId}, model = ${model},
+            cost_cents = ${costCents}, error = ${`voice: ${raw}`}, finished_at = now()
+          where id = ${runId}
+        `;
+        return { episode: oldRows[0], runId, voiceError: friendlyVoiceError(voiceErr) };
+      }
       const draftRows = (await sql`
         insert into episodes (show_id, title, script, show_notes, duration_seconds, status)
         values (${showId}, ${result.title}, ${result.script}, ${result.show_notes}, ${duration}, 'draft')
         returning *
       `) as Episode[];
-      const raw = voiceErr instanceof Error ? voiceErr.message : String(voiceErr);
-      console.error(`[voice] ${raw}`);
       await sql`
         update runs set
           status = 'failed', episode_id = ${draftRows[0].id}, model = ${model},
@@ -299,16 +333,29 @@ export async function generateEpisode(
     }
 
     const storage = getStorage();
-    const episodeRows = (await sql`
-      insert into episodes
-        (show_id, title, script, show_notes, duration_seconds, byte_size, audio_content_type, status)
-      values
-        (${showId}, ${result.title}, ${result.script}, ${result.show_notes},
-         ${duration}, ${byteSize}, ${tts.contentType}, 'draft')
-      returning *
-    `) as Episode[];
+    // Regeneration updates the same row, so the audio URL (and the id RSS
+    // listeners already have) never changes. Only new episodes get cleaned up
+    // if the voice step fails partway through.
+    const episodeRows = target
+      ? (await sql`
+          update episodes set
+            title = ${result.title}, script = ${result.script},
+            show_notes = ${result.show_notes}, duration_seconds = ${duration},
+            byte_size = ${byteSize}, audio_content_type = ${tts.contentType},
+            status = 'draft', published_at = null
+          where id = ${target.episodeId}
+          returning *
+        `) as Episode[]
+      : (await sql`
+          insert into episodes
+            (show_id, title, script, show_notes, duration_seconds, byte_size, audio_content_type, status)
+          values
+            (${showId}, ${result.title}, ${result.script}, ${result.show_notes},
+             ${duration}, ${byteSize}, ${tts.contentType}, 'draft')
+          returning *
+        `) as Episode[];
     const episode = episodeRows[0];
-    pendingAudioEpisodeId = episode.id;
+    if (!target) pendingAudioEpisodeId = episode.id;
 
     const audioPath = storage.url(episode.id);
     await storage.put(episode.id, tts.audio, tts.contentType);
