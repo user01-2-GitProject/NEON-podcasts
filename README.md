@@ -43,7 +43,17 @@ and subscriptions.
    npm run db:migrate
    ```
 
-4. **Run**
+4. **Seed the worked examples (optional, repeatable)**
+   ```bash
+   npm run seed:examples
+   ```
+   Adds two inactive, NEON-owned example shows with a published three-minute
+   sample episode each: "Sterling Reads the News" (news brief) and "Rarely Made
+   History" (narrative essay). They appear first on `/browse` with an Example
+   chip; re-running updates the same rows. The silent mp3 fixture and its
+   ffmpeg command are documented in `scripts/fixtures/README.md`.
+
+5. **Run**
    ```bash
    npm run dev
    ```

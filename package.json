@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.cjs",
     "test:e2e": "playwright test",
-    "db:migrate": "node --experimental-strip-types scripts/migrate.ts"
+    "db:migrate": "node --experimental-strip-types scripts/migrate.ts",
+    "seed:examples": "node --import tsx scripts/seed-example-shows.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",
