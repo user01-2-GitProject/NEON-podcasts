@@ -266,9 +266,18 @@ export const WIZARD_STEPS: WizardStep[] = [
   { id: "talk_bits", type: "yesno", question: "Any running bits?", help: "A segment the show does every time.", when: (d) => isFormat(d, "talk"), section: "Banter" },
   { id: "talk_bits_which", type: "text", question: "What are the running bits?", placeholder: "e.g. 'Hot take of the week'", when: (d) => isFormat(d, "talk") && d.answers.talk_bits === "yes", section: "Banter" },
 
-  // --- Episode shape — pared to the two spec "always on" bits.
-  // #38–44 (length, flow, teaser, open, close, signoff) are OUT for MVP:
-  // NEON opens and closes every episode with a hardcoded plug.
+  // --- Episode shape — pared to the two spec "always on" bits plus length.
+  // #39–44 (flow, teaser, open, close, signoff) are OUT for MVP: NEON opens
+  // and closes every episode with a hardcoded plug. Length is asked again
+  // (jimmy, Nov 26) — the writer honors the picked minutes.
+  {
+    id: "length",
+    type: "choice",
+    question: "How long is each episode?",
+    help: "A rough target — the writer aims for this, actual length varies.",
+    choices: ["About 5 minutes", "About 10 minutes", "About 20 minutes", "About 30 minutes", "About 45 minutes", "About 60 minutes"],
+    section: "Episode shape",
+  },
   { id: "second_person", type: "yesno", question: "Talk to the listener as 'you'?", section: "Episode shape" },
   { id: "say_date", type: "yesno", question: "Say today's date at the start?", section: "Episode shape" },
 
@@ -490,9 +499,9 @@ function formatAnswer(step: WizardStep, v: string): string {
   return `- ${step.question} ${val}`;
 }
 
-// A small placeholder episode-length string ("About 10 minutes") → 10.
-// Episode length isn't asked in the wizard anymore (#38 out) — the finish
-// step passes `undefined` so this returns the fallback.
+// An episode-length answer like "About 10 minutes" → 10. Brought back after
+// jimmy flagged that the length question was missing (Nov 26) — a skipped
+// step still falls back to 10 minutes so Create never breaks.
 export function minutesFromLengthAnswer(ans: string | undefined, fallback = 10): number {
   if (!ans) return fallback;
   const m = /(\d+)/.exec(ans);
