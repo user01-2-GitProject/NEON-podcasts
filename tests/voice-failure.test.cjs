@@ -47,6 +47,8 @@ function generate(db, synthesize, generateScript = okScript) {
     "@/lib/storage": { getStorage: () => { throw new Error("storage should not be touched"); } },
     "@/lib/episode-spec": require("../lib/episode-spec.ts"),
     "@/lib/script-check": require("../lib/script-check.ts"),
+    // B1 QA is a separate pass; stub it so these generation tests stay offline.
+    "@/lib/script-qa": { runScriptQa: async () => ({ notes: [], model: null, checked_at: "2026-01-01T00:00:00.000Z" }) },
     "@/lib/research": { researchBrief: () => null },
   });
 }
@@ -63,6 +65,7 @@ test("a voice failure on a pressed run keeps the script as a draft", async () =>
   assert.match(out.voiceError, /Settings → Voice/);
   const run = db.calls.find((c) => /update runs set/.test(c.text) && /status = 'failed'/.test(c.text));
   assert.ok(run, "run marked failed");
+  assert.match(run.text, /script_qa = \?/, "QA notes are saved even when the voice fails");
   assert.ok(run.values.includes("ep-1"), "run points at the saved draft");
   assert.ok(!db.calls.some((c) => /delete from episodes/.test(c.text)), "draft is not deleted");
 });

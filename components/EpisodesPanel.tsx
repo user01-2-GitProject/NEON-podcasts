@@ -3,6 +3,49 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import type { Episode, Run } from "@/lib/types";
+import type { ScriptQa, ScriptQaKind } from "@/lib/script-qa";
+
+const QA_LABELS: Record<ScriptQaKind, string> = {
+  swear: "Swear",
+  number: "Number",
+  acronym: "Acronym",
+  "long-line": "Long line",
+  "self-name": "Host name",
+};
+
+// The most recent QA pass for an episode, even if its run has scrolled out of
+// the run-history list (page.tsx fetches these separately).
+function qaForEpisode(
+  episodeId: string,
+  qaRuns: Pick<Run, "episode_id" | "script_qa">[],
+): ScriptQa | null {
+  for (const run of qaRuns) {
+    if (run.episode_id !== episodeId) continue;
+    const qa = run.script_qa;
+    if (qa && Array.isArray(qa.notes) && qa.notes.length) return qa;
+  }
+  return null;
+}
+
+function QaNotes({ qa }: { qa: ScriptQa }) {
+  return (
+    <details className="qa-notes">
+      <summary className="tag qa" aria-label={`Show ${qa.notes.length} script QA notes`}>
+        {qa.notes.length} QA note{qa.notes.length === 1 ? "" : "s"}
+      </summary>
+      <ul>
+        {qa.notes.map((note, i) => (
+          <li key={`${note.kind}-${i}`}>
+            <strong>{QA_LABELS[note.kind] || "Note"}:</strong> {String(note.message ?? "")}
+            {typeof note.excerpt === "string" && note.excerpt ? (
+              <span className="muted"> — “{note.excerpt}”</span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
 
 function fmtDuration(seconds: number | null): string {
   if (!seconds) return "—";
@@ -152,11 +195,13 @@ function PublishButton({ episode }: { episode: Episode }) {
 export default function EpisodesPanel({
   initialEpisodes,
   runs,
+  qaRuns = [],
   owner,
   rssToken,
 }: {
   initialEpisodes: Episode[];
   runs: Run[];
+  qaRuns?: Pick<Run, "episode_id" | "script_qa">[];
   owner: boolean;
   rssToken: string;
 }) {
@@ -174,14 +219,17 @@ export default function EpisodesPanel({
       {initialEpisodes.length === 0 ? (
         <p className="muted">No episodes yet. Generate one above.</p>
       ) : (
-        initialEpisodes.map((ep) => (
+        initialEpisodes.map((ep) => {
+          const qa = owner ? qaForEpisode(ep.id, qaRuns) : null;
+          return (
           <div className="list-item" key={ep.id} style={{ flexDirection: "column", alignItems: "stretch" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
               <div>
                 <strong>{ep.title}</strong>{" "}
                 <span className={`tag ${ep.status === "failed" ? "failed" : ep.status === "published" ? "active" : ""}`}>
                   {ep.status}
-                </span>
+                </span>{" "}
+                {qa ? <QaNotes qa={qa} /> : null}
                 <div className="muted">
                   {fmtDuration(ep.duration_seconds)} · {fmtSize(ep.byte_size)} ·{" "}
                   {new Date(ep.created_at).toLocaleString()}
@@ -232,7 +280,8 @@ export default function EpisodesPanel({
               <pre style={{ whiteSpace: "pre-wrap", fontSize: 13 }}>{ep.script}</pre>
             </details>
           </div>
-        ))
+          );
+        })
       )}
 
       <h3 style={{ marginTop: 24 }}>Run history</h3>

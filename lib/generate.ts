@@ -5,6 +5,7 @@ import { generateScript, estimateCostCents, mostImportant } from "@/lib/claude";
 import { synthesize, estimateDurationSeconds } from "@/lib/tts";
 import { applyPronunciations, isNeverSay } from "@/lib/pronounce";
 import { checkScript, needsRewrite, rewriteNotes } from "@/lib/script-check";
+import { runScriptQa, type ScriptQa } from "@/lib/script-qa";
 import { getStorage } from "@/lib/storage";
 import { selectBriefings, todayIn } from "@/lib/episode-spec";
 import { researchBrief, lookUp, researchBriefing, sourcesNote, SEARCH_COST_CENTS } from "@/lib/research";
@@ -40,7 +41,7 @@ export async function generateEpisode(
   showId: string,
   modeOverride?: NarrationMode,
   scheduledRun?: ScheduledRunContext,
-): Promise<{ episode: Episode; runId: string; voiceError?: string }> {
+): Promise<{ episode: Episode; runId: string; voiceError?: string; scriptQa?: ScriptQa | null }> {
   const showRows = (await sql`select * from shows where id = ${showId}`) as Show[];
   const show = showRows[0];
   if (!show) throw new Error("Show not found");
@@ -154,6 +155,11 @@ export async function generateEpisode(
     }
     const checkNote = issues.length ? `Script check: ${issues.map((i) => i.message).join(" ")}` : null;
 
+    // B1: a cheap QA pass over the finished script. Its notes are stored on
+    // the run for the owner; they never rewrite the script or block publishing.
+    const scriptQa = await runScriptQa({ script: result.script, styleGuide: show.style_guide });
+    const qaJson = JSON.stringify(scriptQa);
+
     // A planned episode keeps the title it was planned with; otherwise the
     // writer's title is tidied into a clean automatic one (lib/episode-title).
     if (selection.plan?.title) result.title = selection.plan.title;
@@ -186,6 +192,7 @@ export async function generateEpisode(
             update runs set
               status = 'done', episode_id = ${episodeId}, model = ${model},
               tts_provider = 'external', cost_cents = ${costCents}, error = ${checkNote},
+              script_qa = ${qaJson},
               next_attempt_at = null, finished_at = now()
             where id = ${runId}
           `,
@@ -202,7 +209,7 @@ export async function generateEpisode(
             where id = ${showId} and next_run_at = ${scheduledRun.scheduledFor}::timestamptz
           `,
         ]);
-        return finish({ episode: (results[0] as Episode[])[0], runId });
+        return finish({ episode: (results[0] as Episode[])[0], runId, scriptQa });
       }
 
       // Script-only: create a draft episode, no TTS. The user uploads the mp3.
@@ -224,11 +231,12 @@ export async function generateEpisode(
           tts_provider = 'external',
           cost_cents = ${costCents},
           error = ${checkNote},
+          script_qa = ${qaJson},
           finished_at = now()
         where id = ${runId}
       `;
 
-      return finish({ episode, runId });
+      return finish({ episode, runId, scriptQa });
     }
 
     // "auto": render audio and publish. Pronunciations affect only the text
@@ -250,10 +258,10 @@ export async function generateEpisode(
       await sql`
         update runs set
           status = 'failed', episode_id = ${draftRows[0].id}, model = ${model},
-          cost_cents = ${costCents}, error = ${`voice: ${raw}`}, finished_at = now()
+          cost_cents = ${costCents}, error = ${`voice: ${raw}`}, script_qa = ${qaJson}, finished_at = now()
         where id = ${runId}
       `;
-      return finish({ episode: draftRows[0], runId, voiceError: friendlyVoiceError(voiceErr) });
+      return finish({ episode: draftRows[0], runId, voiceError: friendlyVoiceError(voiceErr), scriptQa });
     }
     const byteSize = tts.audio.length;
 
@@ -279,6 +287,7 @@ export async function generateEpisode(
           update runs set
             status = 'done', episode_id = ${episodeId}, model = ${model},
             tts_provider = ${tts.provider}, cost_cents = ${costCents}, error = ${checkNote},
+            script_qa = ${qaJson},
             next_attempt_at = null, finished_at = now()
           where id = ${runId} and status = 'running'
         `,
@@ -295,7 +304,7 @@ export async function generateEpisode(
           where id = ${showId} and next_run_at = ${scheduledRun.scheduledFor}::timestamptz
         `,
       ]);
-      return finish({ episode: (results[0] as Episode[])[0], runId });
+      return finish({ episode: (results[0] as Episode[])[0], runId, scriptQa });
     }
 
     const storage = getStorage();
@@ -323,11 +332,12 @@ export async function generateEpisode(
         tts_provider = ${tts.provider},
         cost_cents = ${costCents},
         error = ${checkNote},
+        script_qa = ${qaJson},
         finished_at = now()
       where id = ${runId}
     `;
 
-    return finish({ episode, runId });
+    return finish({ episode, runId, scriptQa });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (pendingAudioEpisodeId) {
