@@ -71,3 +71,13 @@ export function cleanPreviewScript(raw: string): string {
 export function previewCounterKey(userId: string, now: Date): string {
   return `preview_uses:${userId}:${now.toISOString().slice(0, 10)}`;
 }
+
+// Settings → Voice "Hear it": a fixed ~5-second line, so auditioning a voice
+// costs only the voice (no writer call). Uses the name before " - " in the
+// catalog label ("Ryan - British man, newsreader" → "Ryan").
+export function voiceSampleLine(label: string): string {
+  const name = (label || "").split(" - ")[0].trim();
+  return name
+    ? `Hi, I'm ${name}. This is how I'd sound reading your show on NEON.`
+    : "Hi. This is how I'd sound reading your show on NEON.";
+}
