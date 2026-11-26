@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { CADENCES, CADENCE_LABELS } from "@/lib/cadence";
+import { CADENCES, CADENCE_LABELS, DAY_SHORT } from "@/lib/cadence";
 import { OPENAI_VOICE_OPTIONS, TIMEZONE_OPTIONS, HOST_PRESETS } from "@/lib/voices";
 import {
   BODY_TEMPLATE,
@@ -344,6 +344,31 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
             </select>
           </div>
         </div>
+        {spec.cadence === "days" ? (
+          <div style={{ marginTop: 8 }}>
+            <span className="muted">Tap the days it should come out:</span>
+            <div className="wizard-choices wizard-choices-row" role="group" aria-label="Days it comes out" style={{ flexWrap: "wrap", marginTop: 4 }}>
+              {DAY_SHORT.map((label, i) => {
+                const day = i + 1;
+                const on = spec.days.includes(day);
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    className={`wizard-choice${on ? " wizard-choice-selected" : ""}`}
+                    aria-pressed={on}
+                    onClick={() =>
+                      set("days", on ? spec.days.filter((d) => d !== day) : [...spec.days, day].sort((a, b) => a - b))
+                    }
+                  >
+                    <span className="wizard-choice-title">{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {spec.days.length === 0 ? <p className="error" style={{ marginTop: 4 }}>Pick at least one day.</p> : null}
+          </div>
+        ) : null}
         {spec.cadence !== "manual" ? (
           <p className="muted" style={{ marginTop: 4 }}>
             {spec.cadence === "twice_daily" ? "Twice a day means this time and 12 hours later. " : ""}

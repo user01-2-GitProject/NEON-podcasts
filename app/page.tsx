@@ -67,7 +67,7 @@ export default async function DashboardPage() {
                         {show.title}
                       </Link>
                       <div className="muted">
-                        {cadenceLabel(show.cadence)} · ~{show.target_minutes} min ·{" "}
+                        {cadenceLabel(show.cadence, show.air_days)} · ~{show.target_minutes} min ·{" "}
                         {Number(show.episode_count)} episode
                         {Number(show.episode_count) === 1 ? "" : "s"}
                       </div>

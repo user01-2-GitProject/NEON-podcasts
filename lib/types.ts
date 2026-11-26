@@ -19,6 +19,8 @@ export interface Show {
   rss_token: string;
   is_public: boolean;
   image_url: string | null;
+  /** ISO weekdays (1 = Mon … 7 = Sun) for cadence "days". */
+  air_days?: number[] | null;
   next_run_at: string | null;
   is_active: boolean;
   created_at: string;

@@ -72,6 +72,17 @@ export const WIZARD_STEPS: WizardStep[] = [
   // --- Content: what the show is ---
   { id: "about", type: "textarea", question: "What's it about, in one sentence?", placeholder: "e.g. A daily rundown of what moved the stock market.", section: "About the show" },
   { id: "audience", type: "text", question: "Who's it for?", placeholder: "e.g. Casual investors who don't watch the market all day", section: "Who it's for" },
+  // "Who's going" — from testing John's show (Nov 25): episodes are often for
+  // a specific group (a family trip, a team outing). Names let the host talk
+  // to the people who'll actually be there.
+  {
+    id: "whos_going",
+    type: "textarea",
+    question: "Who's going?",
+    help: "If it's for certain people, like your family or your team, list them. The host can talk to them by name. Skip it if the show is for anyone.",
+    placeholder: "e.g. Me, Sarah, and the kids: Ava (8) and Leo (5)",
+    section: "Who's going",
+  },
 
   // #6 — pick a couple, conflicting choices gray out.
   {
