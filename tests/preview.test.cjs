@@ -36,3 +36,12 @@ test("preview route guards cost: owner-only bypass, daily cap, spend cap, re-voi
   assert.match(src, /let script = given;\s*if \(!script\)/);
   assert.match(src, /synthesize\(script\.slice\(0, MAX_PREVIEW_CHARS\)/);
 });
+
+test("voiceSampleLine is a short fixed line in the voice's own name that survives cleanup", async () => {
+  const p = await import("../lib/preview.ts");
+  const line = p.voiceSampleLine("Ryan - British man, newsreader");
+  assert.equal(line, "Hi, I'm Ryan. This is how I'd sound reading your show on NEON.");
+  assert.equal(p.cleanPreviewScript(line), line);
+  assert.ok(line.split(/\s+/).length <= 15, "about five seconds");
+  assert.equal(p.voiceSampleLine(""), "Hi. This is how I'd sound reading your show on NEON.");
+});
