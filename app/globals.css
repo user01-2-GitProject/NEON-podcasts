@@ -315,3 +315,15 @@ button.linklike {
   display: inline-flex;
   align-items: center;
 }
+
+/* Tricky words: "Find tricky words for me" suggestions */
+.tricky-finder { margin-top: 10px; }
+.tricky-list { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; }
+.tricky-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center; }
+.tricky-word { display: flex; flex-direction: column; min-width: 0; }
+.tricky-why { font-size: 12px; }
+.tricky-row input { margin: 0; }
+@media (max-width: 560px) {
+  .tricky-row { grid-template-columns: 1fr auto; }
+  .tricky-row .tricky-word { grid-column: 1 / -1; }
+}

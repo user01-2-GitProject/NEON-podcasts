@@ -142,7 +142,7 @@ test("a show that asks for it gets its look-up as a briefing, sources in the not
       mostImportant: () => "Be fair.",
     },
     "@/lib/tts": { synthesize: async () => { throw new Error("no tts"); }, estimateDurationSeconds: () => 60 },
-    "@/lib/pronounce": { applyPronunciations: (s) => s },
+    "@/lib/pronounce": { applyPronunciations: (s) => s, isNeverSay: () => false },
     "@/lib/storage": { getStorage: () => { throw new Error("no storage"); } },
     "@/lib/episode-spec": require("../lib/episode-spec.ts"),
     "@/lib/script-check": require("../lib/script-check.ts"),

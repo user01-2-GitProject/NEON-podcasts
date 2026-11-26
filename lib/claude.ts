@@ -24,6 +24,8 @@ interface GenerateArgs {
   fixNotes?: string;
   /** The show's latest episodes, newest first, so the writer doesn't repeat them. */
   recentEpisodes?: { title: string; show_notes: string }[];
+  /** Words never said on air, each with what to say instead (tricky words). */
+  neverSay?: { term: string; say_as: string }[];
 }
 
 export const RECENT_EPISODES = 5;
@@ -95,6 +97,13 @@ export function buildPrompt(args: GenerateArgs): { system: string; userText: str
     "Rules for show_notes: concise markdown summary with a one-line hook and 3-6 bullet takeaways.",
     "Rules for title: a specific, engaging episode title (no date unless relevant).",
   ];
+  const neverSay = (args.neverSay || []).filter((w) => w.term?.trim() && w.say_as?.trim());
+  if (neverSay.length) {
+    systemLines.push(
+      "Never write these words or names in the title, script or show_notes. Write the replacement instead, every time:",
+      ...neverSay.map((w) => `- "${w.term.trim()}" -> "${w.say_as.trim()}"`),
+    );
+  }
   const styleGuide = args.styleGuide?.trim();
   const priority = mostImportant(styleGuide);
   if (priority) {
@@ -129,6 +138,49 @@ export function buildPrompt(args: GenerateArgs): { system: string; userText: str
   ].join("\n");
 
   return { system, userText };
+}
+
+// One short plain-text answer from whichever model the app is set to use.
+// For small helper jobs (like guessing how to say tricky words), not scripts.
+export async function askModel(system: string, userText: string, maxTokens = 1500): Promise<string> {
+  const cfg = await resolveLlmConfig();
+  if (cfg.provider === "openrouter") {
+    const apiKey = cfg.openRouterApiKey || process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error("No AI key yet. Add your OpenRouter key in Settings.");
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://neon-podcasts.vercel.app",
+        "X-Title": "NEON Podcasts",
+      },
+      body: JSON.stringify({
+        model: cfg.openRouterModel || process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL,
+        max_tokens: maxTokens,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: userText },
+        ],
+      }),
+    });
+    if (!res.ok) throw new Error(`The AI didn't answer (error ${res.status}).`);
+    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    return data.choices?.[0]?.message?.content || "";
+  }
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("No AI key yet. Add your OpenRouter key in Settings.");
+  const client = new Anthropic({ apiKey });
+  const message = await client.messages.create({
+    model: process.env.ANTHROPIC_MODEL || DEFAULT_MODEL,
+    max_tokens: maxTokens,
+    system,
+    messages: [{ role: "user", content: userText }],
+  });
+  return message.content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("");
 }
 
 async function viaAnthropic(system: string, userText: string): Promise<LlmResult> {

@@ -1,5 +1,7 @@
 "use client";
 
+import TrickyWordsFinder from "@/components/TrickyWordsFinder";
+import { formatTrickyWords, parseTrickyWords } from "@/lib/pronounce";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CADENCES, CADENCE_LABELS, DAY_SHORT } from "@/lib/cadence";
@@ -138,17 +140,9 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
 
   const body = rawBody ?? (layout ? joinBrief(layout, answers) : composeBody(answers));
 
-  // "TERM => say as" per line; a trailing " (substring)" switches match mode.
+  // "word = how to say it" per line (lib/pronounce parseTrickyWords).
   function currentSpec(): ShowSpec {
-    const pronunciations = pronText
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        const [term, rest = ""] = line.split("=>").map((x) => x.trim());
-        const substring = /\(substring\)$/i.test(rest);
-        return { term, say_as: rest.replace(/\(substring\)$/i, "").trim(), match: substring ? "substring" as const : "word" as const };
-      });
+    const pronunciations = parseTrickyWords(pronText);
     return {
       ...spec,
       title: spec.title.trim(),
@@ -175,9 +169,7 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
       setLayout(split.layout);
       setRawBody(null);
     }
-    setPronText(
-      parsed.pronunciations.map((p) => `${p.term} => ${p.say_as}${p.match === "substring" ? " (substring)" : ""}`).join("\n"),
-    );
+    setPronText(formatTrickyWords(parsed.pronunciations));
   }
 
   async function importFile(file: File) {
@@ -405,6 +397,32 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
         )}
         </div>
 
+        <h3 style={{ marginTop: 20 }}>Tricky words</h3>
+        <label htmlFor="spec-pron" id="tricky-words">How should the host say them? (optional)</label>
+        <p className="muted" style={{ marginTop: 0 }}>
+          Names, short forms, or words the voice gets wrong. One per line: word = how to say it.
+          Words that must never be said on air go here too, with what to say instead.
+        </p>
+        <textarea
+          id="spec-pron"
+          rows={4}
+          value={pronText}
+          onChange={(e) => {
+            setDirty(true);
+            setPronText(e.target.value);
+          }}
+          placeholder={"rebound = REE-bound\nRBI = R B I\nWembanyama = wem-ban-YAH-mah"}
+        />
+        <TrickyWordsFinder
+          showId={editShowId}
+          getText={() => [spec.title, body].join("\n\n")}
+          have={parseTrickyWords(pronText).map((p) => p.term)}
+          onAdd={(t, s) => {
+            setDirty(true);
+            setPronText((cur) => (cur.trim() ? `${cur.replace(/\s+$/, "")}\n` : "") + `${t} = ${s}`);
+          }}
+        />
+
         <details open={moreOpen} onToggle={(e) => setMoreOpen((e.target as HTMLDetailsElement).open)} style={{ marginTop: 16 }}>
           <summary>More options (all optional)</summary>
 
@@ -512,18 +530,6 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
               </datalist>
             </div>
           </div>
-
-          <label htmlFor="spec-pron">Say it right (one per line: WORD =&gt; how to say it)</label>
-          <textarea
-            id="spec-pron"
-            rows={3}
-            value={pronText}
-            onChange={(e) => {
-              setDirty(true);
-              setPronText(e.target.value);
-            }}
-            placeholder={"FOMC => F O M C\n0DTE => zero D T E"}
-          />
 
           <label htmlFor="spec-body">Full show brief</label>
           <textarea

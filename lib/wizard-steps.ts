@@ -315,6 +315,10 @@ export const WIZARD_STEPS: WizardStep[] = [
   { id: "important", type: "textarea", question: "What is most important to you about this show?", help: "The writer weighs this most. See 'What matters most' in the brief.", placeholder: "e.g. The family is safe, and everyone finishes already looking forward to Saturday." },
   { id: "rules", type: "textarea", question: "Any hard-line rules?", help: "Things the show must never do.", placeholder: "e.g. Never take a political side. Never share listener names." },
 
+  // --- Tricky words (optional). Not part of the brief: ShowWizard turns it
+  // into the show's tricky-words list (lib/pronounce parseTrickyWords).
+  { id: "tricky_words", type: "textarea", question: "Any words the host might say wrong?", help: "Player names, short forms like RBI, or words like \"rebound\". One per line: word = how to say it. Not sure? Skip it, you can add these later.", placeholder: "e.g. rebound = REE-bound\nRBI = R B I", maxLength: 3000 },
+
   // --- End-of-tab free text (jimmy + Matt, Nov 25): up to 5,000 characters ---
   { id: "anything_show", type: "textarea", question: "Anything else about the show?", help: "A paragraph in your own words. Not a prompt — this is context NEON uses, the host won't read it out.", placeholder: "e.g. Stay unbiased. It's fine to say which way each party leans, but what I want to understand is the issue.", maxLength: 5000, section: "Anything else about the show" },
 

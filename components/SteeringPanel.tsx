@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Pronunciation } from "@/lib/types";
+import TrickyWordsFinder from "@/components/TrickyWordsFinder";
 
 export default function SteeringPanel({
   showId,
@@ -66,8 +67,8 @@ export default function SteeringPanel({
     <div className="panel">
       <h2>Show steering</h2>
       <p className="muted">
-        Style guidance is added to the script-writing prompt. Pronunciation rules are applied just
-        before text-to-speech; the stored episode script is never changed.
+        Style guidance is added to the script-writing prompt. Tricky words are fixed just before the
+        voice reads the script; the saved script keeps the real spelling.
       </p>
 
       <div style={{ marginTop: 10 }}>
@@ -86,20 +87,25 @@ export default function SteeringPanel({
         </button>
       </div>
 
-      <h2 style={{ marginTop: 18 }}>Pronunciations</h2>
+      <h2 style={{ marginTop: 18 }} id="tricky-words">Tricky words</h2>
       <p className="muted">
-        Map a term to how it should sound, whole-word or anywhere it appears.
+        Words the host says wrong, like a player&apos;s name or &quot;rebound&quot;. Write how it should
+        sound, the way you&apos;d spell it for a friend. Words that must never be said on air go
+        here too, with what to say instead.
       </p>
       {initialRules.length === 0 ? (
-        <p className="muted">No pronunciation rules yet.</p>
+        <p className="muted">No tricky words yet.</p>
       ) : (
-        <ul>
+        <ul className="tricky-list">
           {initialRules.map((rule) => (
-            <li key={rule.id}>
-              {rule.term} → {rule.say_as}{" "}
-              <span className="muted">({rule.match_mode})</span>{" "}
-              <button onClick={() => deletePronunciation(rule.id)} disabled={busy}>
-                Delete
+            <li key={rule.id} className="tricky-row">
+              <strong>{rule.term}</strong>
+              <span>
+                says &quot;{rule.say_as}&quot;
+                {rule.match_mode === "substring" ? <span className="muted"> (inside words too)</span> : null}
+              </span>
+              <button onClick={() => deletePronunciation(rule.id)} disabled={busy} aria-label={`Remove ${rule.term}`}>
+                Remove
               </button>
             </li>
           ))}
@@ -107,23 +113,38 @@ export default function SteeringPanel({
       )}
 
       <div style={{ marginTop: 10 }}>
-        <label htmlFor="pron-term">Term</label>
-        <input id="pron-term" value={term} onChange={(e) => setTerm(e.target.value)} placeholder="0" />
-        <label htmlFor="pron-say">Say as</label>
-        <input id="pron-say" value={sayAs} onChange={(e) => setSayAs(e.target.value)} placeholder="oh" />
-        <label htmlFor="pron-mode">Match</label>
-        <select
-          id="pron-mode"
-          value={matchMode}
-          onChange={(e) => setMatchMode(e.target.value as "word" | "substring")}
-        >
-          <option value="word">Whole word</option>
-          <option value="substring">Substring</option>
-        </select>
-        <button onClick={addPronunciation} disabled={busy}>
+        <label htmlFor="pron-term">Word</label>
+        <input id="pron-term" value={term} onChange={(e) => setTerm(e.target.value)} placeholder="e.g. rebound" />
+        <label htmlFor="pron-say">Say it like</label>
+        <input id="pron-say" value={sayAs} onChange={(e) => setSayAs(e.target.value)} placeholder="e.g. REE-bound" />
+        <details style={{ marginTop: 6 }}>
+          <summary className="muted">More</summary>
+          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              style={{ width: "auto", margin: 0 }}
+              checked={matchMode === "substring"}
+              onChange={(e) => setMatchMode(e.target.checked ? "substring" : "word")}
+            />
+            Also fix it inside longer words
+          </label>
+        </details>
+        <button onClick={addPronunciation} disabled={busy || !term.trim() || !sayAs.trim()} style={{ marginTop: 8 }}>
           Add
         </button>
       </div>
+
+      <TrickyWordsFinder
+        showId={showId}
+        have={initialRules.map((r) => r.term)}
+        onAdd={async (t, s) => {
+          await send(`/api/shows/${showId}/pronunciations`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ term: t, say_as: s, match_mode: "word" }),
+          });
+        }}
+      />
       {error ? <p className="error">{error}</p> : null}
     </div>
   );
