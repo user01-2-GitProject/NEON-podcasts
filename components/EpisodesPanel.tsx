@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import OfficialBadge from "@/components/OfficialBadge";
 import type { Episode, Run } from "@/lib/types";
 
 function fmtDuration(seconds: number | null): string {
@@ -200,6 +201,44 @@ function PublishButton({ episode }: { episode: Episode }) {
   );
 }
 
+// Owner-only twin of OfficialToggle on the show page, but for one episode.
+function OfficialToggle({ episodeId, initialOfficial }: { episodeId: string; initialOfficial: boolean }) {
+  const router = useRouter();
+  const [official, setOfficial] = useState(initialOfficial);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function toggle() {
+    setBusy(true);
+    setError(null);
+    const next = !official;
+    try {
+      const res = await fetch(`/api/episodes/${episodeId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_official: next }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "That didn't save. Try again.");
+      setOfficial(next);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <span>
+      <button type="button" className="btn secondary" disabled={busy} onClick={toggle}>
+        {busy ? "Saving…" : official ? "Remove NEON-official badge" : "Mark as NEON-official"}
+      </button>
+      {error ? <span className="error" style={{ marginLeft: 8 }}>{error}</span> : null}
+    </span>
+  );
+}
+
 export default function EpisodesPanel({
   initialEpisodes,
   runs,
@@ -229,6 +268,7 @@ export default function EpisodesPanel({
           <div className="list-item" key={ep.id} style={{ flexDirection: "column", alignItems: "stretch" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
               <div>
+                {ep.is_official ? <OfficialBadge size={18} /> : null}
                 <strong>{ep.title}</strong>{" "}
                 <span className={`tag ${ep.status === "failed" ? "failed" : ep.status === "published" ? "active" : ""}`}>
                   {ep.status}
@@ -262,6 +302,7 @@ export default function EpisodesPanel({
                 ) : null}
                 {owner ? <RegenerateButton episodeId={ep.id} /> : null}
                 {owner ? <PublishButton episode={ep} /> : null}
+                {owner ? <OfficialToggle episodeId={ep.id} initialOfficial={!!ep.is_official} /> : null}
                 {ep.status === "published" ? (
                   <a className="btn secondary" href={`/listen/${rssToken}`}>Public page</a>
                 ) : null}
