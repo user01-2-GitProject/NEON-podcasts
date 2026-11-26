@@ -1,0 +1,93 @@
+/* E3 product-page layout for a show. Colors come from E1's tokens where they
+   exist, with standalone fallbacks so this PR works on its own. */
+
+.show-detail {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(20px, 4vw, 48px);
+  padding: clamp(18px, 3vw, 32px);
+  margin-bottom: 18px;
+  border: 1px solid var(--border, #283040);
+  border-radius: 14px;
+  background: var(--panel, #151a23);
+}
+
+.show-detail-aside {
+  position: sticky;
+  top: 16px;
+  min-width: 0;
+}
+
+.show-detail-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 12px;
+  border-bottom: 3px solid var(--hairline, #a8895e);
+}
+
+.show-detail-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  margin-top: 14px;
+}
+.show-detail-actions .btn { text-align: center; }
+
+/* E3's button pair: slate primary, outlined secondary. */
+.show-detail .btn.primary {
+  background: #3d5a7e;
+  border: 1px solid #3d5a7e;
+  color: #f9f2e2;
+}
+.show-detail .btn.secondary {
+  background: transparent;
+  border: 1px solid var(--hairline, #a8895e);
+  color: var(--text, #e7ecf3);
+}
+
+.show-detail-main { min-width: 0; }
+
+.show-detail .eyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-ink, #a8895e);
+}
+
+.show-detail-title {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 0 0 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--hairline, #a8895e);
+  font-family: var(--font-display, "Bodoni 72", Didot, Georgia, serif);
+  font-size: clamp(30px, 4vw, 52px);
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--heading, var(--text, #e7ecf3));
+}
+
+.show-detail-description {
+  margin: 0 0 10px;
+  max-width: 62ch;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.show-detail-meta { margin: 0 0 16px; }
+.show-detail-listen { margin-top: 4px; }
+
+.episodes-panel { margin-bottom: 18px; }
+
+@media (max-width: 860px) {
+  .show-detail { grid-template-columns: minmax(0, 1fr); }
+  .show-detail-aside { position: static; }
+  .show-detail-art { max-width: 420px; margin: 0 auto; }
+}

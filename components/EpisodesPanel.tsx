@@ -296,7 +296,7 @@ export default function EpisodesPanel({
   rssToken: string;
 }) {
   return (
-    <div className="panel">
+    <div className="panel episodes-panel">
       <h2>Episodes</h2>
       {owner ? (
         <p className="muted" style={{ overflowWrap: "anywhere" }}>
