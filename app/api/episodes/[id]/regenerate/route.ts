@@ -8,8 +8,7 @@ import { checkGeneration } from "@/lib/limits";
 import { runGenerationInBackground } from "@/lib/run-generation";
 
 export const runtime = "nodejs";
-// Vercel supports up to 30 minutes on Pro/Enterprise with Fluid compute.
-export const maxDuration = 1800;
+export const maxDuration = 300;
 
 type Params = { params: Promise<{ id: string }> };
 

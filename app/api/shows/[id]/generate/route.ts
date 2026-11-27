@@ -30,7 +30,7 @@ export async function POST(req: Request, { params }: Params) {
     `) as { id: string }[];
     const runId = runs[0].id;
     // Save the script first. For auto narration, the client then POSTs
-    // { runId } to /api/episodes/[episodeId]/audio after this run exposes its draft.
+    // { runId } to /api/episodes/[episodeId]/audio until it returns complete: true.
     after(() => runGenerationInBackground(runId, () => generateEpisode(id, "external", undefined, undefined, runId)));
     return NextResponse.json({ runId }, { status: 202 });
   } catch (err) {

@@ -20,7 +20,7 @@ export interface TtsResult {
   provider: string;
 }
 
-export async function synthesize(script: string, voiceOverride?: string | null, onChunk?: () => Promise<void>): Promise<TtsResult> {
+export async function synthesize(script: string, voiceOverride?: string | null): Promise<TtsResult> {
   const config = await resolveTtsConfig();
   const provider = providerFor(voiceOverride, config.provider);
   const voice = voiceOverride ? voiceName(voiceOverride) : voiceOverride;
@@ -37,7 +37,6 @@ export async function synthesize(script: string, voiceOverride?: string | null, 
     } else {
       buffers.push(await openai(chunk, voice, config));
     }
-    await onChunk?.();
   }
 
   // Joined without each piece's length header, so players don't stop or skip
