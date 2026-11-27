@@ -6,7 +6,7 @@ import { useRef, useState } from "react";
 import OfficialBadge from "@/components/OfficialBadge";
 import type { Episode, Run } from "@/lib/types";
 import type { ScriptQa, ScriptQaKind } from "@/lib/script-qa";
-import { readJson } from "./generation-client";
+import { makeEpisodeAudio, readJson } from "./generation-client";
 
 const QA_LABELS: Record<ScriptQaKind, string> = {
   swear: "Swear",
@@ -111,7 +111,7 @@ function UploadAudio({ episodeId }: { episodeId: string }) {
   );
 }
 
-function MakeAudioButton({ episodeId, redo = false }: { episodeId: string; redo?: boolean }) {
+function MakeAudioButton({ episodeId, runId, redo = false }: { episodeId: string; runId?: string; redo?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [armed, setArmed] = useState(false);
@@ -126,6 +126,11 @@ function MakeAudioButton({ episodeId, redo = false }: { episodeId: string; redo?
     setBusy(true);
     setError(null);
     try {
+      if (!redo && runId) {
+        await makeEpisodeAudio(episodeId, runId);
+        router.refresh();
+        return;
+      }
       const res = await fetch(`/api/episodes/${episodeId}/narrate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -338,11 +343,11 @@ export default function EpisodesPanel({
                     <a className="btn" href={`${ep.audio_url}?download=1`}>
                       Download mp3
                     </a>
-                    {owner && ep.script ? <MakeAudioButton episodeId={ep.id} redo /> : null}
+                    {owner && ep.script ? <MakeAudioButton episodeId={ep.id} runId={runs.find((run) => run.episode_id === ep.id)?.id} redo /> : null}
                   </>
                 ) : owner ? (
                   <>
-                    {ep.script ? <MakeAudioButton episodeId={ep.id} /> : null}
+                    {ep.script ? <MakeAudioButton episodeId={ep.id} runId={runs.find((run) => run.episode_id === ep.id)?.id} /> : null}
                     <UploadAudio episodeId={ep.id} />
                   </>
                 ) : null}
