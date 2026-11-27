@@ -10,6 +10,7 @@
 
 import { resolveLlmConfig } from "@/lib/settings";
 import { DEFAULT_OPENROUTER_MODEL } from "@/lib/claude";
+import { fetchWithTimeout } from "@/lib/request-timeout";
 
 export const RESEARCH_HEADING = /^##\s+Look (?:things )?up before each episode\s*$/im;
 export const MAX_SOURCES = 10;
@@ -162,7 +163,7 @@ export async function lookUp(a: ResearchArgs, fetchImpl: typeof fetch = fetch): 
   const model = cfg.openRouterModel || process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL;
   const { system, userText } = buildResearchPrompt(a);
 
-  const res = await fetchImpl("https://openrouter.ai/api/v1/chat/completions", {
+  const res = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -179,7 +180,7 @@ export async function lookUp(a: ResearchArgs, fetchImpl: typeof fetch = fetch): 
         { role: "user", content: userText },
       ],
     }),
-  });
+  }, "Research request", fetchImpl);
   if (!res.ok) {
     console.error(`[research] OpenRouter ${res.status}: ${(await res.text().catch(() => "")).slice(0, 300)}`);
     throw new Error(`Couldn't look things up for this episode (search service error ${res.status}).`);

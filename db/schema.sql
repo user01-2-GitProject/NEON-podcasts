@@ -124,9 +124,20 @@ create table if not exists runs (
   attempt_count     integer not null default 0,
   next_attempt_at   timestamptz,
   started_at        timestamptz not null default now(),
+  heartbeat_at      timestamptz,
   finished_at       timestamptz
 );
 create index if not exists idx_runs_show_id on runs(show_id);
+
+create table if not exists episode_audio_chunks (
+  run_id      uuid not null references runs(id) on delete cascade,
+  episode_id  uuid not null references episodes(id) on delete cascade,
+  chunk_index integer not null,
+  content_type text not null,
+  provider    text not null,
+  data        bytea not null,
+  primary key (run_id, chunk_index)
+);
 
 -- Scheduler indexes live in 002_scheduler.sql, after its idempotent ALTERs.
 

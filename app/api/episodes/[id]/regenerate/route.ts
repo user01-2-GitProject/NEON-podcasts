@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { currentCaller } from "@/lib/current-user";
 import { sql } from "@/lib/db";
 import { friendlyGenerateError, sanitizeError } from "@/lib/errors";
 import { generateEpisode } from "@/lib/generate";
 import { checkGeneration } from "@/lib/limits";
+import { runGenerationInBackground } from "@/lib/run-generation";
 
 export const runtime = "nodejs";
-// Rewrites the script and voices it again, so it can take a while.
 export const maxDuration = 300;
 
 type Params = { params: Promise<{ id: string }> };
@@ -49,16 +49,13 @@ export async function POST(req: Request, { params }: Params) {
 
     // No mode override: the show's current narration_mode decides whether the
     // result is published with audio or saved as a script-only draft.
-    const { episode: updated, runId: usedRunId, voiceError } = await generateEpisode(
+    after(() => runGenerationInBackground(runId, () => generateEpisode(
       episode.show_id,
       undefined,
       undefined,
       { episodeId: episode.id, runId },
-    );
-    return NextResponse.json(
-      { episode: updated, runId: usedRunId, voice_error: voiceError ?? null },
-      { status: 200 },
-    );
+    )));
+    return NextResponse.json({ runId }, { status: 202 });
   } catch (err) {
     sanitizeError(err, "regenerateEpisode");
     const { message, status } = friendlyGenerateError(err);

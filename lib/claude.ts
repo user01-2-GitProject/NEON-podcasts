@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { resolveLlmConfig } from "@/lib/settings";
+import { fetchWithTimeout, withRequestTimeout } from "@/lib/request-timeout";
 
 export interface GeneratedScript {
   title: string;
@@ -147,7 +148,7 @@ export async function askModel(system: string, userText: string, maxTokens = 150
   if (cfg.provider === "openrouter") {
     const apiKey = cfg.openRouterApiKey || process.env.OPENROUTER_API_KEY;
     if (!apiKey) throw new Error("No AI key yet. Add your OpenRouter key in Settings.");
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const res = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -163,7 +164,7 @@ export async function askModel(system: string, userText: string, maxTokens = 150
           { role: "user", content: userText },
         ],
       }),
-    });
+    }, "OpenRouter request");
     if (!res.ok) throw new Error(`The AI didn't answer (error ${res.status}).`);
     const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
     return data.choices?.[0]?.message?.content || "";
@@ -171,12 +172,12 @@ export async function askModel(system: string, userText: string, maxTokens = 150
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("No AI key yet. Add your OpenRouter key in Settings.");
   const client = new Anthropic({ apiKey });
-  const message = await client.messages.create({
+  const message = await withRequestTimeout("Anthropic request", (signal) => client.messages.create({
     model: process.env.ANTHROPIC_MODEL || DEFAULT_MODEL,
     max_tokens: maxTokens,
     system,
     messages: [{ role: "user", content: userText }],
-  });
+  }, { signal }));
   return message.content
     .filter((b): b is Anthropic.TextBlock => b.type === "text")
     .map((b) => b.text)
@@ -189,12 +190,12 @@ async function viaAnthropic(system: string, userText: string): Promise<LlmResult
   const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
   const client = new Anthropic({ apiKey });
 
-  const message = await client.messages.create({
+  const message = await withRequestTimeout("Anthropic request", (signal) => client.messages.create({
     model,
     max_tokens: 8000,
     system,
     messages: [{ role: "user", content: userText }],
-  });
+  }, { signal }));
 
   const text = message.content
     .filter((b): b is Anthropic.TextBlock => b.type === "text")
@@ -221,7 +222,7 @@ async function viaOpenRouter(
   }
   const model = modelIn || process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL;
 
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  const res = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -238,7 +239,7 @@ async function viaOpenRouter(
         { role: "user", content: userText },
       ],
     }),
-  });
+  }, "OpenRouter request");
 
   if (!res.ok) {
     let detail = "";
@@ -311,7 +312,7 @@ export async function completeText(opts: {
     const apiKey = cfg.openRouterApiKey || process.env.OPENROUTER_API_KEY;
     if (!apiKey) throw new Error("OpenRouter API key is not set — add it in Settings, or set OPENROUTER_API_KEY");
     const model = cfg.openRouterModel || process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL;
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const res = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -326,8 +327,8 @@ export async function completeText(opts: {
           { role: "system", content: opts.system },
           { role: "user", content: opts.user },
         ],
-      }),
-    });
+        }),
+    }, "OpenRouter request");
     if (!res.ok) {
       const detail = await res.text().catch(() => "<no body>");
       throw new Error(`OpenRouter request failed (${res.status}): ${detail.slice(0, 500)}`);
@@ -343,12 +344,12 @@ export async function completeText(opts: {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
   const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
-  const message = await new Anthropic({ apiKey }).messages.create({
+  const message = await withRequestTimeout("Anthropic request", (signal) => new Anthropic({ apiKey }).messages.create({
     model,
     max_tokens: opts.maxTokens,
     system: opts.system,
     messages: [{ role: "user", content: opts.user }],
-  });
+  }, { signal }));
   const text = message.content
     .filter((b): b is Anthropic.TextBlock => b.type === "text")
     .map((b) => b.text)

@@ -17,6 +17,7 @@ const spec = load("lib/show-spec.ts", (n) => {
 });
 const { buildPrompt } = load("lib/claude.ts", (name) => {
   if (name === "@/lib/settings") return { resolveLlmConfig: async () => ({ provider: "anthropic" }) };
+  if (name === "@/lib/request-timeout") return { withRequestTimeout: (_label, request) => request(new AbortController().signal) };
   if (name === "@anthropic-ai/sdk") return {};
   throw new Error(`unexpected require: ${name}`);
 });
