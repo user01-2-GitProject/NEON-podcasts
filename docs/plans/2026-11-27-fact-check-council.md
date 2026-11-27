@@ -1,5 +1,7 @@
 # Fact-check council — implementation plan
 
+Status and evidence: [`2026-11-27-fact-check-council-status.md`](2026-11-27-fact-check-council-status.md).
+
 2026-11-27 · Claude (plan keeper). Source: Jimmy's "Fact-check council plan" (pasted 2026-11-27), corrected
 after a repo review. Branch `claude/fact-check-council`, stacked on PR #112 (`lib/fact-check.ts` + migration 016).
 
