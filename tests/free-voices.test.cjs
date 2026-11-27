@@ -48,11 +48,11 @@ test("every one-tap host uses a real free catalog voice; Sterling is first and B
 test("wizard host: one-tap pick, custom name, preview voice, and format fallback", async () => {
   const { wizardHost, composeWizardBody, EMPTY_WIZARD } = await import("../lib/wizard-steps.ts");
   const base = { ...EMPTY_WIZARD, title: "T", format: "news", answers: {} };
-  // Skipped: News falls back to Sterling with his free voice.
-  assert.deepEqual(wizardHost(base, 1), { name: "Sterling", voice: "edge:en-GB-RyanNeural" });
+  // A preset supplies voice/persona; the name is always user-entered.
+  assert.equal(wizardHost(base, 1).name, "");
   // One tap.
-  const ellen = { ...base, answers: { host1_preset: "ellen" } };
-  assert.equal(wizardHost(ellen, 1).name, "Ellen");
+  const ellen = { ...base, answers: { host1_preset: "ellen", host1_name: "Avery" } };
+  assert.equal(wizardHost(ellen, 1).name, "Avery");
   assert.match(composeWizardBody(ellen), /## Host 1\nEllen is a warm/);
   // Build my own.
   const own = { ...base, answers: { host1_preset: "custom", host1_name: "Maya" } };
@@ -60,9 +60,9 @@ test("wizard host: one-tap pick, custom name, preview voice, and format fallback
   assert.doesNotMatch(composeWizardBody(own), /## Host 1\n\n/);
   // The preview screen's voice pick wins.
   const picked = { ...base, answers: { host1_preset: "sterling", host1_voice: "onyx" } };
-  assert.deepEqual(wizardHost(picked, 1), { name: "Sterling", voice: "onyx" });
+  assert.deepEqual(wizardHost(picked, 1), { name: "", voice: "onyx" });
   // Second host.
-  const two = { ...base, host_count: 2, answers: { host2_preset: "maeve" } };
-  assert.equal(wizardHost(two, 2).name, "Maeve");
-  assert.equal(wizardHost({ ...base, host_count: 2 }, 2).name, "Co-host");
+  const two = { ...base, host_count: 2, answers: { host2_preset: "maeve", host2_name: "Sam" } };
+  assert.equal(wizardHost(two, 2).name, "Sam");
+  assert.equal(wizardHost({ ...base, host_count: 2 }, 2).name, "");
 });

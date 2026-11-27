@@ -292,7 +292,7 @@ export const WIZARD_STEPS: WizardStep[] = [
   // --- Two-host specifics (Host 2 tab) ---
   // One-tap hosts (jimmy + Matt, Nov 24): pick a ready-made host or build one.
   { id: "host2_preset", type: "host", question: "Who's the second host?", help: "Tap one to use them as they are. You can change anything later.", when: (d) => d.host_count === 2, tab: "host2", section: "Host 2" },
-  { id: "host2_name", type: "text", question: "What's the second host's name?", placeholder: "e.g. Maya", maxLength: 40, when: (d) => d.host_count === 2 && d.answers.host2_preset === CUSTOM_HOST, tab: "host2" },
+  { id: "host2_name", type: "text", question: "What's the second host's name?", placeholder: "e.g. Maya", maxLength: 40, required: true, when: (d) => d.host_count === 2, tab: "host2" },
   // #75 — add "Professional" and "Mentor / student" (transcript).
   {
     id: "hosts_dynamic",
@@ -355,7 +355,7 @@ export const WIZARD_STEPS: WizardStep[] = [
   // anything_host2 — live earlier in this array and carry tab: "host2".)
   // One-tap hosts (jimmy + Matt, Nov 24): Sterling first, or build your own.
   { id: "host1_preset", type: "host", question: "Pick your host", help: "Tap one to use them as they are. You can change anything later.", tab: "host1", section: "Host 1" },
-  { id: "host1_name", type: "text", question: "What's your host's name?", placeholder: "e.g. Maya", maxLength: 40, when: (d) => d.answers.host1_preset === CUSTOM_HOST, tab: "host1" },
+  { id: "host1_name", type: "text", question: "What's your host's name?", placeholder: "e.g. Maya", maxLength: 40, required: true, tab: "host1" },
   { id: "anything_host1", type: "textarea", question: "Anything else about host 1?", help: "Backstory, voice tweaks, a catchphrase — anything the writer should know.", placeholder: "e.g. Grew up in Detroit, finance background, dry wit. Loves a short pause for effect.", maxLength: 5000, tab: "host1", section: "Host 1" },
 ];
 
@@ -375,8 +375,7 @@ export function wizardHost(draft: WizardDraft, slot: 1 | 2): { name: string; voi
   const preset = hostPreset(picked);
   const format = SHOW_FORMATS.find((f) => f.id === draft.format);
   const fallback = slot === 1 ? hostPreset(format?.defaultHostName?.toLowerCase()) ?? HOST_PRESETS[0] : undefined;
-  const custom = picked === CUSTOM_HOST;
-  const name = (custom ? a[`host${slot}_name`]?.trim() : "") || preset?.name || (custom ? "" : fallback?.name) || (slot === 1 ? "Host" : "Co-host");
+  const name = a[`host${slot}_name`]?.trim() || "";
   const voice = a[`host${slot}_voice`]?.trim() || preset?.voice || (slot === 1 ? fallback?.voice ?? "" : "");
   return { name, voice };
 }

@@ -29,7 +29,7 @@ test("visibleSteps: format branches hide questions for other formats", async () 
 
   // "title" is required; everything else is optional.
   const req = w.WIZARD_STEPS.filter((s) => s.required).map((s) => s.id);
-  assert.deepEqual(req, ["title"]);
+  assert.deepEqual(req, ["title", "host2_name", "host1_name"]);
 
   // No duplicate step ids.
   assert.equal(new Set(allIds).size, allIds.length);

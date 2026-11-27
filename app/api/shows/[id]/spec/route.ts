@@ -81,6 +81,7 @@ export async function PUT(req: Request, { params }: Params) {
         description = ${f.description},
         style_guide = ${f.style_guide},
         voice_id = ${f.voice_id},
+        hosts = ${JSON.stringify(f.hosts)}::jsonb,
         narration_mode = ${f.narration_mode},
         cadence = ${f.cadence},
         schedule_time = ${f.schedule_time},

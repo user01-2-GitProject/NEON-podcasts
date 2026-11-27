@@ -12,6 +12,7 @@ export interface Show {
   description: string;
   style_guide: string;
   voice_id: string | null;
+  hosts?: { name: string; voice: string }[] | null;
   narration_mode: NarrationMode;
   cadence: Cadence;
   schedule_time: string;

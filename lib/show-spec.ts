@@ -424,6 +424,7 @@ export function specToShowFields(spec: ShowSpec) {
     description: spec.tagline,
     style_guide: buildStyleGuide(spec),
     voice_id: spec.hosts[0]?.voice || null,
+    hosts: spec.hosts,
     narration_mode: spec.narration_mode,
     cadence: spec.cadence,
     air_days: spec.cadence === "days" ? specDays(spec.days) : null,
@@ -494,6 +495,7 @@ export function showToSpec(
     description: string;
     style_guide: string;
     voice_id: string | null;
+    hosts?: { name: string; voice: string }[] | string | null;
     narration_mode: string;
     cadence: string;
     schedule_time: string;
@@ -517,9 +519,13 @@ export function showToSpec(
   // edit; saving the setup keeps it (see the spec PUT route).
   spec.image_url = show.image_url && !show.image_url.startsWith("/art/") ? show.image_url : "";
   let guide = (show.style_guide ?? "").trim();
+  const storedHosts = typeof show.hosts === "string"
+    ? (() => { try { return JSON.parse(show.hosts) as { name: string; voice: string }[]; } catch { return []; } })()
+    : show.hosts;
+  if (storedHosts?.length) spec.hosts = storedHosts.map((h) => ({ name: h.name ?? "", voice: h.voice ?? "" }));
   const hostLine = /^Hosts?: (.+?)(?:\r?\n\r?\n|$)/.exec(guide);
   if (hostLine) {
-    spec.hosts = hostLine[1].split(", ").map((name) => ({ name: name.trim(), voice: "" }));
+    if (!spec.hosts.length) spec.hosts = hostLine[1].split(", ").map((name) => ({ name: name.trim(), voice: "" }));
     guide = guide.slice(hostLine[0].length).trim();
   }
   if (show.voice_id) {

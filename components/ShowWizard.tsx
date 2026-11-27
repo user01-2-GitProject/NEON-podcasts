@@ -109,8 +109,7 @@ export default function ShowWizard() {
     setError(null);
     try {
       // Hosts must have a name (lib/show-spec.ts validateShowSpec). wizardHost
-      // uses the one-tap host (or the preview's voice pick), else the
-      // format's default host, so a skipped step still gets a free voice.
+      // uses the selected preset only for voice/persona; names are always user-entered.
       const hosts = draft.host_count === 2 ? [wizardHost(draft, 1), wizardHost(draft, 2)] : [wizardHost(draft, 1)];
       const cadence = cadenceFromAnswer(draft.answers.cadence);
       const body = composeWizardBody(draft);
