@@ -5,7 +5,7 @@ import { formatTrickyWords, parseTrickyWords } from "@/lib/pronounce";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CADENCES, CADENCE_LABELS, DAY_SHORT } from "@/lib/cadence";
-import { EDGE_VOICES, KOKORO_VOICES, OPENAI_CATALOG, TIMEZONE_OPTIONS, HOST_PRESETS, VOICE_CATALOG } from "@/lib/voices";
+import { TIMEZONE_OPTIONS, HOST_PRESETS, VOICE_CATALOG } from "@/lib/voices";
 import {
   BODY_TEMPLATE,
   emptyShowSpec,
@@ -440,12 +440,7 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
           <div className="row">
             <div>
               <label htmlFor="spec-host">Host name</label>
-              <input id="spec-host" list="host-names" value={host(0).name} onChange={(e) => setHost(0, "name", e.target.value)} />
-              <datalist id="host-names">
-                {HOST_PRESETS.map((h) => (
-                  <option key={h.id} value={h.name}>{h.label}</option>
-                ))}
-              </datalist>
+              <input id="spec-host" value={host(0).name} onChange={(e) => setHost(0, "name", e.target.value)} />
             </div>
             <div>
               <label htmlFor="spec-host2">Second host</label>
@@ -469,17 +464,17 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
                     >
                       <option value="">Default (your Settings voice)</option>
                       <optgroup label="Free voices">
-                        {EDGE_VOICES.map((o) => (
+                        {VOICE_CATALOG.filter((o) => o.source === "edge").map((o) => (
                           <option key={o.id} value={o.id}>{o.label}</option>
                         ))}
                       </optgroup>
                       <optgroup label="OpenAI voices (paid, needs your key)">
-                        {OPENAI_CATALOG.map((o) => (
+                        {VOICE_CATALOG.filter((o) => o.source === "openai").map((o) => (
                           <option key={o.id} value={o.id}>{o.label}</option>
                         ))}
                       </optgroup>
                       <optgroup label="Free, on your own computer (Kokoro)">
-                        {KOKORO_VOICES.map((o) => (
+                        {VOICE_CATALOG.filter((o) => o.source === "kokoro").map((o) => (
                           <option key={o.id} value={o.id}>{o.label}</option>
                         ))}
                       </optgroup>
@@ -509,12 +504,11 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
                   type="button"
                   className="secondary"
                   onClick={() => {
-                    setHost(0, "name", h.name);
                     setHost(0, "voice", h.voice);
                   }}
                   title={h.label}
                 >
-                  {h.name}
+                  {h.label}
                 </button>
               ))}
             </div>
