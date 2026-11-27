@@ -2,13 +2,13 @@ import type { ReactNode } from "react";
 import { Image, StyleSheet, Text, View, type StyleProp, type TextStyle } from "react-native";
 
 // The spinning-N badge beside a NEON-official show's title. Mirrors the web
-// badge (components/OfficialBadge.tsx). The gif ships inside the app so it
-// shows offline too. Android plays gifs because Expo turns on
-// expo.gif.enabled in prebuild.
+// badge (components/OfficialBadge.tsx) using iggy's canonical orbit GIF from
+// the branding shelf. It ships inside the app so it shows offline too.
+// Android plays gifs because Expo turns on expo.gif.enabled in prebuild.
 export function OfficialBadge({ size = 22 }: { size?: number }) {
   return (
     <Image
-      source={require("../assets/neon-official.gif")}
+      source={require("../assets/brand/neon-logo-orbit-360-clean.gif")}
       style={{ width: size, height: size, borderRadius: size / 2, marginRight: size < 20 ? 5 : 8 }}
       accessibilityLabel="NEON official show"
     />
