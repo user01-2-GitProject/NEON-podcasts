@@ -18,9 +18,13 @@ type Params = { params: Promise<{ id: string }> };
 // route owns the verdict rule (validateCouncilSubmission recomputes it), the
 // grade and the durable write; callers cannot hand us a pre-baked pass.
 export async function POST(req: Request, { params }: Params) {
+  const authHeader = req.headers.get("authorization") || "";
+  if (!/^Bearer npt_[0-9a-f]{64}$/i.test(authHeader)) {
+    return NextResponse.json({ error: "Use a NEON agent token." }, { status: 401 });
+  }
   const caller = await currentCaller({
     session: await auth(),
-    authHeader: req.headers.get("authorization"),
+    authHeader,
     db: sql,
   });
   if (!caller) return NextResponse.json({ error: "Please sign in first." }, { status: 401 });

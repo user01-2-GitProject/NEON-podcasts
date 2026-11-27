@@ -69,10 +69,10 @@ export async function listPendingCouncil(
     briefing_snapshot: row.briefing_snapshot,
     briefing_docs: row.briefing_docs ?? null,
     prompts: {
-      quickdraw: buildCouncilPrompt("quickdraw", row.script || "", [row.briefing_docs, row.briefing_snapshot].filter(Boolean).join("\n\n")),
-      scholar: buildCouncilPrompt("scholar", row.script || "", [row.briefing_docs, row.briefing_snapshot].filter(Boolean).join("\n\n")),
+      quickdraw: buildCouncilPrompt("quickdraw", row.script || "", [row.briefing_snapshot, row.briefing_docs].filter(Boolean).join("\n\n")),
+      scholar: buildCouncilPrompt("scholar", row.script || "", [row.briefing_snapshot, row.briefing_docs].filter(Boolean).join("\n\n")),
       // Q5 reserved voter: always present, harmless if the leader ignores it.
-      qwen: buildCouncilPrompt("qwen", row.script || "", [row.briefing_docs, row.briefing_snapshot].filter(Boolean).join("\n\n")),
+      qwen: buildCouncilPrompt("qwen", row.script || "", [row.briefing_snapshot, row.briefing_docs].filter(Boolean).join("\n\n")),
     },
   }));
 }

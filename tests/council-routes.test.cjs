@@ -40,6 +40,7 @@ const caller = {
   tokenId: "token-1",
   tokenLabel: "Rig",
 };
+const AGENT_AUTH = `Bearer npt_${"a".repeat(64)}`;
 
 const episode = {
   episode_id: "ep-1",
@@ -73,7 +74,7 @@ const failBody = () => ({
 const post = (body) =>
   new Request("https://app.test/api/episodes/ep-1/fact-check", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", authorization: AGENT_AUTH },
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
 const patchGrade = (body) => new Request("https://app.test/api/episodes/ep-1/fact-check", {
@@ -133,6 +134,14 @@ test("pending rows are scoped, filtered for no council verdict, oldest first, an
   assert.match(db.calls[0].text, /order by l\.started_at asc/);
   assert.match(db.calls[0].text, /limit \?/);
   assert.deepEqual(db.calls[0].values, [caller.userId, 10]);
+});
+
+test("pending prompts prioritize the run snapshot before large current briefing text", async () => {
+  const { listPendingCouncil } = await loadCouncil();
+  const row = { ...episode, script: "Script", briefing_snapshot: "EXACT RUN SNAPSHOT", briefing_docs: "x".repeat(12000) };
+  const [item] = await listPendingCouncil(recordingSql(() => [row]), caller.userId);
+  assert.ok(item.prompts.quickdraw.user.includes("EXACT RUN SNAPSHOT"));
+  assert.ok(item.prompts.quickdraw.user.length < 13000);
 });
 
 test("episode lookup is ownership-scoped and loads the latest run", async () => {
@@ -243,12 +252,12 @@ test("GET /api/council/pending returns only the caller's prepared items", async 
   const { route, seen } = pendingRoute(caller, items);
   const res = await route.GET(
     new Request("https://app.test/api/council/pending", {
-      headers: { authorization: "Bearer npt_token" },
+      headers: { authorization: AGENT_AUTH },
     }),
   );
   assert.equal(res.status, 200);
   assert.deepEqual(await res.json(), { items });
-  assert.equal(seen.callerOpts.authHeader, "Bearer npt_token");
+  assert.equal(seen.callerOpts.authHeader, AGENT_AUTH);
   assert.equal(seen.listArgs[1], caller.userId);
   assert.equal(res.headers.get("cache-control"), "no-store");
 });
@@ -283,6 +292,15 @@ test("POST /api/episodes/:id/fact-check requires a caller", async () => {
   const { route, state } = postRoute(null);
   const res = await route.POST(post(passBody()), params());
   assert.equal(res.status, 401);
+  assert.equal(state.saved.length, 0);
+});
+
+test("POST /api/episodes/:id/fact-check rejects browser-session-only access", async () => {
+  const { route, state } = postRoute(caller);
+  const req = new Request("https://app.test/api/episodes/ep-1/fact-check", {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(passBody()),
+  });
+  assert.equal((await route.POST(req, params())).status, 401);
   assert.equal(state.saved.length, 0);
 });
 
