@@ -118,7 +118,8 @@ a:hover {
 .home-section-heading h2 { margin: 0; font-size: 21px; }
 .show-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 18px; }
 .show-card { min-width: 0; padding: 12px; border-radius: 12px; color: var(--text); background: var(--panel); transition: background-color 140ms ease; }
-.show-card:hover { background: var(--panel-2); text-decoration: none; }
+.show-card:hover, .show-card:focus-visible { background: var(--panel-2); text-decoration: none; }
+.show-card:active { transform: scale(.985); background: var(--panel-2); }
 .show-card-art { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: 8px; margin-bottom: 12px; }
 .show-card .home-show-title { font-size: 16px; }
 .show-card .muted { margin: 6px 0 0; }
@@ -147,8 +148,10 @@ header.topbar {
   padding: 16px 20px;
   border-bottom: 1px solid var(--hairline);
   background: var(--panel);
+  min-width: 0;
 }
 header.topbar h1 { margin-right: auto !important; }
+header.topbar h1 { min-width: 0; }
 header.topbar h1 {
   font-size: 18px;
   margin: 0;
@@ -164,8 +167,8 @@ header.topbar .brand {
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 999px;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   font-size: 16px;
   line-height: 1;
@@ -457,11 +460,18 @@ button.linklike {
 .wizard-choices-row { flex-direction: row; }
 .wizard-scale { margin-top: 16px; }
 .wizard-scale-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-soft); margin-bottom: 8px; }
-.wizard-scale-dots { display: flex; gap: 6px; justify-content: space-between; }
-.wizard-scale-dot { flex: 1; padding: 14px 0; border-radius: 10px; border: 1px solid var(--tint-3); background: var(--tint); color: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+.wizard-scale-dots { display: flex; gap: 6px; justify-content: flex-start; overflow-x: auto; padding-bottom: 4px; }
+.wizard-scale-dot { flex: 0 0 44px; min-height: 44px; padding: 10px 0; border-radius: 10px; border: 1px solid var(--tint-3); background: var(--tint); color: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
 .wizard-scale-dot:hover { background: var(--tint-2); }
 .wizard-scale-dot-selected { border-color: var(--accent); background: var(--accent-soft); }
 .linklike { background: none; border: none; color: var(--accent); cursor: pointer; padding: 0; text-decoration: underline; font: inherit; }
+@media (max-width: 520px) {
+  .home-nav { display: flex; flex-wrap: wrap; gap: 8px; }
+  .home-nav > * { flex: 1 1 auto; min-height: 44px; }
+  .home-nav .btn { min-height: 44px; }
+  .schedule-row { flex-direction: column; }
+  .schedule-row > * { min-width: 0; }
+}
 
 /* Friendly "nothing bad will happen" note on the edit page and after saving. */
 .notice-safe {

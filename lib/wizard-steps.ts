@@ -73,7 +73,7 @@ export interface WizardDraft {
   answers: Record<string, string>;
 }
 
-export const EMPTY_WIZARD: WizardDraft = { title: "", host_count: 1, format: "", answers: {} };
+export const EMPTY_WIZARD: WizardDraft = { title: "", host_count: 1, format: "", answers: { preview: "yes" } };
 
 const isFormat = (d: WizardDraft, ...ids: string[]) => ids.includes(d.format);
 
@@ -396,7 +396,12 @@ export function stepsByTab(draft: WizardDraft): { tab: typeof WIZARD_TABS[number
   return out;
 }
 
-// One-sentence preview per filled answer, for the review screen. Skipped and
+export function wizardProgress(stepId: string): { current: number; total: number } {
+  const index = WIZARD_STEPS.findIndex((step) => step.id === stepId);
+  return { current: index >= 0 ? index + 1 : 1, total: WIZARD_STEPS.length };
+}
+
+// Complete answer preview for the review screen. Skipped and
 // empty answers are left out.
 export function reviewLines(draft: WizardDraft): { step: WizardStep; line: string }[] {
   const out: { step: WizardStep; line: string }[] = [];
@@ -414,9 +419,8 @@ function previewLine(step: WizardStep, v: string): string {
   if (step.type === "scale") return `${val} out of ${step.max ?? 5}${step.maxLabel ? ` (${step.minLabel} → ${step.maxLabel})` : ""}`;
   if (step.type === "multi") return val;
   if (step.type === "host") return val === CUSTOM_HOST ? "Building my own" : hostPreset(val)?.label ?? val;
-  // text / textarea / choice — clip to one short sentence.
-  const first = val.split(/(?<=[.!?])\s+/)[0] || val;
-  return first.length > 140 ? first.slice(0, 137) + "…" : first;
+  // text / textarea / choice — keep the complete answer for review.
+  return val;
 }
 
 // The owner's title is used as-is (jimmy, Nov 26: the N.E.O.N. prefix looked

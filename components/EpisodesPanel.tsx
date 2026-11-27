@@ -273,7 +273,7 @@ function OfficialToggle({ episodeId, initialOfficial }: { episodeId: string; ini
   return (
     <span>
       <button type="button" className="btn secondary" disabled={busy} onClick={toggle}>
-        {busy ? "Saving…" : official ? "Remove NEON-official badge" : "Mark as NEON-official"}
+        {busy ? "Saving…" : official ? "Remove episode badge" : "Mark episode official"}
       </button>
       {error ? <span className="error" style={{ marginLeft: 8 }}>{error}</span> : null}
     </span>
