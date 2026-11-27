@@ -48,6 +48,14 @@ test("parseFactCheckNotes drops unknown kinds and empty messages", async () => {
   ]);
 });
 
+test("parseFactCheckNotes dedupes repeated notes", async () => {
+  const { parseFactCheckNotes } = await load();
+  const first = note("wrong", "Wrong year", "in 1999");
+  const again = note("wrong", "WRONG YEAR", "a different quote");
+  const other = note("unsupported", "No source for 40%");
+  assert.deepEqual(parseFactCheckNotes(JSON.stringify({ notes: [first, again, other] })), [first, other]);
+});
+
 test("parseFactCheckNotes trims message to 240 and excerpt to 160", async () => {
   const { parseFactCheckNotes } = await load();
   const text = JSON.stringify({
@@ -176,6 +184,24 @@ test("runFactCheck aggregates three free models and lists them all", async () =>
   assert.ok(!Number.isNaN(Date.parse(out.checked_at)));
 });
 
+test("runFactCheck keeps agreed notes when two free models answer", async () => {
+  const { runFactCheck } = await load();
+  const shared = note("wrong", "Wrong year", "in 1999");
+  const { fetchImpl, calls } = mockFetch((model) =>
+    model === FREE[2] ? { ok: false, json: async () => ({}) } : reply([shared]),
+  );
+  const out = await runFactCheck({
+    script: "s",
+    briefingSnapshot: "briefing",
+    config: { openRouterApiKey: "k" },
+    fetchImpl,
+  });
+  assert.deepEqual(calls, FREE);
+  assert.equal(out.model, `${FREE[0]}, ${FREE[1]}`);
+  assert.equal(out.notes.length, 1);
+  assert.equal(out.notes[0].agreed, 2);
+});
+
 test("runFactCheck falls back to one gpt-4o-mini call when only one free model answers", async () => {
   const { runFactCheck } = await load();
   const n = note("wrong", "Bad number", "ten");
@@ -207,6 +233,23 @@ test("runFactCheck returns empty when every model fails", async () => {
   assert.deepEqual(out.notes, []);
   assert.equal(out.model, null);
   assert.equal(calls.length, 4);
+});
+
+test("runFactCheck swallows a fetch throw and returns empty notes", async () => {
+  const { runFactCheck } = await load();
+  const { fetchImpl, calls } = mockFetch(() => {
+    throw new Error("network is down");
+  });
+  const out = await runFactCheck({
+    script: "s",
+    briefingSnapshot: "briefing",
+    config: { openRouterApiKey: "k" },
+    fetchImpl,
+  });
+  assert.deepEqual(out.notes, []);
+  assert.equal(out.model, null);
+  assert.ok(Number.isNaN(Date.parse(out.checked_at)) === false);
+  assert.equal(calls.length, 4, "three free models and the paid fallback were tried");
 });
 
 test("runFactCheck passes a timeout signal and treats a timed-out model as failed", async () => {
