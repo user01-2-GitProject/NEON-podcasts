@@ -21,6 +21,7 @@ import { exampleForFormat, exampleListenPath } from "@/lib/example-shows";
 import { parseTrickyWords } from "@/lib/pronounce";
 import TrickyWordsFinder from "@/components/TrickyWordsFinder";
 import ShowPreview from "@/components/ShowPreview";
+import { WizardProgress, WizardTabHeader } from "@/components/WizardChrome";
 import {
   CUSTOM_HOST,
   EMPTY_WIZARD,
@@ -165,10 +166,7 @@ export default function ShowWizard() {
     const previewAnswer = draft.answers.preview ?? "";
     return (
       <div className="wizard">
-        <div className="wizard-tab-header">
-          <span className="wizard-tab-label">Review</span>
-          <span className="wizard-tab-pos muted">Last stop before Create</span>
-        </div>
+        <WizardTabHeader label="Review" position="Last stop before Create" />
         <div className="wizard-card">
           <h2>Your show so far</h2>
           <p className="muted">
@@ -249,10 +247,7 @@ export default function ShowWizard() {
 
   return (
     <div className="wizard">
-      <div className="wizard-tab-header">
-        <span className="wizard-tab-label">{tabInfo.label}</span>
-        <span className="wizard-tab-pos muted">{posInTab.current} / {posInTab.total}</span>
-      </div>
+      <WizardTabHeader label={tabInfo.label} position={`${posInTab.current} / ${posInTab.total}`} />
       <WizardProgress current={clampedIdx + 1} total={flat.length} />
       <div className="wizard-card">
         <StepView step={step} value={valueFor(step)} onChange={(v) => setAnswer(step.id, v)} firstRef={firstInput} />
@@ -346,15 +341,6 @@ export default function ShowWizard() {
         </button>
         , or <Link href="/">cancel</Link>.
       </p>
-    </div>
-  );
-}
-
-function WizardProgress({ current, total }: { current: number; total: number }) {
-  return (
-    <div className="wizard-progress" aria-label={`Step ${current} of ${total}`}>
-      <div className="wizard-progress-bar" style={{ width: `${(current / total) * 100}%` }} />
-      <span className="wizard-progress-label">{current} / {total}</span>
     </div>
   );
 }
