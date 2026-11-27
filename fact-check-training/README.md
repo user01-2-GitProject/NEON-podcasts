@@ -19,13 +19,17 @@ fact-check-training/
     fever/
       fever_train.sample.jsonl   # committed small fixture (real rows)
       fever_dev.sample.jsonl     # committed small fixture (real rows)
-      .raw/                      # cached downloads, gitignored
+      fever_train.task.jsonl     # Q1 instruction/context/output format after full fetch
+      .raw/sample/               # Range-capped cache, gitignored
+      .raw/full/                 # complete source downloads, gitignored
     liar/
       liar_train.sample.jsonl
       liar_dev.sample.jsonl
       liar_test.sample.jsonl
       liar_valid.sample.tsv      # raw TSV excerpt for parser tests
-      .raw/                      # cached zip/TSVs, gitignored
+      liar_train.task.jsonl      # Q1 instruction/context/output format after full fetch
+      .raw/sample/               # cached sample source files
+      .raw/full/                 # complete source files
     synthetic/                   # created by another task; normalized *.jsonl
   outputs/                       # adapters, gitignored
 ```
@@ -50,6 +54,12 @@ Canonical labels are `supported`, `refuted`, `not_enough_info`.
 | LIAR | `half-true` | `not_enough_info` (mixed/uncertain) |
 
 LIAR's `valid.tsv` becomes `split: "dev"`; `test.tsv` becomes `split: "test"`.
+
+Each fetch also writes parallel `*.task.jsonl` files in the requested Q1 format:
+`instruction`, `context`, and `output` (a JSON string containing `verdict`, `confidence`,
+and `reasoning`). `not_enough_info` maps to `unverifiable`. Confidence is `1.0` for the
+source dataset's gold annotation; reasoning states the gold label because these datasets
+do not provide model-written explanations. The normalized files remain the trainer input.
 
 `evidence` is a compact identifier, not the full evidence corpus:
 - FEVER: flattened `wikipedia:<page>:<sentence_id>` ids from the row's nested evidence (up to 5).
@@ -78,7 +88,7 @@ cd /home/jimmy/Projects/neon-fact-check
 # Small, reproducible samples (HTTP Range-capped; safe on a laptop/CI):
 python3 fact-check-training/fetch_data.py --limit 120 --max-bytes 200000 --suffix .sample
 
-# Full datasets (only on the GPU/data box; ~38 MB total):
+# Full source datasets (the fetch keeps sample and full caches separate):
 python3 fact-check-training/fetch_data.py --limit 0
 
 # Only one dataset, or override a URL if a mirror is needed:

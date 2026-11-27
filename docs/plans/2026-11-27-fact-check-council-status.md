@@ -36,9 +36,10 @@ and Jimmy's original task table. All work is on branch `claude/fact-check-counci
   buttons copy server-built prompts; briefing text is stripped before client props. Commit `85ab50e`.
 - [x] **F10 — grading/tagging.** `gradeScript()` produces A–F bands, tags, error types and
   `caught_by` counts; grades are stored in `runs.fact_check.grade` and shown in the UI. Commit `90ac172`.
-- [x] **Q1 — FEVER/LIAR prep.** `fact-check-training/fetch_data.py` downloads and normalizes both
-  datasets to `{claim,label,evidence,source,split}`; small committed samples plus license notes.
-  Landed in shared commit `2b1a5df`.
+- [ ] **Q1 — FEVER/LIAR prep.** The fetcher now writes both trainer-normalized records and the
+  requested `instruction/context/output` files, and separates sample/full download caches. Full
+  downloads could not be fetched in this environment because DNS is unavailable; the full-size
+  dataset files and expected counts remain outstanding. Committed samples are available.
 - [x] **Q2 — synthetic claims.** 3,500 deterministic labelled podcast claims in
   `fact-check-training/data/synthetic/podcast_claims.jsonl` with a regenerator. Commit `286a392`.
 - [x] **Q3 — training env.** `fact-check-training/train.py` (QLoRA), `evaluate.py`, pinned
@@ -80,6 +81,9 @@ $ python3 -m py_compile fact-check-training/{fetch_data,train,evaluate,generate_
 
 $ python3 (independent synthetic-data check)
 lines=3500 unique_ids=3500 json_parse=OK labels_ok=True schema_ok=True
+
+$ python3 -m unittest discover -s fact-check-training -p 'test_*.py'
+Ran 2 tests — OK
 ```
 
 Live Q5 smoke test used the already-installed `qwen2.5-coder:7b` Ollama model; the leader's

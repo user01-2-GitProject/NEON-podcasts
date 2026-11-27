@@ -107,6 +107,21 @@ def write_jsonl(path: Path, records: Iterable[dict]) -> int:
     return count
 
 
+def task_record(record: dict) -> dict:
+    """Convert a normalized row to the instruction/context/output Q1 format."""
+    verdict = "unverifiable" if record["label"] == "not_enough_info" else record["label"]
+    output = {
+        "verdict": verdict,
+        "confidence": 1.0,
+        "reasoning": f"Gold dataset label: {record['label']}.",
+    }
+    return {
+        "instruction": f"Verify this claim: {record['claim']}",
+        "context": record["evidence"],
+        "output": json.dumps(output, ensure_ascii=False, separators=(",", ":")),
+    }
+
+
 def make_record(claim: object, label: str, evidence: object, source: str, split: str) -> dict | None:
     clean_claim = " ".join(str(claim or "").split())
     if not clean_claim or not label:
@@ -297,7 +312,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.only in (None, "fever"):
         fever_dir = data_dir / "fever"
-        raw_dir = fever_dir / ".raw"
+        raw_dir = fever_dir / ".raw" / ("full" if limit == 0 else "sample")
         try:
             specs = [
                 (args.fever_train_url, "train.jsonl", "train", "fever_train.jsonl"),
@@ -306,7 +321,10 @@ def main(argv: list[str] | None = None) -> int:
             for url, raw_name, split, out_name in specs:
                 raw_path = download(url, raw_dir / raw_name, max_bytes, args.force, args.timeout)
                 out_path = fever_dir / out_name.replace(".jsonl", f"{args.suffix}.jsonl")
-                count = write_jsonl(out_path, normalize_fever(raw_path, split, limit))
+                rows = list(normalize_fever(raw_path, split, limit))
+                count = write_jsonl(out_path, rows)
+                task_path = fever_dir / out_name.replace(".jsonl", f".task{args.suffix}.jsonl")
+                write_jsonl(task_path, (task_record(row) for row in rows))
                 print(f"[normalize] {out_path} ({count} records, split={split})")
         except Exception as exc:
             failures += 1
@@ -319,13 +337,16 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.only in (None, "liar"):
         liar_dir = data_dir / "liar"
-        raw_dir = liar_dir / ".raw"
+        raw_dir = liar_dir / ".raw" / ("full" if limit == 0 else "sample")
         try:
             zip_path = download(args.liar_zip_url, raw_dir / "liar_dataset.zip", 0, args.force, args.timeout)
             tsvs = extract_liar_tsvs(zip_path, raw_dir, args.force)
             for tsv_name, split in (("train.tsv", "train"), ("valid.tsv", "dev"), ("test.tsv", "test")):
                 out_path = liar_dir / f"liar_{split}{args.suffix}.jsonl"
-                count = write_jsonl(out_path, normalize_liar(tsvs[tsv_name], split, limit))
+                rows = list(normalize_liar(tsvs[tsv_name], split, limit))
+                count = write_jsonl(out_path, rows)
+                task_path = liar_dir / f"liar_{split}.task{args.suffix}.jsonl"
+                write_jsonl(task_path, (task_record(row) for row in rows))
                 print(f"[normalize] {out_path} ({count} records, split={split})")
         except Exception as exc:
             failures += 1
