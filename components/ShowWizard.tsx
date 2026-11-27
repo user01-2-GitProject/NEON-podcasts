@@ -21,7 +21,7 @@ import { exampleForFormat, exampleListenPath } from "@/lib/example-shows";
 import { parseTrickyWords } from "@/lib/pronounce";
 import TrickyWordsFinder from "@/components/TrickyWordsFinder";
 import ShowPreview from "@/components/ShowPreview";
-import { readJson } from "@/components/generation-client";
+import { pollEpisodeAudio, pollRun, readJson } from "@/components/generation-client";
 import {
   CUSTOM_HOST,
   EMPTY_WIZARD,
@@ -52,6 +52,7 @@ export default function ShowWizard() {
   const [confirming, setConfirming] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [makingAudio, setMakingAudio] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const firstInput = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement | null>(null);
 
@@ -138,12 +139,18 @@ export default function ShowWizard() {
       if (draft.answers.preview === "yes") {
         const response = await fetch(`/api/shows/${data.show.id}/generate`, { method: "POST" });
         runId = (await readJson<{ runId: string }>(response, "wizard-start-generation")).runId;
+        const run = await pollRun(runId);
+        if (run.status === "failed") throw new Error(run.error || "Generation didn't finish — try again");
+        if (!run.episodeId) throw new Error("The script finished, but its episode could not be found.");
+        setMakingAudio(true);
+        await pollEpisodeAudio(run.episodeId, runId);
       }
       router.push(`/shows/${data.show.id}?from=wizard${runId ? `&runId=${encodeURIComponent(runId)}` : ""}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setConfirming(false);
     } finally {
+      setMakingAudio(false);
       setBusy(false);
     }
   }
@@ -220,7 +227,7 @@ export default function ShowWizard() {
                 Keep editing
               </button>
               <button type="button" className="btn primary" disabled={busy} onClick={() => void finish()}>
-                {busy ? "Creating…" : "Yes, create it"}
+                {makingAudio ? "Making audio…" : busy ? "Creating…" : "Yes, create it"}
               </button>
             </>
           ) : (

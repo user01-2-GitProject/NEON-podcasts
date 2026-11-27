@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { NarrationMode } from "@/lib/types";
-import { pollRun, readJson } from "@/components/generation-client";
+import { pollEpisodeAudio, pollRun, readJson } from "@/components/generation-client";
 
 export default function GeneratePanel({
   showId,
@@ -21,23 +21,31 @@ export default function GeneratePanel({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const [runId, setRunId] = useState<string | null>(searchParams.get("runId"));
+  const [phase, setPhase] = useState<"script" | "audio">("script");
 
   useEffect(() => {
     if (!runId) return;
     let active = true;
     setBusy(true);
-    pollRun(runId).then((run) => {
+    pollRun(runId).then(async (run) => {
       if (!active) return;
-      if (run.status === "failed") setError(run.error || "Generation didn't finish — try again");
-      else setDone("Episode generated");
+      if (run.status === "failed") throw new Error(run.error || "Generation didn't finish — try again");
+      if (mode === "auto") {
+        if (!run.episodeId) throw new Error("The script finished, but its episode could not be found.");
+        setPhase("audio");
+        await pollEpisodeAudio(run.episodeId, runId);
+      }
+      if (!active) return;
+      setDone(mode === "auto" ? "Episode generated with audio" : "Script generated");
       setBusy(false);
       router.refresh();
-    }).catch((e) => { if (active) { setError(e.message); setBusy(false); } });
+    }).catch((e) => { if (active) { setError(e instanceof Error ? e.message : String(e)); setBusy(false); } });
     return () => { active = false; };
-  }, [runId, router]);
+  }, [runId, mode, router]);
 
   async function generate() {
     setBusy(true);
+    setPhase("script");
     setError(null);
     setDone(null);
     try {
@@ -88,7 +96,7 @@ export default function GeneratePanel({
       <div style={{ marginTop: 12 }}>
         <button onClick={generate} disabled={busy}>
           {busy
-            ? "Making it… (~a few minutes)"
+            ? phase === "audio" ? "Making audio…" : "Making it… (~a few minutes)"
             : mode === "external"
               ? "Generate script"
               : "Generate now"}
