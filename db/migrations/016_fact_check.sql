@@ -2,3 +2,7 @@
 -- Stored as { notes: [{ kind, message, excerpt? }], model, checked_at }.
 -- Null on runs that predate the check, have no briefing, or failed before a script existed.
 alter table runs add column if not exists fact_check jsonb;
+
+-- Shows that opt in to the fact-check council keep auto-mode episodes as drafts
+-- until the council passes them.
+alter table shows add column if not exists fact_check_council boolean not null default false;

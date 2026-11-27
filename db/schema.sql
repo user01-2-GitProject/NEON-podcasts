@@ -39,6 +39,7 @@ create table if not exists shows (
   image_url      text,                                -- show artwork (http(s) URL)
   next_run_at    timestamptz,
   is_active      boolean not null default true,
+  fact_check_council boolean not null default false, -- hold episodes as drafts until the council passes them
   created_at     timestamptz not null default now()
 );
 
@@ -116,6 +117,7 @@ create table if not exists runs (
   episode_id        uuid references episodes(id) on delete set null,
   status            text not null default 'queued',    -- queued | running | done | failed
   briefing_snapshot text,
+  fact_check        jsonb,                             -- layer 1 notes (+ council result)
   model             text,
   tts_provider      text,
   cost_cents        integer,

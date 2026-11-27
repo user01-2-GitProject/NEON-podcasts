@@ -6,6 +6,7 @@ import { synthesize, estimateDurationSeconds } from "@/lib/tts";
 import { applyPronunciations, isNeverSay } from "@/lib/pronounce";
 import { checkScript, needsRewrite, rewriteNotes } from "@/lib/script-check";
 import { runScriptQa, type ScriptQa } from "@/lib/script-qa";
+import { runFactCheck } from "@/lib/fact-check";
 import { getStorage } from "@/lib/storage";
 import { selectBriefings, todayIn } from "@/lib/episode-spec";
 import { researchBrief, lookUp, researchBriefing, sourcesNote, SEARCH_COST_CENTS } from "@/lib/research";
@@ -171,6 +172,16 @@ export async function generateEpisode(
     const scriptQa = await runScriptQa({ script: result.script, styleGuide: show.style_guide });
     const qaJson = JSON.stringify(scriptQa);
 
+    // Fact-check layer 1: free models compare the script to the briefing
+    // snapshot. Notes are stored for the owner; they never block publishing
+    // by themselves (the council gate below does, for opted-in shows).
+    const factCheck = await runFactCheck({ script: result.script, briefingSnapshot });
+    const fcJson = JSON.stringify(factCheck);
+
+    // Shows that opted in to the fact-check council stay drafts until the
+    // council has passed them, even in auto mode.
+    const autoStatus = show.fact_check_council ? "draft" : "published";
+
     // A planned episode keeps the title it was planned with; otherwise the
     // writer's title is tidied into a clean automatic one (lib/episode-title).
     if (selection.plan?.title) result.title = selection.plan.title;
@@ -204,6 +215,7 @@ export async function generateEpisode(
               status = 'done', episode_id = ${episodeId}, model = ${model},
               tts_provider = 'external', cost_cents = ${costCents}, error = ${checkNote},
               script_qa = ${qaJson},
+              fact_check = ${fcJson},
               next_attempt_at = null, finished_at = now()
             where id = ${runId}
           `,
@@ -256,6 +268,7 @@ export async function generateEpisode(
           cost_cents = ${costCents},
           error = ${checkNote},
           script_qa = ${qaJson},
+          fact_check = ${fcJson},
           finished_at = now()
         where id = ${runId}
       `;
@@ -294,7 +307,7 @@ export async function generateEpisode(
       await sql`
         update runs set
           status = 'failed', episode_id = ${draftRows[0].id}, model = ${model},
-          cost_cents = ${costCents}, error = ${`voice: ${raw}`}, script_qa = ${qaJson}, finished_at = now()
+          cost_cents = ${costCents}, error = ${`voice: ${raw}`}, script_qa = ${qaJson}, fact_check = ${fcJson}, finished_at = now()
         where id = ${runId}
       `;
       return finish({ episode: draftRows[0], runId, voiceError: friendlyVoiceError(voiceErr), scriptQa });
@@ -316,7 +329,7 @@ export async function generateEpisode(
       await storage.put(episodeId, tts.audio, tts.contentType);
       const results = await getSql().transaction((tx) => [
         tx`
-          update episodes set audio_url = ${audioPath}, status = 'published', published_at = now()
+          update episodes set audio_url = ${audioPath}, status = ${autoStatus}, published_at = case when ${autoStatus} = 'published' then now() end
           where id = ${episodeId} returning *
         `,
         tx`
@@ -324,6 +337,7 @@ export async function generateEpisode(
             status = 'done', episode_id = ${episodeId}, model = ${model},
             tts_provider = ${tts.provider}, cost_cents = ${costCents}, error = ${checkNote},
             script_qa = ${qaJson},
+            fact_check = ${fcJson},
             next_attempt_at = null, finished_at = now()
           where id = ${runId} and status = 'running'
         `,
@@ -377,7 +391,7 @@ export async function generateEpisode(
     const audioPath = storage.url(episode.id);
     await storage.put(episode.id, tts.audio, tts.contentType);
     const publishedRows = (await sql`
-      update episodes set audio_url = ${audioPath}, status = 'published', published_at = now()
+      update episodes set audio_url = ${audioPath}, status = ${autoStatus}, published_at = case when ${autoStatus} = 'published' then now() end
       where id = ${episode.id} returning id
     `) as { id: string }[];
     if (!publishedRows[0]) {
@@ -396,6 +410,7 @@ export async function generateEpisode(
         cost_cents = ${costCents},
         error = ${checkNote},
         script_qa = ${qaJson},
+        fact_check = ${fcJson},
         finished_at = now()
       where id = ${runId}
     `;

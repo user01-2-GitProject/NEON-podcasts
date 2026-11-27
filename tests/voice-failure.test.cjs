@@ -49,6 +49,7 @@ function generate(db, synthesize, generateScript = okScript) {
     "@/lib/script-check": require("../lib/script-check.ts"),
     // B1 QA is a separate pass; stub it so these generation tests stay offline.
     "@/lib/script-qa": { runScriptQa: async () => ({ notes: [], model: null, checked_at: "2026-01-01T00:00:00.000Z" }) },
+    "@/lib/fact-check": { runFactCheck: async () => ({ notes: [], model: null, checked_at: "2026-01-01T00:00:00.000Z" }) },
     "@/lib/research": { researchBrief: () => null },
   });
 }

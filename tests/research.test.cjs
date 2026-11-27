@@ -149,6 +149,7 @@ test("a show that asks for it gets its look-up as a briefing, sources in the not
     "@/lib/script-check": require("../lib/script-check.ts"),
     // B1 QA is a separate pass; stub it so this test stays offline.
     "@/lib/script-qa": { runScriptQa: async () => ({ notes: [], model: null, checked_at: "2026-01-01T00:00:00.000Z" }) },
+    "@/lib/fact-check": { runFactCheck: async () => ({ notes: [], model: null, checked_at: "2026-01-01T00:00:00.000Z" }) },
     "@/lib/research": {
       ...research,
       lookUp: async (a) => {
