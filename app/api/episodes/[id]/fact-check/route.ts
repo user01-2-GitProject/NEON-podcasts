@@ -59,7 +59,7 @@ export async function PATCH(req: Request, { params }: Params) {
   const episode = await findCouncilEpisode(sql, id, caller.userId);
   if (!episode || !episode.run_id) return NextResponse.json({ error: "We couldn't find that episode." }, { status: 404 });
   const body = await req.json().catch(() => null) as { score?: unknown; notes?: unknown } | null;
-  if (!body || !["A", "B", "C", "D", "F"].includes(String(body.score)) || typeof body.notes !== "string" || body.notes.length > 1000) {
+  if (!body || !["A", "B", "C", "D", "F"].includes(String(body.score)) || typeof body.notes !== "string" || !body.notes.trim() || body.notes.length > 1000) {
     return NextResponse.json({ error: "Choose a grade and enter notes up to 1000 characters." }, { status: 400 });
   }
   const factCheck = parseStoredFactCheck(episode.fact_check);

@@ -365,5 +365,6 @@ test("PATCH grade override is owner-scoped and preserves automatic grade", async
 test("PATCH rejects invalid grades and episodes without a council grade", async () => {
   const { route, state } = postRoute(caller);
   assert.equal((await route.PATCH(patchGrade({ score: "Z", notes: "bad" }), params())).status, 400);
+  assert.equal((await route.PATCH(patchGrade({ score: "A", notes: "  " }), params())).status, 400);
   assert.equal(state.saved.length, 0);
 });

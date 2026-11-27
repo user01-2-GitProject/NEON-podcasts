@@ -225,7 +225,7 @@ function FactCheckNotes({
               router.refresh();
             }} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <label>Override grade <select value={score} onChange={(event) => setScore(event.target.value)}>{["A", "B", "C", "D", "F"].map((value) => <option key={value}>{value}</option>)}</select></label>
-              <input aria-label="Owner grade notes" value={gradeNotes} onChange={(event) => setGradeNotes(event.target.value)} maxLength={1000} placeholder="Reason for override" />
+              <input aria-label="Owner grade notes" value={gradeNotes} onChange={(event) => setGradeNotes(event.target.value)} maxLength={1000} placeholder="Reason for override" required />
               <button className="btn secondary" type="submit">Save grade</button>
               {gradeError ? <span role="alert">{gradeError}</span> : null}
             </form>
