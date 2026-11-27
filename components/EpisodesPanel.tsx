@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import OfficialBadge from "@/components/OfficialBadge";
 import type { Episode, Run } from "@/lib/types";
 import type { ScriptQa, ScriptQaKind } from "@/lib/script-qa";
+import { readJson } from "./generation-client";
 
 const QA_LABELS: Record<ScriptQaKind, string> = {
   swear: "Swear",
@@ -79,8 +80,7 @@ function UploadAudio({ episodeId }: { episodeId: string }) {
         method: "POST",
         body: form,
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Upload failed");
+      await readJson(res, "upload-episode-audio");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -131,8 +131,7 @@ function MakeAudioButton({ episodeId, redo = false }: { episodeId: string; redo?
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ redo }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Couldn't make the audio");
+      await readJson(res, "narrate-episode");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -179,8 +178,7 @@ function RegenerateButton({ episodeId }: { episodeId: string }) {
         headers: { "Content-Type": "application/json" },
         body: "{}",
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "We couldn't make a new episode");
+      await readJson(res, "regenerate-episode");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

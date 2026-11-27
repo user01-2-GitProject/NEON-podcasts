@@ -21,6 +21,7 @@ import { exampleForFormat, exampleListenPath } from "@/lib/example-shows";
 import { parseTrickyWords } from "@/lib/pronounce";
 import TrickyWordsFinder from "@/components/TrickyWordsFinder";
 import ShowPreview from "@/components/ShowPreview";
+import { readJson } from "@/components/generation-client";
 import {
   CUSTOM_HOST,
   EMPTY_WIZARD,
@@ -136,15 +137,15 @@ export default function ShowWizard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ spec }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "That didn't save. Try again.");
+      const data = await readJson<{ show: { id: string } }>(res, "create-show");
       try { localStorage.removeItem(DRAFT_KEY); } catch {}
       // Honor "Make the first full episode now?" from the review screen.
-      // Failure here is reported on the show page (Runs panel), not here.
+      let runId = "";
       if (draft.answers.preview === "yes") {
-        void fetch(`/api/shows/${data.show.id}/generate`, { method: "POST" });
+        const response = await fetch(`/api/shows/${data.show.id}/generate`, { method: "POST" });
+        runId = (await readJson<{ runId: string }>(response, "wizard-start-generation")).runId;
       }
-      router.push(`/shows/${data.show.id}?from=wizard`);
+      router.push(`/shows/${data.show.id}?from=wizard${runId ? `&runId=${encodeURIComponent(runId)}` : ""}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setConfirming(false);
