@@ -82,6 +82,8 @@ interface CouncilDismissalView {
 }
 interface GradeView {
   score: string;
+  auto_score?: string;
+  owner_override?: boolean;
   tags?: string[];
   error_types?: string[];
   caught_by?: Record<string, number>;
@@ -141,10 +143,16 @@ function factCheckForEpisode(episodeId: string, runs: FactCheckRunView[]): FactC
 function FactCheckNotes({
   factCheck,
   councilEnabled,
+  episodeId,
 }: {
   factCheck: FactCheckView | null;
   councilEnabled: boolean;
+  episodeId: string;
 }) {
+  const router = useRouter();
+  const [score, setScore] = useState(factCheck?.grade?.score ?? "A");
+  const [gradeNotes, setGradeNotes] = useState("");
+  const [gradeError, setGradeError] = useState("");
   const verdict = factCheck?.verdict ?? factCheck?.council?.verdict ?? null;
   const badge = verdict
     ? verdict === "pass"
@@ -187,6 +195,7 @@ function FactCheckNotes({
           <>
             <p style={{ margin: "0 0 6px" }}>
               <strong style={headingStyle}>Grade {grade.score}</strong>
+              {grade.owner_override ? <span className="muted"> (owner override; automatic {grade.auto_score})</span> : null}
               {grade.tags?.map((tag) => (
                 <span className="tag qa" key={tag} style={{ marginLeft: 6 }}>{tag}</span>
               ))}
@@ -204,6 +213,22 @@ function FactCheckNotes({
                   .join(" · ")}
               </p>
             ) : null}
+            <form onSubmit={async (event) => {
+              event.preventDefault();
+              setGradeError("");
+              const response = await fetch(`/api/episodes/${episodeId}/fact-check`, {
+                method: "PATCH", headers: { "content-type": "application/json" },
+                body: JSON.stringify({ score, notes: gradeNotes }),
+              });
+              if (!response.ok) { setGradeError("Could not save grade. Try again."); return; }
+              setGradeNotes("");
+              router.refresh();
+            }} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <label>Override grade <select value={score} onChange={(event) => setScore(event.target.value)}>{["A", "B", "C", "D", "F"].map((value) => <option key={value}>{value}</option>)}</select></label>
+              <input aria-label="Owner grade notes" value={gradeNotes} onChange={(event) => setGradeNotes(event.target.value)} maxLength={1000} placeholder="Reason for override" />
+              <button className="btn secondary" type="submit">Save grade</button>
+              {gradeError ? <span role="alert">{gradeError}</span> : null}
+            </form>
           </>
         ) : null}
         {notes.length ? (
@@ -598,7 +623,7 @@ export default function EpisodesPanel({
                 </span>{" "}
                 {qa ? <QaNotes qa={qa} /> : null}
                 {showFactCheck ? (
-                  <FactCheckNotes factCheck={factCheck} councilEnabled={councilEnabled} />
+                  <FactCheckNotes factCheck={factCheck} councilEnabled={councilEnabled} episodeId={ep.id} />
                 ) : null}
                 <div className="muted">
                   {fmtDuration(ep.duration_seconds)} · {fmtSize(ep.byte_size)} ·{" "}

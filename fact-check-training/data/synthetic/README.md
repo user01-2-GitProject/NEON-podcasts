@@ -1,67 +1,61 @@
 # Synthetic podcast claim dataset
 
-`podcast_claims.jsonl` has **3,500** lines, one JSON object per line.
+`podcast_claims.jsonl` has **2,520** lines, one JSON object per line.
 Regenerate it (and this README) with:
 
 ```sh
 python3 fact-check-training/generate_synthetic.py
 ```
 
-Defaults: seed `20261127`, 100 scenarios per topic. Templates are
+Defaults: seed `20261127`, 42 scenarios per topic. Templates are
 deterministic and use only the Python standard library — no API key or
 network access. The claims are invented training examples, not reports
 about real events.
 
 ## Schema
 
-| field | type | meaning |
-| --- | --- | --- |
-| `id` | string | Stable unique id, `SC00001` onwards. |
-| `claim` | string | One podcast-style spoken assertion. |
-| `label` | string | `true`, `false`, `misleading`, `unsupported`, `outdated`. |
-| `topic` | string | `finance`, `breaking-news`, `interview`, `sports`, `science`, `local news`, `history`. |
-| `format` | string | `studio-analysis`, `breaking-news`, `interview`, `field-report`, `roundtable`, `recap`, `debate`. |
-| `evidence` | string | A cited source excerpt; enough to decide the label. |
-| `explanation` | string | Why the claim earns that label. |
+Each line uses Q1's exact `{instruction, context, output}` shape. `output` is a JSON-encoded string.
+The decoded output has `verdict`, `confidence`, and `reasoning`; synthetic category/topic/format are noted in reasoning.
+
+| output verdict | meaning |
+| --- | --- |
+| `supported` | true |
+| `refuted` | false or misleading/partial |
+| `unverifiable` | evidence does not establish the claim |
 
 ## Counts
 
 | label | count |
 | --- | ---: |
-| true | 700 |
-| false | 700 |
-| misleading | 700 |
-| unsupported | 700 |
-| outdated | 700 |
+| true | 1,008 |
+| false | 756 |
+| misleading | 504 |
+| unverifiable | 252 |
 
 | topic | count |
 | --- | ---: |
-| finance | 500 |
-| breaking-news | 500 |
-| interview | 500 |
-| sports | 500 |
-| science | 500 |
-| local news | 500 |
-| history | 500 |
+| news | 420 |
+| pop culture | 420 |
+| sports | 420 |
+| science | 420 |
+| history | 420 |
+| tech | 420 |
 
 | format | count |
 | --- | ---: |
-| studio-analysis | 500 |
-| breaking-news | 500 |
-| interview | 500 |
-| field-report | 500 |
-| roundtable | 500 |
-| recap | 500 |
-| debate | 500 |
+| studio-analysis | 358 |
+| breaking-news | 360 |
+| interview | 360 |
+| field-report | 364 |
+| roundtable | 366 |
+| recap | 353 |
+| debate | 359 |
 
-Each scenario yields five contrastive records: one true claim and four
-mutations. False claims rotate through numeric, date, and name
-mutations. Misleading claims keep a real number but drop a scope the
-source states; unsupported claims add a specific detail the cited
-sources do not cover; outdated claims use a superseded figure.
+The dataset is balanced at exactly 40% true, 30% false, 20% misleading/partial, and 10% unverifiable.
+Podcast-style openers add conversational phrasing while the evidence and label stay unchanged.
 
 ## Verify
 
 ```sh
-python3 -c 'import json,pathlib; p=pathlib.Path("fact-check-training/data/synthetic/podcast_claims.jsonl"); r=[json.loads(x) for x in p.read_text().splitlines()]; assert len(r)==len({x["id"] for x in r}); assert all(x["label"] in {"true","false","misleading","unsupported","outdated"} for x in r); print(len(r), "records OK")'
+python3 -m unittest fact-check-training/test_q2.py
 ```

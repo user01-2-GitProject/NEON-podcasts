@@ -64,14 +64,30 @@ def collect_records(args: argparse.Namespace) -> Iterator[dict]:
             if ".raw" in path.parts:
                 continue
             for row in iter_jsonl(path):
-                split = str(row.get("split", "")).strip().lower()
+                if {"instruction", "context", "output"}.issubset(row):
+                    instruction = str(row.get("instruction", ""))
+                    if not instruction.startswith("Verify this claim: ") or not isinstance(row.get("output"), str):
+                        continue
+                    try:
+                        output = json.loads(row["output"])
+                    except (TypeError, json.JSONDecodeError):
+                        continue
+                    verdict = output.get("verdict") if isinstance(output, dict) else None
+                    label = "not_enough_info" if verdict == "unverifiable" else canonical_label(verdict)
+                    claim = instruction.removeprefix("Verify this claim: ").strip()
+                    evidence = str(row.get("context", "")).strip()
+                    split = ""
+                    source = path.parent.name
+                else:
+                    split = str(row.get("split", "")).strip().lower()
+                    label = canonical_label(row.get("label"))
+                    claim = str(row.get("claim", "")).strip()
+                    evidence = str(row.get("evidence", "")).strip()
+                    source = str(row.get("source", path.parent.name))
                 if not args.include_eval and split in EVAL_SPLITS:
                     continue
-                label = canonical_label(row.get("label"))
-                claim = str(row.get("claim", "")).strip()
                 if not label or label not in LABELS or not claim:
                     continue
-                evidence = str(row.get("evidence", "")).strip()
                 key = (claim, label, evidence)
                 if key in seen:
                     continue
@@ -80,7 +96,7 @@ def collect_records(args: argparse.Namespace) -> Iterator[dict]:
                     "claim": claim,
                     "label": label,
                     "evidence": evidence,
-                    "source": str(row.get("source", path.parent.name)),
+                    "source": source,
                     "split": split or "train",
                 }
                 kept += 1

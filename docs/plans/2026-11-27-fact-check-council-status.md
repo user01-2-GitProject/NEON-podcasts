@@ -35,15 +35,20 @@ and Jimmy's original task table. All work is on branch `claude/fact-check-counci
 - [x] **F9 — fallback buttons.** Owner-only "Copy Quickdraw prompt" / "Copy Scholar prompt"
   buttons copy server-built prompts; briefing text is stripped before client props. Commit `85ab50e`.
 - [x] **F10 — grading/tagging.** `gradeScript()` produces A–F bands, tags, error types and
-  `caught_by` counts; grades are stored in `runs.fact_check.grade` and shown in the UI. Commit `90ac172`.
-- [ ] **Q1 — FEVER/LIAR prep.** The fetcher now writes both trainer-normalized records and the
-  requested `instruction/context/output` files, and separates sample/full download caches. Full
-  downloads could not be fetched in this environment because DNS is unavailable; the full-size
-  dataset files and expected counts remain outstanding. Committed samples are available.
-- [x] **Q2 — synthetic claims.** 3,500 deterministic labelled podcast claims in
-  `fact-check-training/data/synthetic/podcast_claims.jsonl` with a regenerator. Commit `286a392`.
-- [x] **Q3 — training env.** `fact-check-training/train.py` (QLoRA), `evaluate.py`, pinned
-  `requirements.txt` and README. Syntax-checked and `--help` verified. Landed in `2b1a5df`.
+  `caught_by` counts; tags include topic, format, error types and the persona that caught an issue.
+  Owners can override a stored grade with a reason. Automatic and overridden scores are both kept.
+- [x] **Q1 — FEVER/LIAR prep.** The fetcher writes trainer-normalized records and the requested
+  `instruction/context/output` files, with separate sample/full caches. Full fetch completed:
+  FEVER has 145,449 train + 19,998 labelled dev rows; LIAR has 12,836 train/valid/test rows. The
+  official FEVER total of 185,445 also includes an unlabelled blind test split, so only labelled
+  train/dev rows are emitted. Full data outputs stay local and ignored; committed samples remain
+  available for offline tests.
+- [x] **Q2 — synthetic claims.** 2,520 deterministic labelled podcast claims in
+  `fact-check-training/data/synthetic/podcast_claims.jsonl`, 420 per topic, with exact 40/30/20/10
+  label distribution and Q1's `instruction/context/output` schema.
+- [x] **Q3 — training env.** `train.py` (QLoRA), `eval.py`/`evaluate.py`, `export.py` (adapter merge
+  plus llama.cpp GGUF conversion), pinned `requirements.txt` and README. CLI help and compilation
+  verified; actual GPU training is Q4.
 - [x] **Q5 — Qwen voter.** The leader accepts `QWEN_URL`/`QWEN_MODEL`, calls Ollama `/api/chat`,
   includes Qwen as an optional fourth member, and can ask it to accept/reject a dismissal. The
   server accepts a `qwen` member and builds `prompts.qwen`. Smoke-tested against local Ollama.
@@ -59,6 +64,9 @@ and Jimmy's original task table. All work is on branch `claude/fact-check-counci
   `qwen3.5-9b-fc` for the Q5 voter.
 - [ ] **F1 prod apply.** Migration 016 is written but intentionally not applied to production;
   Jimmy must approve/apply it.
+- [ ] **F7 trusted-source list and Rig run.** Active show briefing documents and the run's exact
+  briefing snapshot are both included in checker prompts. A vetted trusted-source list is not
+  present in the repo, so none was invented; the list and a credentialed Rig run remain pending.
 
 ## Verification evidence
 

@@ -11,6 +11,7 @@
     "test": "node --import tsx --test tests/*.test.cjs",
     "test:e2e": "playwright test",
     "db:migrate": "node --experimental-strip-types scripts/migrate.ts",
+    "covers:stamp": "node --import tsx scripts/stamp-covers.ts",
     "seed:examples": "node --import tsx scripts/seed-example-shows.ts"
   },
   "dependencies": {
@@ -24,6 +25,7 @@
     "next-auth": "^5.0.0-beta.32",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "sharp": "^0.35.5",
     "unpdf": "^2.2.2"
   },
   "devDependencies": {

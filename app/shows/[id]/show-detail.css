@@ -1,5 +1,4 @@
-/* E3 product-page layout for a show. Colors come from E1's tokens where they
-   exist, with standalone fallbacks so this PR works on its own. */
+/* E3 product-page layout for a show, using E1 theme tokens. */
 
 .show-detail {
   display: grid;
@@ -8,9 +7,9 @@
   gap: clamp(20px, 4vw, 48px);
   padding: clamp(18px, 3vw, 32px);
   margin-bottom: 18px;
-  border: 1px solid var(--border, #283040);
+  border: 1px solid var(--border);
   border-radius: 14px;
-  background: var(--panel, #151a23);
+  background: var(--panel);
 }
 
 .show-detail-aside {
@@ -26,7 +25,7 @@
   aspect-ratio: 1;
   object-fit: cover;
   border-radius: 12px;
-  border-bottom: 3px solid var(--hairline, #a8895e);
+  border-bottom: 3px solid var(--hairline);
 }
 
 .show-detail-actions {
@@ -40,14 +39,14 @@
 
 /* E3's button pair: slate primary, outlined secondary. */
 .show-detail .btn.primary {
-  background: #3d5a7e;
-  border: 1px solid #3d5a7e;
-  color: #f9f2e2;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: var(--on-accent);
 }
 .show-detail .btn.secondary {
   background: transparent;
-  border: 1px solid var(--hairline, #a8895e);
-  color: var(--text, #e7ecf3);
+  border: 1px solid var(--hairline);
+  color: var(--text);
 }
 
 .show-detail-main { min-width: 0; }
@@ -57,7 +56,7 @@
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--gold-ink, #a8895e);
+  color: var(--gold-ink);
 }
 
 .show-detail-title {
@@ -66,12 +65,12 @@
   gap: 0;
   margin: 0 0 12px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--hairline, #a8895e);
+  border-bottom: 1px solid var(--hairline);
   font-family: var(--font-display, "Bodoni 72", Didot, Georgia, serif);
   font-size: clamp(30px, 4vw, 52px);
   font-weight: 600;
   line-height: 1.15;
-  color: var(--heading, var(--text, #e7ecf3));
+  color: var(--heading);
 }
 
 .show-detail-description {

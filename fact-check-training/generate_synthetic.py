@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""Generate deterministic synthetic podcast claims for fact-check training.
-
-No API key, network access, or third-party packages are needed. The generator
-builds contrastive sets from a fixed table of fact patterns: for each scenario
-it emits one true claim plus four unambiguous mutations (false, misleading,
-unsupported, outdated). The evidence is written so a checker can decide the
-label from the text alone.
+"""Generate deterministic synthetic podcast claims in the Q1 JSONL schema.
 
 Run from anywhere:
 
@@ -29,18 +23,18 @@ from pathlib import Path
 from typing import Iterable
 
 SEED = 20261127
-SCENARIOS_PER_TOPIC = 100
+SCENARIOS_PER_TOPIC = 42
+RECORDS_PER_SCENARIO = 10
 
 TOPICS = (
-    "finance",
-    "breaking-news",
-    "interview",
+    "news",
+    "pop culture",
     "sports",
     "science",
-    "local news",
     "history",
+    "tech",
 )
-LABELS = ("true", "false", "misleading", "unsupported", "outdated")
+LABELS = ("true", "false", "misleading", "unverifiable")
 FORMATS = (
     "studio-analysis",
     "breaking-news",
@@ -60,6 +54,16 @@ FORMAT_INTROS = {
     "recap": "Quick recap from the top of the hour: {core}",
     "debate": "The other side keeps arguing that {core}",
 }
+
+PODCAST_OPENERS = (
+    "Okay, here's the claim people keep repeating: {claim}",
+    "I've heard this one all over the place: {claim}",
+    "Big if true: {claim}",
+    "To be fair, the claim is that {claim}",
+    "Wild if accurate — {claim}",
+    "Now, I might be missing context, but people are saying {claim}",
+    "This sounds huge, but let's check it: {claim}",
+)
 
 MODERN_DATES = tuple(
     f"{month} {year}" for year in (2025, 2026) for month in (
@@ -704,17 +708,40 @@ def build_scenario_records(
 def generate(seed: int, scenarios_per_topic: int) -> list[dict[str, str]]:
     rng = random.Random(seed)
     records: list[dict[str, str]] = []
+    groups = {
+        "news": [p for p in PATTERNS if p.topic in {"finance", "breaking-news", "local news"}],
+        "pop culture": [p for p in PATTERNS if p.topic == "interview" and p.subject == "the film director"],
+        "sports": [p for p in PATTERNS if p.topic == "sports" or (p.topic == "interview" and p.subject == "the team's captain")],
+        "science": [p for p in PATTERNS if p.topic == "science" or (p.topic == "interview" and p.subject == "the climate researcher")],
+        "history": [p for p in PATTERNS if p.topic == "history"],
+        "tech": [p for p in PATTERNS if p.topic == "interview" and p.subject == "the startup's founder"],
+    }
+    quotas = (("true", 4), ("false", 3), ("misleading", 2), ("unverifiable", 1))
     for topic_no, topic in enumerate(TOPICS):
-        patterns = [p for p in PATTERNS if p.topic == topic]
+        patterns = groups[topic]
+        if not patterns:
+            raise ValueError(f"No source patterns for topic {topic}")
         for scenario_no in range(scenarios_per_topic):
-            pattern_no = scenario_no % len(patterns)
-            records.extend(
-                build_scenario_records(
-                    patterns[pattern_no], scenario_no, pattern_no, topic_no, rng
-                )
-            )
-    for index, record in enumerate(records, start=1):
-        record["id"] = f"SC{index:05d}"
+            pool: dict[str, list[dict[str, str]]] = {label: [] for label, _ in quotas}
+            for variant in range(4):
+                pattern_no = (scenario_no * 4 + variant) % len(patterns)
+                built = build_scenario_records(patterns[pattern_no], scenario_no * 4 + variant,
+                                                pattern_no, topic_no, rng)
+                for row in built:
+                    label = "unverifiable" if row["label"] == "unsupported" else row["label"]
+                    if label in pool and len(pool[label]) < dict(quotas)[label]:
+                        pool[label].append(row)
+            for label, count in quotas:
+                candidates = pool[label]
+                while len(candidates) < count:
+                    candidates.extend(candidates[:1])
+                for row in candidates[:count]:
+                    claim = rng.choice(PODCAST_OPENERS).format(claim=row["claim"])
+                    verdict = {"true": "supported", "false": "refuted", "misleading": "refuted", "unverifiable": "unverifiable"}[label]
+                    output = {"verdict": verdict, "confidence": 0.35 if label == "unverifiable" else 0.85 if label == "misleading" else 1.0,
+                              "reasoning": f"Synthetic label={label}; topic={topic}; format={row['format']}. {row['explanation']}"}
+                    records.append({"instruction": f"Verify this claim: {claim}", "context": row["evidence"],
+                                    "output": json.dumps(output, ensure_ascii=False, separators=(",", ":"))})
     return records
 
 
@@ -729,17 +756,23 @@ def read_jsonl(path: Path) -> list[dict[str, object]]:
 def verify(path: Path) -> dict[str, object]:
     """Independent read-back checks; returns the counts used in the README."""
     records = read_jsonl(path)
-    ids = [r["id"] for r in records]
-    labels = Counter(r["label"] for r in records)
-    topics = Counter(r["topic"] for r in records)
-    formats = Counter(r["format"] for r in records)
-    assert all(r["label"] in LABELS for r in records), "label outside allowed set"
-    assert len(ids) == len(set(ids)), "duplicate id"
+    labels: Counter[str] = Counter()
+    topics: Counter[str] = Counter()
+    formats: Counter[str] = Counter()
+    for r in records:
+        assert set(r) == {"instruction", "context", "output"}, "unexpected Q1 schema"
+        assert isinstance(r["instruction"], str) and r["instruction"].startswith("Verify this claim: ")
+        assert isinstance(r["context"], str) and isinstance(r["output"], str)
+        out = json.loads(r["output"])
+        assert set(out) == {"verdict", "confidence", "reasoning"}
+        match = re.match(r"^Synthetic label=(true|false|misleading|unverifiable); topic=(.*?); format=(.*?)\.", out["reasoning"])
+        assert match, "missing synthetic metadata"
+        label, topic, fmt = match.groups()
+        labels[label] += 1; topics[topic] += 1; formats[fmt] += 1
     assert 2000 <= len(records) <= 5000, "unexpected record count"
-    assert all(
-        set(r) == {"id", "claim", "label", "topic", "format", "evidence", "explanation"}
-        for r in records
-    ), "unexpected schema"
+    assert labels == Counter({"true": len(records)*4//10, "false": len(records)*3//10,
+                              "misleading": len(records)*2//10, "unverifiable": len(records)//10})
+    assert set(topics) == set(TOPICS) and len(set(topics.values())) == 1
     return {"total": len(records), "labels": labels, "topics": topics, "formats": formats}
 
 
@@ -765,15 +798,14 @@ def render_readme(stats: dict[str, object], seed: int, scenarios: int) -> str:
         "",
         "## Schema",
         "",
-        "| field | type | meaning |",
-        "| --- | --- | --- |",
-        "| `id` | string | Stable unique id, `SC00001` onwards. |",
-        "| `claim` | string | One podcast-style spoken assertion. |",
-        "| `label` | string | `true`, `false`, `misleading`, `unsupported`, `outdated`. |",
-        "| `topic` | string | `finance`, `breaking-news`, `interview`, `sports`, `science`, `local news`, `history`. |",
-        "| `format` | string | `studio-analysis`, `breaking-news`, `interview`, `field-report`, `roundtable`, `recap`, `debate`. |",
-        "| `evidence` | string | A cited source excerpt; enough to decide the label. |",
-        "| `explanation` | string | Why the claim earns that label. |",
+        "Each line uses Q1's exact `{instruction, context, output}` shape. `output` is a JSON-encoded string.",
+        "The decoded output has `verdict`, `confidence`, and `reasoning`; synthetic category/topic/format are noted in reasoning.",
+        "",
+        "| output verdict | meaning |",
+        "| --- | --- |",
+        "| `supported` | true |",
+        "| `refuted` | false or misleading/partial |",
+        "| `unverifiable` | evidence does not establish the claim |",
         "",
         "## Counts",
         "",
@@ -787,16 +819,13 @@ def render_readme(stats: dict[str, object], seed: int, scenarios: int) -> str:
     lines += [f"| {fmt} | {formats[fmt]:,} |" for fmt in FORMATS]
     lines += [
         "",
-        "Each scenario yields five contrastive records: one true claim and four",
-        "mutations. False claims rotate through numeric, date, and name",
-        "mutations. Misleading claims keep a real number but drop a scope the",
-        "source states; unsupported claims add a specific detail the cited",
-        "sources do not cover; outdated claims use a superseded figure.",
+        "The dataset is balanced at exactly 40% true, 30% false, 20% misleading/partial, and 10% unverifiable.",
+        "Podcast-style openers add conversational phrasing while the evidence and label stay unchanged.",
         "",
         "## Verify",
         "",
         "```sh",
-        "python3 -c 'import json,pathlib; p=pathlib.Path(\"fact-check-training/data/synthetic/podcast_claims.jsonl\"); r=[json.loads(x) for x in p.read_text().splitlines()]; assert len(r)==len({x[\"id\"] for x in r}); assert all(x[\"label\"] in {\"true\",\"false\",\"misleading\",\"unsupported\",\"outdated\"} for x in r); print(len(r), \"records OK\")'",
+        "python3 -m unittest fact-check-training/test_q2.py",
         "```",
         "",
     ]
@@ -833,7 +862,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     print(f"wrote {stats['total']} records to {jsonl_path}")
     print("labels: " + ", ".join(f"{k}={labels[k]}" for k in LABELS))
     print("topics: " + ", ".join(f"{k}={topics[k]}" for k in TOPICS))
-    print("verification: OK (JSON parses, ids unique, labels allowed, schema exact)")
+    print("verification: OK (JSON parses, exact Q1 schema and label/topic quotas)")
     return 0
 
 

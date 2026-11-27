@@ -82,12 +82,14 @@ export interface CouncilSubmission {
   upheld: CouncilFlag[]; // flags the Lead agrees are real
   dismissed: CouncilDismissal[]; // flags the Lead called false positives
   verdict: "pass" | "fail";
-  tags?: string[]; // topic/format tags, max 8, each <= 32 chars, lowercased
+  tags?: string[]; // topic/format tags, max 16, each <= 32 chars, lowercased
   added_sources?: { url: string; by: CouncilPersona; accepted: boolean }[];
 }
 
 export interface ScriptGrade {
   score: "A" | "B" | "C" | "D" | "F";
+  auto_score?: "A" | "B" | "C" | "D" | "F";
+  owner_override?: true;
   tags: string[];
   error_types: FactCheckKind[];
   /** Persona -> unresolved flags; free_models -> layer-1 note count. */
@@ -329,7 +331,7 @@ export async function runFactCheck(opts: RunFactCheckOptions): Promise<FactCheck
 // ---------------------------------------------------------------------------
 
 const MAX_TAG = 32;
-const MAX_TAGS = 8;
+const MAX_TAGS = 16;
 const MAX_REASON = 1000;
 const MAX_URL = 2000;
 const MAJOR_KINDS: readonly FactCheckKind[] = ["wrong", "outdated"];
@@ -503,9 +505,14 @@ function unresolvedFlags(s: CouncilSubmission): CouncilFlag[] {
 // Tags are topic/format labels chosen by the Lead (or the leader script's
 // script heuristics) and validated above. Keep them lowercase, short, sorted
 // and capped so the same submission always produces the same grade.
-function deriveTags(s: CouncilSubmission): string[] {
+function deriveTags(s: CouncilSubmission, unresolved: CouncilFlag[], layer1: FactCheckNote[]): string[] {
   const tags: string[] = [];
-  for (const raw of s.tags ?? []) {
+  const metadata = [
+    ...(FACT_CHECK_KINDS.filter((kind) => unresolved.some((flag) => flag.kind === kind)).map((kind) => `error:${kind}`)),
+    ...COUNCIL_PERSONAS.filter((persona) => unresolved.some((flag) => flag.persona === persona)).map((persona) => `caught:${persona}`),
+    ...(layer1.length ? ["caught:free_models"] : []),
+  ];
+  for (const raw of [...(s.tags ?? []), ...metadata]) {
     const tag = cleanString(raw, MAX_TAG).toLowerCase();
     if (tag && !tags.includes(tag)) tags.push(tag);
     if (tags.length >= MAX_TAGS) break;
@@ -557,7 +564,21 @@ export function gradeScript(s: CouncilSubmission, layer1: FactCheckNote[]): Scri
     notes = `Fail: ${unresolved.length} minor flags need review.`;
   }
 
-  return { score, tags: deriveTags(s), error_types, caught_by, notes };
+  return { score, tags: deriveTags(s, unresolved, layer1), error_types, caught_by, notes };
+}
+
+export function overrideScriptGrade(
+  grade: ScriptGrade,
+  score: ScriptGrade["score"],
+  notes: string,
+): ScriptGrade & { auto_score: ScriptGrade["score"]; owner_override: true } {
+  return {
+    ...grade,
+    auto_score: grade.auto_score ?? grade.score,
+    score,
+    notes: notes.trim().slice(0, 1000),
+    owner_override: true,
+  };
 }
 
 /** Replace the previous council fields with a fresh run's result. Layer-1

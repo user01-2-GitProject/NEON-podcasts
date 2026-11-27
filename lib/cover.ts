@@ -4,6 +4,13 @@
 
 import { isTrustedArtworkUrl } from "@/lib/show-image";
 import { isUploadedCoverPath } from "@/lib/cover-upload";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import sharp from "sharp";
+
+export const COVER_STAMP_SCALE = 0.18;
+export const COVER_STAMP_MARGIN = 0.04;
+const COVER_STAMP = readFileSync(join(process.cwd(), "public/brand/neon-logo-orbit-still.png"));
 
 export interface CoverPalette {
   from: string;
@@ -53,5 +60,46 @@ export function coverFontSize(title: string): number {
 // A cover an owner uploaded is served by /art/[id] itself.
 export function artworkPath(show: { id: string; title: string; image_url?: string | null }): string {
   if (isTrustedArtworkUrl(show.image_url) || isUploadedCoverPath(show.id, show.image_url)) return show.image_url as string;
-  return `/art/${show.id}?v=${hashString(show.title).toString(36)}`;
+  return `/art/${show.id}?v=${hashString(`${show.title}:stamp-v1`).toString(36)}`;
+}
+
+export async function hasOfficialCoverStamp(input: Buffer): Promise<boolean> {
+  const image = sharp(input, { limitInputPixels: 10_000_000 }).rotate();
+  const { width, height } = await image.metadata();
+  if (!width || width !== height) return false;
+  const size = Math.round(width * COVER_STAMP_SCALE);
+  const inset = Math.round(width * COVER_STAMP_MARGIN);
+  const left = width - size - inset;
+  const top = height - size - inset;
+  const [coverPixels, markPixels] = await Promise.all([
+    image.extract({ left, top, width: size, height: size }).ensureAlpha().raw().toBuffer(),
+    sharp(COVER_STAMP).resize(size, size).ensureAlpha().raw().toBuffer(),
+  ]);
+  let error = 0;
+  let compared = 0;
+  for (let i = 0; i < markPixels.length; i += 4) {
+    if (markPixels[i + 3] < 240) continue;
+    error += Math.abs(coverPixels[i] - markPixels[i]);
+    error += Math.abs(coverPixels[i + 1] - markPixels[i + 1]);
+    error += Math.abs(coverPixels[i + 2] - markPixels[i + 2]);
+    compared += 3;
+  }
+  return compared > 0 && error / compared < 28;
+}
+
+export async function stampOfficialCover(input: Buffer): Promise<Buffer> {
+  const image = sharp(input, { limitInputPixels: 10_000_000 }).rotate();
+  const { width, height } = await image.metadata();
+  if (!width || width !== height) throw new Error("NEON cover art must be square before stamping.");
+  const size = Math.round(width * COVER_STAMP_SCALE);
+  const inset = Math.round(width * COVER_STAMP_MARGIN);
+  const marked = await hasOfficialCoverStamp(input);
+  const output = marked
+    ? image
+    : image.composite([{
+        input: await sharp(COVER_STAMP).resize(size, size).png().toBuffer(),
+        left: width - size - inset,
+        top: height - size - inset,
+      }]);
+  return output.jpeg({ quality: 90 }).toBuffer();
 }

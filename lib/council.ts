@@ -16,6 +16,7 @@ export interface CouncilPendingRow {
   title: string;
   script: string;
   briefing_snapshot: string | null;
+  briefing_docs?: string | null;
 }
 
 export interface CouncilPendingItem extends CouncilPendingRow {
@@ -42,10 +43,15 @@ export async function listPendingCouncil(
       where r.episode_id is not null
       order by r.episode_id, r.started_at desc, r.id desc
     )
-    select e.id as episode_id, l.run_id, l.show_id, e.title, e.script, l.briefing_snapshot
+    select e.id as episode_id, l.run_id, l.show_id, e.title, e.script, l.briefing_snapshot,
+           coalesce(b.docs, '') as briefing_docs
     from latest l
     join episodes e on e.id = l.episode_id
     join shows s on s.id = l.show_id
+    left join lateral (
+      select string_agg('### ' || filename || E'\n' || content_md, E'\n\n' order by uploaded_at) as docs
+      from show_briefings where show_id = l.show_id and is_active = true
+    ) b on true
     where s.user_id = ${userId}
       and s.fact_check_council = true
       and nullif(btrim(coalesce(e.script, '')), '') is not null
@@ -62,10 +68,10 @@ export async function listPendingCouncil(
     script: row.script,
     briefing_snapshot: row.briefing_snapshot,
     prompts: {
-      quickdraw: buildCouncilPrompt("quickdraw", row.script || "", row.briefing_snapshot || ""),
-      scholar: buildCouncilPrompt("scholar", row.script || "", row.briefing_snapshot || ""),
+      quickdraw: buildCouncilPrompt("quickdraw", row.script || "", [row.briefing_docs, row.briefing_snapshot].filter(Boolean).join("\n\n")),
+      scholar: buildCouncilPrompt("scholar", row.script || "", [row.briefing_docs, row.briefing_snapshot].filter(Boolean).join("\n\n")),
       // Q5 reserved voter: always present, harmless if the leader ignores it.
-      qwen: buildCouncilPrompt("qwen", row.script || "", row.briefing_snapshot || ""),
+      qwen: buildCouncilPrompt("qwen", row.script || "", [row.briefing_docs, row.briefing_snapshot].filter(Boolean).join("\n\n")),
     },
   }));
 }

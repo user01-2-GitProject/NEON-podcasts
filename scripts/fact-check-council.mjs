@@ -196,7 +196,7 @@ export function parseLeadResult(text, personas = ["quickdraw", "scholar"]) {
   }
   const tags = [...new Set((Array.isArray(parsed.tags) ? parsed.tags : [])
     .map((t) => clean(t, 32).toLowerCase())
-    .filter(Boolean))].slice(0, 8);
+    .filter(Boolean))].slice(0, 16);
   const accepted = Array.isArray(parsed.accepted_sources)
     ? parsed.accepted_sources.map((s) => clean(s, 500)).filter(Boolean)
     : [];
@@ -253,7 +253,8 @@ export function leadPrompt(item, memberResults) {
     "Return ONLY a JSON object:",
     '{"upheld":[{"kind":"wrong","message":"...","excerpt":"...","persona":"quickdraw"}],',
     '"dismissed":[{"flag":{...same shape...},"reason":"why it is a false positive"}],',
-    '"tags":["finance"],"accepted_sources":["https://..."]}',
+    '"tags":["topic:finance","format:interview"],"accepted_sources":["https://..."]}',
+    "Choose one topic:<slug> and one format:<slug> tag for the script.",
     "Put every flag from the members into upheld or dismissed; never silently drop one.",
     "If you dismiss a flag, write a short reason the original flagger can respond to.",
     "",

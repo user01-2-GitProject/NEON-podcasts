@@ -70,6 +70,26 @@ test("councilVerdict follows the unanimous rule", async () => {
   );
 });
 
+test("owner grade overrides retain the automatic score and bound notes", async () => {
+  const { overrideScriptGrade } = await load();
+  const grade = { score: "B", tags: [], error_types: [], caught_by: {}, notes: "Auto" };
+  assert.deepEqual(overrideScriptGrade(grade, "D", "  Owner review  "), {
+    ...grade, score: "D", auto_score: "B", notes: "Owner review", owner_override: true,
+  });
+});
+
+test("automatic grades tag topic, format, error type, and catching persona", async () => {
+  const { gradeScript } = await load();
+  const value = submission({
+    members: [member("quickdraw", [note("wrong", "Wrong year")]), member("scholar")],
+    upheld: [flag("quickdraw", "wrong", "Wrong year")],
+    verdict: "fail",
+    tags: ["topic:history", "format:interview"],
+  });
+  const grade = gradeScript(value, []);
+  assert.deepEqual(grade.tags, ["caught:quickdraw", "error:wrong", "format:interview", "topic:history"]);
+});
+
 test("validateCouncilSubmission accepts and normalizes a well-formed result", async () => {
   const checked = await accepted({
     upheld: [flag("quickdraw", "wrong", "  Wrong year  ", "  in 1999  ")],

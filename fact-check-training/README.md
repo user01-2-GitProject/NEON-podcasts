@@ -80,6 +80,11 @@ retrieval. The large FEVER Wikipedia corpus is deliberately not downloaded.
 Observed official file sizes: FEVER train ~33 MB, FEVER shared-task dev ~4.3 MB, LIAR zip ~1 MB.
 The committed fixtures are tiny excerpts (a few hundred rows total) and no large binaries are committed.
 
+The full fetch currently produces **145,449 FEVER train + 19,998 labelled dev rows** and **12,836 LIAR rows**
+(train/valid/test). FEVER's published total of 185,445 also counts the blind test split, which is unlabelled;
+it is not included because Q1 requires label-bearing training JSONL. The full source, normalized and task-format
+files stay local under ignored `data/` paths to avoid committing the LIAR archive or dataset dumps.
+
 ## Q1: fetch / normalize
 
 ```bash

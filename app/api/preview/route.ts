@@ -1,20 +1,18 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { completeText } from "@/lib/claude";
 import { currentCaller } from "@/lib/current-user";
 import { sql } from "@/lib/db";
-import { friendlyGenerateError, sanitizeError } from "@/lib/errors";
+import { sanitizeError } from "@/lib/errors";
 import { checkGeneration } from "@/lib/limits";
 import {
   MAX_PREVIEW_CHARS,
   PREVIEWS_PER_DAY,
-  PREVIEW_MAX_TOKENS,
   cleanPreviewScript,
   previewCounterKey,
-  previewPrompt,
+  previewScript,
 } from "@/lib/preview";
 import { synthesize } from "@/lib/tts";
-import { EMPTY_WIZARD, brandedTitle, composeWizardBody, type WizardDraft } from "@/lib/wizard-steps";
+import { EMPTY_WIZARD, brandedTitle, type WizardDraft } from "@/lib/wizard-steps";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -23,10 +21,9 @@ export const maxDuration = 60;
 //   { draft: WizardDraft, host_name?: string, voice?: string, script?: string }
 // -> { script, audio_base64, content_type }
 //
-// The wizard's "Hear your show" step. Writes a ~30-second opening from the
-// draft answers and reads it in the picked voice. Sending back the `script`
-// from an earlier preview skips the writer and only re-voices it, which is how
-// the voice picker stays cheap. Nothing is saved.
+// The wizard's "Hear your show" step. Builds a canned, format-specific first
+// paragraph and reads it in the picked voice. Sending back the cached `script`
+// only re-voices it. Nothing is saved.
 export async function POST(req: Request) {
   const caller = await currentCaller({ session: await auth(), authHeader: req.headers.get("authorization"), db: sql });
   if (!caller) return NextResponse.json({ error: "Please sign in to hear a preview." }, { status: 401 });
@@ -66,36 +63,26 @@ export async function POST(req: Request) {
 
   let script = given;
   if (!script) {
-    try {
-      const raw = (body.draft && typeof body.draft === "object" ? body.draft : {}) as Partial<WizardDraft>;
-      const draft: WizardDraft = {
-        ...EMPTY_WIZARD,
-        title: typeof raw.title === "string" ? raw.title.slice(0, 200) : "",
-        host_count: raw.host_count === 2 ? 2 : 1,
-        format: typeof raw.format === "string" ? raw.format.slice(0, 40) : "",
-        answers: raw.answers && typeof raw.answers === "object"
-          ? Object.fromEntries(
-              Object.entries(raw.answers as Record<string, unknown>)
-                .filter(([, v]) => typeof v === "string")
-                .map(([k, v]) => [k.slice(0, 60), (v as string).slice(0, 5000)]),
-            )
-          : {},
-      };
-      const { system, user } = previewPrompt({
-        showTitle: brandedTitle(draft.title || "Your new show"),
-        hostName,
-        brief: composeWizardBody(draft),
-      });
-      const out = await completeText({ system, user, maxTokens: PREVIEW_MAX_TOKENS });
-      script = cleanPreviewScript(out.text);
-    } catch (err) {
-      sanitizeError(err, "preview script");
-      const { message, status } = friendlyGenerateError(err);
-      const msg = /couldn't write this episode/.test(message)
-        ? "We couldn't write the preview just now. Try again in a minute."
-        : message;
-      return NextResponse.json({ error: msg }, { status });
-    }
+    const raw = (body.draft && typeof body.draft === "object" ? body.draft : {}) as Partial<WizardDraft>;
+    const draft: WizardDraft = {
+      ...EMPTY_WIZARD,
+      title: typeof raw.title === "string" ? raw.title.slice(0, 200) : "",
+      host_count: raw.host_count === 2 ? 2 : 1,
+      format: typeof raw.format === "string" ? raw.format.slice(0, 40) : "",
+      answers: raw.answers && typeof raw.answers === "object" && !Array.isArray(raw.answers)
+        ? Object.fromEntries(
+            Object.entries(raw.answers as Record<string, unknown>)
+              .filter(([, v]) => typeof v === "string")
+              .map(([k, v]) => [k.slice(0, 60), (v as string).slice(0, 5000)]),
+          )
+        : {},
+    };
+    script = previewScript({
+      showTitle: brandedTitle(draft.title || "Your new show"),
+      hostName,
+      format: draft.format,
+      about: draft.answers.about || "",
+    });
   }
   if (!script) return NextResponse.json({ error: "The writer came back empty. Try again." }, { status: 502 });
 

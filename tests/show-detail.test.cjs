@@ -31,10 +31,10 @@ test("the hero puts artwork + owner actions in a sticky column beside the conten
 
 test("the hero uses the brand tokens: Didone title, gold hairline, slate primary", () => {
   assert.match(css, /\.show-detail-title \{[\s\S]*font-family: var\(--font-display/);
-  assert.match(css, /border-bottom: 1px solid var\(--hairline, #a8895e\)/);
-  assert.match(css, /\.show-detail \.btn\.primary \{[\s\S]*background: #3d5a7e/);
+  assert.match(css, /border-bottom: 1px solid var\(--hairline\)/);
+  assert.match(css, /\.show-detail \.btn\.primary \{[\s\S]*background: var\(--accent\)/);
   assert.match(css, /\.show-detail \.btn\.secondary \{[\s\S]*border: 1px solid var\(--hairline/);
-  assert.match(css, /color: var\(--heading, var\(--text/);
+  assert.match(css, /color: var\(--heading\)/);
 });
 
 test("episodes are part of the right-hand column", () => {

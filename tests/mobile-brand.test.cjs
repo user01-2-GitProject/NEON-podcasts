@@ -48,14 +48,14 @@ test("the player card is branded: cream/navy card, Didone title, 18% orbit stamp
   assert.match(player, /fontFamily: displayFont/);
   assert.match(fonts, /ios: "Didot"/);
   assert.match(player, /backgroundColor: c\.hairline/);
-  assert.match(player, /source=\{require\("\.\.\/assets\/neon-official\.gif"\)\}/);
+  assert.match(player, /source=\{require\("\.\.\/assets\/brand\/neon-logo-orbit-360-clean\.gif"\)\}/);
   assert.match(player, /width: "18%", height: "18%", right: "4%", bottom: "4%"/);
   assert.match(player, /accessibilityLabel="NEON official show"/);
 });
 
 test("the show screen carries the stamp and shows the full player card", () => {
   assert.match(show, /<PlayerCard episode=\{current\} \/>/);
-  assert.match(show, /require\("\.\.\/\.\.\/assets\/neon-official\.gif"\)/);
+  assert.match(show, /require\("\.\.\/\.\.\/assets\/brand\/neon-logo-orbit-360-clean\.gif"\)/);
   assert.match(show, /width: "18%", height: "18%", right: "4%", bottom: "4%"/);
   assert.match(show, /fontFamily: displayFont/);
   assert.match(show, /styles\.hairline, \{ backgroundColor: c\.hairline \}/);

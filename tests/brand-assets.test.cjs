@@ -5,7 +5,10 @@ const { join } = require("node:path");
 
 const web = readFileSync("components/OfficialBadge.tsx", "utf8");
 const mobile = readFileSync("mobile/components/OfficialBadge.tsx", "utf8");
+const mobilePlayer = readFileSync("mobile/components/Player.tsx", "utf8");
+const mobileShow = readFileSync("mobile/app/show/[token].tsx", "utf8");
 const globals = readFileSync("app/globals.css", "utf8");
+const showDetail = readFileSync("app/shows/[id]/show-detail.css", "utf8");
 
 const ASSETS = [
   "neon-logo-orbit-360-clean.gif",
@@ -49,10 +52,21 @@ test("the web badge uses the canonical orbit files with a reduced-motion still",
 test("the native badge uses the bundled branded gif", () => {
   assert.match(mobile, /require\("\.\.\/assets\/brand\/neon-logo-orbit-360-clean\.gif"\)/);
   assert.doesNotMatch(mobile, /assets\/neon-official\.gif/);
+  assert.match(mobilePlayer, /assets\/brand\/neon-logo-orbit-360-clean\.gif/);
+  assert.match(mobileShow, /assets\/brand\/neon-logo-orbit-360-clean\.gif/);
 });
 
-test("the old unbranded web gif is gone; the native one stays for #109", () => {
+test("show and wizard brand styles use E1 tokens", () => {
+  assert.match(showDetail, /background: var\(--accent\)/);
+  assert.match(showDetail, /color: var\(--on-accent\)/);
+  assert.doesNotMatch(showDetail, /#[0-9a-f]{3,8}\b/i);
+  assert.match(globals, /\.login-wrap h2 \{ font-family: var\(--font-display\); \}/);
+  assert.match(globals, /\.wizard-card h2 \{ font-family: var\(--font-display\);/);
+  assert.match(globals, /\.wizard-progress-bar[^\n]*background: var\(--hairline\)/);
+});
+
+test("the old unbranded web and mobile gifs are gone", () => {
   assert.equal(existsSync("public/neon-official.gif"), false);
-  assert.equal(existsSync("mobile/assets/neon-official.gif"), true); // E4 draft still requires it
+  assert.equal(existsSync("mobile/assets/neon-official.gif"), false);
   assert.equal(existsSync("public/neon-official-still.png"), true);
 });

@@ -17,3 +17,5 @@ data/fever/fever_dev.jsonl
 data/liar/liar_train.jsonl
 data/liar/liar_dev.jsonl
 data/liar/liar_test.jsonl
+data/fever/*.task.jsonl
+data/liar/*.task.jsonl

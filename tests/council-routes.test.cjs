@@ -76,6 +76,9 @@ const post = (body) =>
     headers: { "content-type": "application/json" },
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
+const patchGrade = (body) => new Request("https://app.test/api/episodes/ep-1/fact-check", {
+  method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+});
 
 const params = () => ({ params: Promise.resolve({ id: "ep-1" }) });
 
@@ -324,4 +327,20 @@ test("POST with a failing verdict never publishes", async () => {
   assert.equal(body.fact_check.agent_notes.length, 1);
   assert.equal(state.saved.length, 1);
   assert.equal(state.publishSql.calls.length, 0);
+});
+
+test("PATCH grade override is owner-scoped and preserves automatic grade", async () => {
+  const { route, state, setEpisode } = postRoute(caller);
+  setEpisode({ ...episode, fact_check: { ...episode.fact_check, grade: { score: "A", tags: [], error_types: [], caught_by: {}, notes: "Pass" } } });
+  const res = await route.PATCH(patchGrade({ score: "D", notes: "Reviewed source" }), params());
+  assert.equal(res.status, 200);
+  assert.equal(state.saved[0].merged.grade.score, "D");
+  assert.equal(state.saved[0].merged.grade.auto_score, "A");
+  assert.equal(state.saved[0].merged.grade.notes, "Reviewed source");
+});
+
+test("PATCH rejects invalid grades and episodes without a council grade", async () => {
+  const { route, state } = postRoute(caller);
+  assert.equal((await route.PATCH(patchGrade({ score: "Z", notes: "bad" }), params())).status, 400);
+  assert.equal(state.saved.length, 0);
 });
