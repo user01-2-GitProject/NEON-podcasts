@@ -63,6 +63,16 @@ and Jimmy's original task table. Current work is on branch `claude/fact-check-co
 
 ## Blocked — needs Jimmy or a GPU box
 
+- [ ] **A1 — EAS project setup.** `mobile/eas.json` still has no EAS project ID and its submit
+  profiles contain `REPLACE_ME` placeholders. Run `eas init` and configure the real store IDs and
+  credentials before submitting builds.
+- [ ] **A2/A3 — native Google sign-in.** The Vercel project has web OAuth credentials, but
+  `GOOGLE_MOBILE_CLIENT_IDS` is absent. Add the iOS and Android OAuth client IDs to Vercel and
+  mobile config, then verify sign-in on both devices.
+- [ ] **E5 — cover stamp dry run.** The stamping CLI is ready and defaults to dry-run. Vercel
+  confirms `DATABASE_URL` is configured for production and preview, but the connected account
+  cannot decrypt its value, so the script could not be run against that database here. Run
+  `npm run covers:stamp` in an authorized environment before deciding whether to apply changes.
 - [ ] **Q4 — run training + evaluate.** The pipeline is ready, but this machine has no NVIDIA/AMD
   compute GPU (`nvidia-smi` absent, no ROCm), `torch` is not installed, and no cloud GPU credentials
   are set (`HF_TOKEN`, `MODAL_TOKEN_ID`, `RUNPOD_API_KEY`, `LAMBDA_API_KEY`, `REPLICATE_API_TOKEN`
