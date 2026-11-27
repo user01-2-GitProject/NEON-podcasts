@@ -44,7 +44,9 @@ export interface FactCheck {
 // reserved future checker, so it is accepted in submissions and counts in
 // caught_by even though the current council does not run it.
 export const COUNCIL_PERSONAS = ["quickdraw", "scholar", "lead"] as const;
-export type CouncilPersona = (typeof COUNCIL_PERSONAS)[number];
+// `qwen` is a reserved future voter: the validator accepts it and grading
+// counts its flags, but the required panel stays quickdraw + scholar + lead.
+export type CouncilPersona = (typeof COUNCIL_PERSONAS)[number] | "qwen";
 
 // Verbatim persona prefixes from the council plan. The dependency-free leader
 // script reads the same strings from lib/fact-check-personas.json.
@@ -335,12 +337,15 @@ const MAJOR_KINDS: readonly FactCheckKind[] = ["wrong", "outdated"];
 /** Prefix the shared checker prompt with the persona's voice. The prompt body
  * (including the locked source material) stays byte-identical for both members. */
 export function buildCouncilPrompt(
-  persona: "quickdraw" | "scholar",
+  persona: "quickdraw" | "scholar" | "qwen",
   script: string,
   briefingSnapshot: string,
 ): { system: string; user: string } {
   const base = buildFactCheckPrompt(script, briefingSnapshot);
-  return { system: `${PERSONA_PREFIX[persona]}\n\n${base.system}`, user: base.user };
+  // Q5 reserved voter: no verbatim prefix in the plan yet, so it gets the
+  // shared checker prompt unchanged. Harmless when Qwen is not configured.
+  const prefix = persona === "qwen" ? "" : `${PERSONA_PREFIX[persona]}\n\n`;
+  return { system: `${prefix}${base.system}`, user: base.user };
 }
 
 /** The unanimous rule: one upheld flag, or one false-positive dismissal the
@@ -351,8 +356,10 @@ export function councilVerdict(s: Pick<CouncilSubmission, "upheld" | "dismissed"
   return "pass";
 }
 
+const SUBMITTED_PERSONAS: readonly string[] = [...COUNCIL_PERSONAS, "qwen"];
+
 function isPersona(value: unknown): value is CouncilPersona {
-  return typeof value === "string" && (COUNCIL_PERSONAS as readonly string[]).includes(value);
+  return typeof value === "string" && SUBMITTED_PERSONAS.includes(value);
 }
 
 function isKind(value: unknown): value is FactCheckKind {
