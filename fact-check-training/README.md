@@ -1,7 +1,8 @@
 # Fact-check training (Q1 + Q3)
 
 This directory contains the **data pipeline** (Q1) and the **training/evaluation entrypoints** (Q3) for the
-fact-check council model. It does **not** run training here: Q4 (the actual GPU training run and the
+fact-check council model. Its pinned GPU stack includes Unsloth, Transformers, Datasets, PEFT, and
+bitsandbytes. It does **not** run training here: Q4 (the actual GPU training run and the
 >85% FEVER-dev evaluation) is a separate task on a GPU box/cloud instance.
 
 Everything Python here is syntax-checked with `python3 -m py_compile`. `fetch_data.py` needs only the standard

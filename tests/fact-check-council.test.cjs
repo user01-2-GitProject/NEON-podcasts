@@ -46,6 +46,10 @@ test("persona prefixes are the verbatim council text and buildCouncilPrompt prep
   assert.ok(system.startsWith(`${personas.scholar}\n\n`));
   assert.ok(system.includes('"missing-context"'), "same checker instructions for every persona");
   assert.ok(user.includes("SCRIPT-BODY") && user.includes("BRIEFING-BODY"));
+  assert.ok(user.includes("VETTED TRUSTED-SOURCE INDEX:") && user.includes("https://www.archives.gov/"));
+  const quick = buildCouncilPrompt("quickdraw", "s", "same sources");
+  const scholar = buildCouncilPrompt("scholar", "s", "same sources");
+  assert.equal(quick.user, scholar.user, "all council checkers receive the same source text");
 });
 
 test("councilVerdict follows the unanimous rule", async () => {

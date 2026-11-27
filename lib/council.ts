@@ -67,6 +67,7 @@ export async function listPendingCouncil(
     title: row.title,
     script: row.script,
     briefing_snapshot: row.briefing_snapshot,
+    briefing_docs: row.briefing_docs ?? null,
     prompts: {
       quickdraw: buildCouncilPrompt("quickdraw", row.script || "", [row.briefing_docs, row.briefing_snapshot].filter(Boolean).join("\n\n")),
       scholar: buildCouncilPrompt("scholar", row.script || "", [row.briefing_docs, row.briefing_snapshot].filter(Boolean).join("\n\n")),

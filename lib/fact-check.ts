@@ -13,6 +13,7 @@
 
 import { sanitizeError } from "@/lib/errors";
 import { resolveLlmConfig } from "@/lib/settings";
+import { FACT_CHECK_TRUSTED_SOURCES } from "@/lib/fact-check-trusted-sources";
 
 export const FACT_CHECK_KINDS = ["wrong", "unsupported", "outdated", "missing-context"] as const;
 export type FactCheckKind = (typeof FACT_CHECK_KINDS)[number];
@@ -347,7 +348,10 @@ export function buildCouncilPrompt(
   // Q5 reserved voter: no verbatim prefix in the plan yet, so it gets the
   // shared checker prompt unchanged. Harmless when Qwen is not configured.
   const prefix = persona === "qwen" ? "" : `${PERSONA_PREFIX[persona]}\n\n`;
-  return { system: `${prefix}${base.system}`, user: base.user };
+  return {
+    system: `${prefix}${base.system}`,
+    user: `${base.user}\n\nVETTED TRUSTED-SOURCE INDEX:\n---\n${FACT_CHECK_TRUSTED_SOURCES}\n---`,
+  };
 }
 
 /** The unanimous rule: one upheld flag, or one false-positive dismissal the

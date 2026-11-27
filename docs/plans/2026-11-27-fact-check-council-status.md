@@ -1,7 +1,7 @@
 # Fact-check council — task status
 
 2026-11-27 · Implementation status for [`2026-11-27-fact-check-council.md`](2026-11-27-fact-check-council.md)
-and Jimmy's original task table. All work is on branch `claude/fact-check-council`; the working tree is clean.
+and Jimmy's original task table. Current work is on branch `claude/fact-check-council`.
 
 ## Completed
 
@@ -28,7 +28,8 @@ and Jimmy's original task table. All work is on branch `claude/fact-check-counci
 - [x] **F7 — council leader.** `scripts/fact-check-council.mjs` is dependency-free Node 20+;
   it fans out to Codex/Muse, runs the Lead and rebuttal rounds, assembles the submission, and
   POSTs it. `--once`, graceful shutdown, no token logging. `tests/fact-check-council-script.test.cjs`
-  passes 9/9. Commits `4a4e619`, `2b1a5df`.
+  passes 9/9. All checker prompts now include active show briefings, the exact run snapshot, and
+  the shared curated source index. A Rig run still needs credentials.
 - [x] **F8 — docs.** `docs/fact-check-agents.md` follows the `live-agents.md` style and documents
   opt-in, the Rig invocation, env vars, the Muse drop-folder contract, prompt/JSON shapes, both
   endpoints and the grading table. Commits `aa5b70f`, `2b1a5df`.
@@ -37,6 +38,10 @@ and Jimmy's original task table. All work is on branch `claude/fact-check-counci
 - [x] **F10 — grading/tagging.** `gradeScript()` produces A–F bands, tags, error types and
   `caught_by` counts; tags include topic, format, error types and the persona that caught an issue.
   Owners can override a stored grade with a reason. Automatic and overridden scores are both kept.
+- [x] **E7 — branding shelf assets.** Copied the confirmed canonical orbit GIF/WebM, N mark,
+  horizontal wordmark, and favicon source byte-for-byte into `public/brand/` and
+  `mobile/assets/brand/`; both official badges reference the branded orbit GIF and the old GIF
+  paths are removed.
 - [x] **Q1 — FEVER/LIAR prep.** The fetcher writes trainer-normalized records and the requested
   `instruction/context/output` files, with separate sample/full caches. Full fetch completed:
   FEVER has 145,449 train + 19,998 labelled dev rows; LIAR has 12,836 train/valid/test rows. The
@@ -51,7 +56,9 @@ and Jimmy's original task table. All work is on branch `claude/fact-check-counci
   verified; actual GPU training is Q4.
 - [x] **Q5 — Qwen voter.** The leader accepts `QWEN_URL`/`QWEN_MODEL`, calls Ollama `/api/chat`,
   includes Qwen as an optional fourth member, and can ask it to accept/reject a dismissal. The
-  server accepts a `qwen` member and builds `prompts.qwen`. Smoke-tested against local Ollama.
+  server accepts a `qwen` member and builds `prompts.qwen`. The runner logs the first 50 Qwen/Lead
+  verdict comparisons and the running disagreement rate. Real-script checks and the 50-episode
+  sample still need a trained local model and credentialed Rig run.
   Commits `2b1a5df`, `90ac172`.
 
 ## Blocked — needs Jimmy or a GPU box
@@ -64,20 +71,22 @@ and Jimmy's original task table. All work is on branch `claude/fact-check-counci
   `qwen3.5-9b-fc` for the Q5 voter.
 - [ ] **F1 prod apply.** Migration 016 is written but intentionally not applied to production;
   Jimmy must approve/apply it.
-- [ ] **F7 trusted-source list and Rig run.** Active show briefing documents and the run's exact
-  briefing snapshot are both included in checker prompts. A vetted trusted-source list is not
-  present in the repo, so none was invented; the list and a credentialed Rig run remain pending.
+- [ ] **F7 Rig run.** The shared source index is in `lib/fact-check-trusted-sources.ts`; a
+  credentialed Rig run remains outstanding.
 
 ## Verification evidence
 
 ```text
 $ npm test
-ℹ tests 388
-ℹ pass 388
+ℹ tests 62
+ℹ pass 62
 ℹ fail 0
 
 $ npx tsc --noEmit
 TYPECHECK_OK
+
+$ python3 -m unittest fact-check-training/test_q2.py fact-check-training/test_fetch_data.py
+Ran 5 tests — OK
 
 $ timeout 30 node --import tsx --test tests/fact-check-council-script.test.cjs
 ℹ tests 9

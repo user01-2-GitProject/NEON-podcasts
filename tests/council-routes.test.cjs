@@ -95,6 +95,7 @@ test("pending rows are scoped, filtered for no council verdict, oldest first, an
     title: "Episode one",
     script: "A story about NASA today",
     briefing_snapshot: "SOURCE DOC",
+    briefing_docs: "ACTIVE SHOW BRIEFING",
   };
   const db = recordingSql(() => [row]);
   const items = await listPendingCouncil(db, caller.userId, 10);
@@ -108,6 +109,7 @@ test("pending rows are scoped, filtered for no council verdict, oldest first, an
       title: items[0].title,
       script: items[0].script,
       briefing_snapshot: items[0].briefing_snapshot,
+      briefing_docs: items[0].briefing_docs,
     },
     row,
   );
@@ -115,6 +117,9 @@ test("pending rows are scoped, filtered for no council verdict, oldest first, an
   assert.ok(items[0].prompts.scholar.system.startsWith(`${personas.scholar}\n\n`));
   assert.ok(items[0].prompts.quickdraw.user.includes("A story about NASA today"));
   assert.ok(items[0].prompts.scholar.user.includes("SOURCE DOC"));
+  assert.ok(items[0].prompts.quickdraw.user.includes("ACTIVE SHOW BRIEFING"));
+  assert.ok(items[0].prompts.scholar.user.includes("ACTIVE SHOW BRIEFING"));
+  assert.ok(db.calls[0].text.includes("show_briefings"));
   assert.notEqual(items[0].prompts.quickdraw.system, items[0].prompts.scholar.system);
   assert.ok(items[0].prompts.qwen, "Q5 reserved voter always gets a prompt");
   assert.equal(typeof items[0].prompts.qwen.system, "string");

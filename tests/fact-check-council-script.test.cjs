@@ -33,7 +33,25 @@ test("readConfig accepts an optional local Qwen voter", () => {
   assert.equal(config.qwenUrl, "http://127.0.0.1:11434");
   assert.equal(config.qwenModel, "qwen-test");
   assert.equal(config.qwenTimeoutMs, 60000);
+  assert.match(config.qwenDisagreementLog, /qwen-disagreements\.jsonl$/);
   assert.throws(() => council.readConfig({ ...BASE_ENV, QWEN_URL: "nope" }, []), /QWEN_URL/);
+});
+
+test("Qwen disagreement monitor logs only the first 50 episodes and reports the rate", async () => {
+  const state = { contents: "" };
+  const config = { qwenDisagreementLog: "/tmp/qwen-log.jsonl" };
+  const io = {
+    readFile: async () => state.contents,
+    appendFile: async (_path, text) => { state.contents += text; },
+  };
+  let last;
+  for (let i = 0; i < 50; i += 1) {
+    last = await council.recordQwenComparison({ episode_id: `ep${i}`, qwen_flagged: i < 3, lead_verdict: i < 2 ? "fail" : "pass", disagreed: i === 2 }, config, io);
+  }
+  assert.equal(last.count, 50);
+  assert.equal(last.rate, 1 / 50);
+  assert.equal(state.contents.trim().split("\n").length, 50);
+  assert.deepEqual(await council.recordQwenComparison({ episode_id: "ep51", disagreed: true }, config, io), { count: 50, disagreed: null });
 });
 
 test("runQwen calls Ollama and parses its JSON answer", async () => {

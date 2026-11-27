@@ -15,7 +15,7 @@
 // SIGINT/SIGTERM finish the current item, then exit cleanly.
 
 import { execFile as nodeExecFile } from "node:child_process";
-import { mkdtemp, readFile, unlink, writeFile, mkdir } from "node:fs/promises";
+import { appendFile, mkdtemp, readFile, unlink, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -81,6 +81,7 @@ export function readConfig(env = process.env, argv = process.argv.slice(2)) {
     qwenUrl,
     qwenModel: env.QWEN_MODEL || "qwen3.5-9b-fc",
     qwenTimeoutMs,
+    qwenDisagreementLog: env.QWEN_DISAGREEMENT_LOG || join(process.cwd(), "qwen-disagreements.jsonl"),
     pollMs,
     once: argv.includes("--once") || env.ONCE === "1",
   };
@@ -424,7 +425,29 @@ export async function processItem(item, config, deps, client) {
   }
   const submission = buildSubmission(item, members, lead, rebuttals);
   const result = await client.submit(item.episode_id, submission);
-  return { submission, result };
+  const qwen = members.find((member) => member.persona === "qwen");
+  return { submission, result, qwenComparison: qwen ? {
+    episode_id: item.episode_id,
+    qwen_flagged: qwen.notes.length > 0,
+    lead_verdict: submission.verdict,
+    disagreed: (qwen.notes.length > 0) !== (submission.verdict === "fail"),
+  } : null };
+}
+
+export async function recordQwenComparison(comparison, config, deps = {}) {
+  if (!comparison) return null;
+  const read = deps.readFile || readFile;
+  const write = deps.appendFile || appendFile;
+  let history = "";
+  try { history = await read(config.qwenDisagreementLog, "utf8"); } catch {}
+  const prior = history.split("\n").filter(Boolean).length;
+  if (prior >= 50) return { count: 50, disagreed: null };
+  await write(config.qwenDisagreementLog, `${JSON.stringify({ ...comparison, checked_at: new Date().toISOString() })}\n`);
+  const count = prior + 1;
+  const disagreements = history.split("\n").filter(Boolean).reduce((n, row) => {
+    try { return n + (JSON.parse(row).disagreed === true ? 1 : 0); } catch { return n; }
+  }, comparison.disagreed ? 1 : 0);
+  return { count, disagreed: comparison.disagreed, rate: disagreements / count };
 }
 
 /** Poll loop. ONCE/--once runs a single pass and exits. */
@@ -462,8 +485,17 @@ export async function run(config, deps = {}) {
     for (const item of items) {
       if (signal.aborted) break;
       try {
-        const { result } = await processItem(item, config, io, client);
+        const { result, qwenComparison } = await processItem(item, config, io, client);
         log(`episode ${item.episode_id}: ${result?.fact_check?.verdict || "submitted"}`);
+        if (qwenComparison) {
+          try {
+            const monitor = await recordQwenComparison(qwenComparison, config, io);
+            if (monitor?.disagreed === null) log("qwen disagreement sample is complete (50 episodes)");
+            else log(`qwen disagreement ${monitor.disagreed ? "yes" : "no"} (${monitor.count}/50, ${(monitor.rate * 100).toFixed(1)}%)`);
+          } catch (err) {
+            log(`qwen disagreement log failed: ${err.message}`);
+          }
+        }
       } catch (err) {
         log(`episode ${item.episode_id}: skipped (${err.message})`);
       }

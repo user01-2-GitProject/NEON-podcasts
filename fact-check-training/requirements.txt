@@ -13,3 +13,5 @@ accelerate==1.16.0
 datasets==5.2.0
 safetensors==0.8.0
 numpy==2.5.5
+# Unsloth publishes compatible support for Qwen3.5; install it in the same GPU venv.
+unsloth

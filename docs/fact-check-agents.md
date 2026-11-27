@@ -2,7 +2,7 @@
 
 NEON checks a finished script twice. The **automatic check** runs inside episode generation for every show: three free OpenRouter models look for factual problems and the app stores their notes in the run's `fact_check` field. It costs nothing and never blocks an episode.
 
-The **council** is a second, opt-in layer for shows whose owner wants a stricter gate. Three checkers read the same locked source list — the briefing snapshot the script was actually written from, plus any vetted sources added later:
+The **council** is a second, opt-in layer for shows whose owner wants a stricter gate. Three checkers read the same locked sources — active show briefing documents, the briefing snapshot the script was actually written from, and the curated trusted-source index in `lib/fact-check-trusted-sources.ts`:
 
 - **Quickdraw** (Codex) — fast, concrete errors only.
 - **Scholar** (Muse) — slow and methodical; flags errors and misleading context.
@@ -52,6 +52,7 @@ node scripts/fact-check-council.mjs [--once]
 | `QWEN_URL` | no | — | Ollama base URL for the optional Qwen voter, e.g. `http://127.0.0.1:11434`. |
 | `QWEN_MODEL` | no | `qwen3.5-9b-fc` | Ollama model name used when `QWEN_URL` is set. |
 | `QWEN_TIMEOUT_MS` | no | `60000` | Time allowed for a Qwen answer or rebuttal. |
+| `QWEN_DISAGREEMENT_LOG` | no | `qwen-disagreements.jsonl` in the current directory | Append the first 50 episode-level comparisons between Qwen's independent flags and the Lead's final verdict. The runner logs the running disagreement rate. |
 
 ### Quickdraw and Lead commands
 
