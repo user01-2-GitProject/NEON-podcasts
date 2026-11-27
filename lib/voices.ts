@@ -154,8 +154,16 @@ export const OPENAI_CATALOG: CatalogVoice[] = OPENAI_VOICE_OPTIONS.map((v) => ({
   accent: v.id === "fable" ? "British" : "American",
 }));
 
-// Free voices first: they cost nothing to try.
-export const VOICE_CATALOG: CatalogVoice[] = [...EDGE_VOICES, ...KOKORO_VOICES, ...OPENAI_CATALOG];
+// Free voices first: they cost nothing to try. Labels intentionally avoid
+// engine and character names; ids remain stable for storage and TTS routing.
+const RAW_VOICE_CATALOG: CatalogVoice[] = [...EDGE_VOICES, ...KOKORO_VOICES, ...OPENAI_CATALOG];
+const voiceGroupCounts = new Map<string, number>();
+export const VOICE_CATALOG: CatalogVoice[] = RAW_VOICE_CATALOG.map((voice) => {
+  const group = `${voice.accent} ${voice.gender === "man" ? "male" : "female"}`;
+  const number = (voiceGroupCounts.get(group) ?? 0) + 1;
+  voiceGroupCounts.set(group, number);
+  return { ...voice, label: `${group} ${number}` };
+});
 
 // The free voice a show falls back to when no voice is set and the app's
 // voice setting is "Free voices".
@@ -181,7 +189,7 @@ export function voiceName(voiceId: string): string {
 export function voiceLabel(voiceId: string | null | undefined): string {
   const v = (voiceId || "").trim();
   if (!v) return "Default voice";
-  return VOICE_CATALOG.find((c) => c.id === v || c.id === `edge:${v}`)?.label ?? v;
+  return VOICE_CATALOG.find((c) => c.id === v || c.id === `edge:${v}`)?.label ?? "Custom voice";
 }
 
 // --- One-tap hosts -----------------------------------------------------------
@@ -198,7 +206,7 @@ export interface HostPreset {
   persona: string;
 }
 
-export const HOST_PRESETS: HostPreset[] = [
+const RAW_HOST_PRESETS: HostPreset[] = [
   {
     id: "sterling",
     label: "Sterling - British newsreader, calm, unbiased",
@@ -264,3 +272,10 @@ export const HOST_PRESETS: HostPreset[] = [
     persona: "Sage is a calm, thoughtful American host who explains hard things simply, like a favorite teacher.",
   },
 ];
+
+export const HOST_PRESETS: HostPreset[] = RAW_HOST_PRESETS.map((preset) => ({
+  ...preset,
+  name: "",
+  label: voiceLabel(preset.voice),
+  persona: preset.persona.replaceAll(preset.name, "The host"),
+}));

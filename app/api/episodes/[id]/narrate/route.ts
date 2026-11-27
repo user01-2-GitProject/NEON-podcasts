@@ -21,10 +21,10 @@ export async function POST(req: Request, { params }: Params) {
   const body = (await req.json().catch(() => ({}))) as { redo?: unknown };
   const redo = body?.redo === true;
   const rows = (await sql`
-    select e.id, e.show_id, e.script, e.audio_url, s.voice_id
+    select e.id, e.show_id, e.script, e.audio_url, s.voice_id, s.hosts
     from episodes e join shows s on s.id = e.show_id
     where e.id = ${id}
-  `) as { id: string; show_id: string; script: string | null; audio_url: string | null; voice_id: string | null }[];
+  `) as { id: string; show_id: string; script: string | null; audio_url: string | null; voice_id: string | null; hosts: { name: string; voice: string }[] | null }[];
   const ep = rows[0];
   if (!ep) return NextResponse.json({ error: "We couldn't find that episode." }, { status: 404 });
   if (ep.audio_url && !redo) return NextResponse.json({ error: "This episode already has audio" }, { status: 409 });
@@ -36,7 +36,7 @@ export async function POST(req: Request, { params }: Params) {
 
   let tts: Awaited<ReturnType<typeof synthesize>>;
   try {
-    tts = await synthesize(applyPronunciations(ep.script, pronunciations), ep.voice_id);
+    tts = await synthesize(applyPronunciations(ep.script, pronunciations), ep.voice_id, ep.hosts);
   } catch (err) {
     console.error(`[voice] narrate ${id}: ${err instanceof Error ? err.message : String(err)}`);
     return NextResponse.json({ error: friendlyVoiceError(err) }, { status: 502 });

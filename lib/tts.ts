@@ -20,7 +20,36 @@ export interface TtsResult {
   provider: string;
 }
 
-export async function synthesize(script: string, voiceOverride?: string | null): Promise<TtsResult> {
+export interface TtsHost { name: string; voice: string }
+
+export function speakerRuns(script: string, hosts: TtsHost[]): { text: string; voice: string | null }[] {
+  const byName = new Map(hosts.map((h) => [h.name.trim().toLowerCase(), h.voice]));
+  const runs: { text: string; voice: string | null }[] = [];
+  let current: { text: string; voice: string | null } | null = null;
+  for (const line of script.replace(/\r\n/g, "\n").split("\n")) {
+    const match = /^([^:\n]+):\s*(.*)$/.exec(line);
+    if (match) {
+      current = { text: match[2], voice: byName.get(match[1].trim().toLowerCase()) ?? null };
+      runs.push(current);
+    } else if (current && line.trim()) {
+      current.text += `\n${line}`;
+    }
+  }
+  return runs.filter((r) => r.text.trim());
+}
+
+export async function synthesize(script: string, voiceOverride?: string | null, hosts?: TtsHost[] | null): Promise<TtsResult> {
+  if (hosts && hosts.length > 1) {
+    const runs = speakerRuns(script, hosts);
+    if (runs.length) {
+      const rendered = await Promise.all(runs.map((run) => synthesizeText(run.text, run.voice || voiceOverride || null)));
+      return { audio: joinMp3(rendered.map((r) => r.audio)), contentType: "audio/mpeg", provider: rendered[0].provider };
+    }
+  }
+  return synthesizeText(script, voiceOverride);
+}
+
+async function synthesizeText(script: string, voiceOverride?: string | null): Promise<TtsResult> {
   const config = await resolveTtsConfig();
   const provider = providerFor(voiceOverride, config.provider);
   const voice = voiceOverride ? voiceName(voiceOverride) : voiceOverride;

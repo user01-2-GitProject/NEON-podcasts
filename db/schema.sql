@@ -29,6 +29,7 @@ create table if not exists shows (
   title          text not null,
   description    text not null default '',
   voice_id       text,
+  hosts          jsonb not null default '[]'::jsonb,
   narration_mode text not null default 'auto',        -- auto (app renders TTS) | external (script-only, e.g. Muse)
   cadence        text not null default 'weekly',      -- twice_daily | daily | weekdays | twice_weekly | weekly | days | manual
   schedule_time  text not null default '09:00',       -- HH:MM local

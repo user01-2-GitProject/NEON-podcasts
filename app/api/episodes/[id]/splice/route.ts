@@ -76,11 +76,12 @@ export async function POST(req: Request, { params }: Params) {
     script: string | null;
     audio_url: string | null;
     voice_id: string | null;
+    hosts: { name: string; voice: string }[] | null;
   } | undefined;
   let pronunciations: Pronunciation[] = [];
   try {
     const rows = (await sql`
-      select e.id, e.show_id, e.script, e.audio_url, s.voice_id
+      select e.id, e.show_id, e.script, e.audio_url, s.voice_id, s.hosts
       from episodes e join shows s on s.id = e.show_id
       where e.id = ${id}
     `) as typeof episode[];
@@ -122,7 +123,7 @@ export async function POST(req: Request, { params }: Params) {
 
   let replacement: Awaited<ReturnType<typeof synthesize>>;
   try {
-    replacement = await synthesize(applyPronunciations(retold, pronunciations), episode.voice_id);
+    replacement = await synthesize(applyPronunciations(retold, pronunciations), episode.voice_id, episode.hosts);
   } catch (err) {
     console.error(`[splice] ${id} voice: ${err instanceof Error ? err.message : String(err)}`);
     return fail(req, isForm, 502, friendlyVoiceError(err), id);

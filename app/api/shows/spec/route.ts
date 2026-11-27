@@ -47,10 +47,10 @@ export async function POST(req: Request) {
   const rows = (await sql`
     with s as (
       insert into shows
-        (user_id, title, description, style_guide, voice_id, narration_mode, cadence,
+        (user_id, title, description, style_guide, voice_id, hosts, narration_mode, cadence,
          schedule_time, timezone, target_minutes, image_url, air_days, next_run_at)
       values
-        (${userId}, ${f.title}, ${f.description}, ${f.style_guide}, ${f.voice_id},
+        (${userId}, ${f.title}, ${f.description}, ${f.style_guide}, ${f.voice_id}, ${JSON.stringify(f.hosts)}::jsonb,
          ${f.narration_mode}, ${f.cadence}, ${f.schedule_time}, ${f.timezone},
          ${f.target_minutes}, ${f.image_url}, ${f.air_days}::smallint[],
          ${firstRun}::timestamptz)

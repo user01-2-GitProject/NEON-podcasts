@@ -96,6 +96,7 @@ test("specToShowFields maps onto shows columns", () => {
   const f = spec.specToShowFields(s);
   assert.equal(f.description, s.tagline);
   assert.equal(f.voice_id, "iggy-v2");
+  assert.deepEqual(f.hosts, [{ name: "Iggy", voice: "iggy-v2" }]);
   assert.equal(f.cadence, "daily");
   assert.ok(f.style_guide.startsWith("Host: Iggy\n\n## Voice & style"));
   assert.equal(spec.specToShowFields({ ...s, image_url: "", hosts: [] }).image_url, null);

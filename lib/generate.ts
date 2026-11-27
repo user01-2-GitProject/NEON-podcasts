@@ -268,7 +268,7 @@ export async function generateEpisode(
     // handed to TTS; the episode row below still stores the original script.
     let tts: Awaited<ReturnType<typeof synthesize>>;
     try {
-      tts = await synthesize(applyPronunciations(result.script, pronunciations), show.voice_id);
+      tts = await synthesize(applyPronunciations(result.script, pronunciations), show.voice_id, show.hosts);
     } catch (voiceErr) {
       // Scheduled runs retry the whole run. A run someone pressed keeps the
       // script as a draft, so a voice problem never throws away the writing.

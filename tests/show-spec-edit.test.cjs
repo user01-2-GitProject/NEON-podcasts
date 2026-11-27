@@ -46,7 +46,6 @@ const put = (body) =>
 
 test("showToSpec inverts specToShowFields for stored fields", () => {
   const back = specLib.showToSpec(storedShow(parsed), storedProns(parsed));
-  // Not stored per show yet, so they come back as defaults.
   const expected = { ...parsed, category: "", language: "en-us", explicit: false, tags: [] };
   assert.deepEqual(back, expected);
 });
@@ -55,7 +54,7 @@ test("two hosts and a missing host line both survive export", () => {
   const two = { ...parsed, hosts: [{ name: "Iggy", voice: "v1" }, { name: "Matt", voice: "" }] };
   assert.deepEqual(specLib.showToSpec(storedShow(two), []).hosts, two.hosts);
   const none = specLib.showToSpec(
-    { ...storedShow(parsed), style_guide: "## Voice & style\nCalm.", voice_id: null },
+    { ...storedShow(parsed), style_guide: "## Voice & style\nCalm.", voice_id: null, hosts: [] },
     [],
   );
   assert.deepEqual(none.hosts, []);
