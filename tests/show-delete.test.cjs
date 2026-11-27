@@ -80,6 +80,7 @@ function generate({ publishRows }) {
     "@/lib/episode-spec": require("../lib/episode-spec.ts"),
     "@/lib/script-check": { checkScript: () => [], needsRewrite: () => false, rewriteNotes: () => "" },
     "@/lib/script-qa": { runScriptQa: async () => ({ notes: [], model: null, checked_at: "2026-01-01T00:00:00.000Z" }) },
+    "@/lib/fact-check": { runFactCheck: async () => ({ notes: [], model: null, checked_at: "2026-01-01T00:00:00.000Z" }) },
     "@/lib/research": { researchBrief: () => null },
   });
   return { ...mod, deleted };

@@ -1,0 +1,21 @@
+# Python / local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Raw downloads and generated artifacts (never commit large data or adapters)
+data/**/.raw/
+*.zip
+*.part
+outputs/
+
+# Re-downloadable canonical normalized files. The small *.sample.jsonl and
+# *.sample.tsv fixtures are intentionally committed for offline tests.
+data/fever/fever_train.jsonl
+data/fever/fever_dev.jsonl
+data/liar/liar_train.jsonl
+data/liar/liar_dev.jsonl
+data/liar/liar_test.jsonl
+data/fever/*.task.jsonl
+data/liar/*.task.jsonl

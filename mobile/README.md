@@ -9,8 +9,8 @@ Phase 3b skeleton; see the native app scope doc for the 3c-3e roadmap.
 cd mobile
 npm install
 EXPO_PUBLIC_API_URL=https://neon-podcasts.vercel.app \
-EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=... \
-EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=... \
+EXPO_PUBLIC_IOS_GOOGLE_CLIENT_ID=... \
+EXPO_PUBLIC_ANDROID_GOOGLE_CLIENT_ID=... \
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=... \
 npx expo start
 ```
@@ -41,9 +41,13 @@ The submit section in `eas.json` uses `REPLACE_ME` placeholders for Apple ID, Ap
 Required environment variables are placeholders set via EAS secrets (`eas secret:create` or the EAS dashboard), **not committed**:
 
 - `EXPO_PUBLIC_API_URL` — API base URL used by `lib/config.ts` (falls back to `app.json` `extra.apiUrl`).
-- `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
-- `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`
+- `EXPO_PUBLIC_IOS_GOOGLE_CLIENT_ID`
+- `EXPO_PUBLIC_ANDROID_GOOGLE_CLIENT_ID`
 - `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`
+
+The previous `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` and
+`EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` names remain accepted for existing EAS
+secrets while credentials are migrated.
 
 Set real values for these secrets before building or submitting a release. `EXPO_PUBLIC_WEB_URL` is optional; it overrides `extra.webUrl` in `app.json` (which falls back to `extra.apiUrl`) for the Settings/About Privacy Policy and Terms links.
 

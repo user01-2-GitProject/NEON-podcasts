@@ -47,7 +47,7 @@ export default function ShowScreen() {
                     <Image source={{ uri: absoluteUrl(data.show.image_url) }} style={styles.art} accessibilityLabel={`${data.show.title} artwork`} />
                     {data.show.is_official ? (
                       <Image
-                        source={require("../../assets/neon-official.gif")}
+                        source={require("../../assets/brand/neon-logo-orbit-360-clean.gif")}
                         style={styles.stamp}
                         accessibilityLabel="NEON official show"
                       />

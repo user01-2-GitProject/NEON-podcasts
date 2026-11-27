@@ -405,6 +405,7 @@ audio {
   max-width: 360px;
   margin: 12vh auto 0;
 }
+.login-wrap h2 { font-family: var(--font-display); }
 
 .show-art {
   display: block;
@@ -429,10 +430,10 @@ button.linklike {
 /* ---- New-show wizard (mobile first) ---- */
 .wizard { max-width: 480px; margin: 0 auto; padding: 16px; }
 .wizard-progress { position: relative; height: 6px; background: var(--tint-2); border-radius: 3px; margin-bottom: 20px; }
-.wizard-progress-bar { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 3px; transition: width 200ms ease; }
+.wizard-progress-bar { position: absolute; left: 0; top: 0; bottom: 0; background: var(--hairline); border-radius: 3px; transition: width 200ms ease; }
 .wizard-progress-label { position: absolute; right: 0; top: 10px; font-size: 12px; color: var(--text-soft); }
 .wizard-card { min-height: 220px; padding: 24px 0; }
-.wizard-card h2 { font-size: 24px; margin: 0 0 8px; }
+.wizard-card h2 { font-family: var(--font-display); font-size: 24px; margin: 0 0 8px; }
 .wizard-input { display: block; width: 100%; margin-top: 16px; padding: 14px 16px; font-size: 18px; border-radius: 10px; border: 1px solid var(--tint-3); background: var(--tint); color: inherit; }
 .wizard-input:focus { outline: none; border-color: var(--accent); }
 .wizard-choices { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }

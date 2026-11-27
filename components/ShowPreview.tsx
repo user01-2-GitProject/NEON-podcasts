@@ -1,8 +1,7 @@
 "use client";
 
-// "Hear your show": the ~30-second voice preview on the wizard's review
-// screen, between the answers and Create. The host opens the show and talks
-// about its own content in the picked voice.
+// "Hear your show": the 60-second, format-specific first-episode preview on
+// the wizard's review screen, in the selected host voice.
 //
 // Cheap by design (see lib/preview.ts): the script is written once per set of
 // answers and re-used when only the voice changes, and every voice already
@@ -98,7 +97,7 @@ export default function ShowPreview({ draft, hostName, voice, onVoiceChange }: {
     <div className="show-preview">
       <h3 style={{ marginTop: 0 }}>Hear your show</h3>
       <p className="muted">
-        A 30-second sample: {hostName} opens your show and talks about what it covers.
+        A 60-second first-episode sample in {hostName}'s selected voice.
         Try a few voices before you create it.
       </p>
       <label className="muted" htmlFor="preview-voice" style={{ display: "block", fontSize: 13, marginBottom: 4 }}>
@@ -118,7 +117,7 @@ export default function ShowPreview({ draft, hostName, voice, onVoiceChange }: {
       </select>
       <div style={{ marginTop: 12 }}>
         <button type="button" className="btn secondary" onClick={() => void play()} disabled={busy}>
-          {busy ? "Making your preview…" : audioUrl ? "Play again" : "Play a 30-second preview"}
+          {busy ? "Making your preview…" : audioUrl ? "Play again" : "Play a 60-second preview"}
         </button>
       </div>
       {audioUrl ? (

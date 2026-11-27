@@ -1,0 +1,120 @@
+{"claim":"Nikolaj Coster-Waldau worked with the Fox Broadcasting Company.","label":"supported","evidence":"wikipedia:Nikolaj_Coster-Waldau:7; wikipedia:Fox_Broadcasting_Company:0","source":"fever","split":"train"}
+{"claim":"Roman Atwood is a content creator.","label":"supported","evidence":"wikipedia:Roman_Atwood:1; wikipedia:Roman_Atwood:3","source":"fever","split":"train"}
+{"claim":"History of art includes architecture, dance, sculpture, music, painting, poetry literature, theatre, narrative, film, photography and graphic arts.","label":"supported","evidence":"wikipedia:History_of_art:2","source":"fever","split":"train"}
+{"claim":"Adrienne Bailon is an accountant.","label":"refuted","evidence":"wikipedia:Adrienne_Bailon:0","source":"fever","split":"train"}
+{"claim":"System of a Down briefly disbanded in limbo.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Homeland is an American television spy thriller based on the Israeli television series Prisoners of War.","label":"supported","evidence":"wikipedia:Homeland_-LRB-TV_series-RRB-:0; wikipedia:Prisoners_of_War_-LRB-TV_series-RRB-:0","source":"fever","split":"train"}
+{"claim":"Beautiful reached number two on the Billboard Hot 100 in 2003.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Neal Schon was named in 1954.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"The Boston Celtics play their home games at TD Garden.","label":"supported","evidence":"wikipedia:Boston_Celtics:3","source":"fever","split":"train"}
+{"claim":"The Ten Commandments is an epic film.","label":"supported","evidence":"wikipedia:The_Ten_Commandments_-LRB-1956_film-RRB-:0; wikipedia:The_Ten_Commandments_-LRB-1956_film-RRB-:20","source":"fever","split":"train"}
+{"claim":"Tetris has sold millions of physical copies.","label":"supported","evidence":"wikipedia:Tetris:18","source":"fever","split":"train"}
+{"claim":"Cyndi Lauper won the Best New Artist award at the 27th Grammy Awards in 1985.","label":"supported","evidence":"wikipedia:Cyndi_Lauper:2","source":"fever","split":"train"}
+{"claim":"There is a movie called The Hunger Games.","label":"supported","evidence":"wikipedia:The_Hunger_Games_-LRB-film-RRB-:0; wikipedia:The_Hunger_Games_-LRB-film-RRB-:1; wikipedia:The_Hunger_Games_-LRB-film-RRB-:2; wikipedia:The_Hunger_Games_-LRB-film-RRB-:16","source":"fever","split":"train"}
+{"claim":"Ryan Gosling has been to a country in Africa.","label":"supported","evidence":"wikipedia:Ryan_Gosling:17; wikipedia:Chad:0","source":"fever","split":"train"}
+{"claim":"Stranger Things is set in Bloomington, Indiana.","label":"refuted","evidence":"wikipedia:Stranger_Things:5","source":"fever","split":"train"}
+{"claim":"Ryan Seacrest is a person.","label":"supported","evidence":"wikipedia:Ryan_Seacrest:0; wikipedia:Ryan_Seacrest:1; wikipedia:Ryan_Seacrest:2; wikipedia:Ryan_Seacrest:5","source":"fever","split":"train"}
+{"claim":"Puerto Rico is not an unincorporated territory of the United States.","label":"refuted","evidence":"wikipedia:Puerto_Rico:0","source":"fever","split":"train"}
+{"claim":"Michael Giacchino composed the score for Doctor Strange.","label":"supported","evidence":"wikipedia:Michael_Giacchino:1","source":"fever","split":"train"}
+{"claim":"Stranger than Fiction is a film.","label":"supported","evidence":"wikipedia:Stranger_than_Fiction_-LRB-2006_film-RRB-:0","source":"fever","split":"train"}
+{"claim":"Chris Hemsworth appeared in A Perfect Getaway.","label":"supported","evidence":"wikipedia:Chris_Hemsworth:2","source":"fever","split":"train"}
+{"claim":"Selena recorded music.","label":"supported","evidence":"wikipedia:Selena:8; wikipedia:Selena:0; wikipedia:Selena:2; wikipedia:Selena:4; wikipedia:Selena:21","source":"fever","split":"train"}
+{"claim":"John Wick: Chapter 2 was theatrically released in the Oregon.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Robert J. O'Neill was born April 10, 1976.","label":"supported","evidence":"wikipedia:Robert_J._O'Neill_-LRB-U.S._Navy_SEAL-RRB-:0","source":"fever","split":"train"}
+{"claim":"Afghanistan is the source of the Kushan dynasty.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Marilyn Monroe worked with Warner Brothers.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"The Silence of the Lambs was a film starring Scott Glenn.","label":"supported","evidence":"wikipedia:The_Silence_of_the_Lambs_-LRB-film-RRB-:0","source":"fever","split":"train"}
+{"claim":"Peggy Sue Got Married is a Egyptian film released in 1986.","label":"refuted","evidence":"wikipedia:Peggy_Sue_Got_Married:0; wikipedia:Francis_Ford_Coppola:0","source":"fever","split":"train"}
+{"claim":"Andy Roddick lost 5 Master Series between 2002 and 2010.","label":"refuted","evidence":"wikipedia:Andy_Roddick:7","source":"fever","split":"train"}
+{"claim":"As the Vietnam War raged in 1969, Yoko Ono and her husband John Lennon did not have two week-long Bed-Ins for Peace.","label":"refuted","evidence":"wikipedia:Bed-In:0","source":"fever","split":"train"}
+{"claim":"Tupac Shakur was born Lesane Parish Crooks.","label":"supported","evidence":"wikipedia:Tupac_Shakur:0","source":"fever","split":"train"}
+{"claim":"Harold Ramis was a veteran.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"The Jim Henson Company produced The Muppet Movie, The Dark Crystal, and Labyrinth.","label":"supported","evidence":"wikipedia:The_Jim_Henson_Company:5","source":"fever","split":"train"}
+{"claim":"United Nations was relocated to the United States in 1945.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Whoopi Goldberg co-produced an American dance tournament.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Slovenia uses the euro.","label":"supported","evidence":"wikipedia:Slovenia:29; wikipedia:Eurozone:0","source":"fever","split":"train"}
+{"claim":"Iowa is a part of the Midwestern United States.","label":"supported","evidence":"wikipedia:Midwestern_United_States:4","source":"fever","split":"train"}
+{"claim":"Keith Urban is a person who sings.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Hotell is owned by Lisa Langseth.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Saratoga is an American film from 1937.","label":"supported","evidence":"wikipedia:Saratoga_-LRB-film-RRB-:0","source":"fever","split":"train"}
+{"claim":"J. Howard Marshall was a baby.","label":"supported","evidence":"wikipedia:J._Howard_Marshall:0; wikipedia:Infant:0","source":"fever","split":"train"}
+{"claim":"Grace Jones is a dancer.","label":"refuted","evidence":"wikipedia:Grace_Jones:0","source":"fever","split":"train"}
+{"claim":"Lisbon has a population larger than 1.","label":"supported","evidence":"wikipedia:Lisbon:0; wikipedia:Lisbon:2","source":"fever","split":"train"}
+{"claim":"Willie Nelson dropped out of college after three years.","label":"refuted","evidence":"wikipedia:Willie_Nelson:9","source":"fever","split":"train"}
+{"claim":"Malcolm Young was the co-founder of Australian hard rock band AC/DC.","label":"supported","evidence":"wikipedia:Malcolm_Young:0","source":"fever","split":"train"}
+{"claim":"Nice & Slow is a jazz single.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Newfoundland and Labrador is the most linguistically homogeneous of Canada.","label":"supported","evidence":"wikipedia:Newfoundland_and_Labrador:4","source":"fever","split":"train"}
+{"claim":"Furia is adapted from a short story by Anna Politkovskaya.","label":"refuted","evidence":"wikipedia:Furia_-LRB-film-RRB-:0","source":"fever","split":"train"}
+{"claim":"One state of the United States has Russia to its west.","label":"supported","evidence":"wikipedia:United_States:3","source":"fever","split":"train"}
+{"claim":"Sophie Turner was born in the 1990s.","label":"supported","evidence":"wikipedia:Sophie_Turner:0","source":"fever","split":"train"}
+{"claim":"Mother Teresa was made a saint by the church.","label":"supported","evidence":"wikipedia:Mother_Teresa:11","source":"fever","split":"train"}
+{"claim":"The Smurfs (film) was released.","label":"supported","evidence":"wikipedia:The_Smurfs_-LRB-film-RRB-:10; wikipedia:The_Smurfs_-LRB-film-RRB-:0; wikipedia:The_Smurfs_-LRB-film-RRB-:15; wikipedia:The_Smurfs_-LRB-film-RRB-:12","source":"fever","split":"train"}
+{"claim":"C. S. Forester's first name was Carl.","label":"refuted","evidence":"wikipedia:C._S._Forester:0","source":"fever","split":"train"}
+{"claim":"Kong: Skull Island is a book.","label":"refuted","evidence":"wikipedia:Kong-COLON-_Skull_Island:0","source":"fever","split":"train"}
+{"claim":"The Challenge was a scripted show.","label":"refuted","evidence":"wikipedia:The_Challenge_-LRB-TV_series-RRB-:0","source":"fever","split":"train"}
+{"claim":"Berlin is the capital of Germany.","label":"supported","evidence":"wikipedia:Berlin:0","source":"fever","split":"train"}
+{"claim":"South Korea has a highly educated workforce.","label":"supported","evidence":"wikipedia:South_Korea:27","source":"fever","split":"train"}
+{"claim":"Jimmy Carter led the international boycott of the 2010 Olympics.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Hulk(comics) is a cooking recipe published by Marvel Comics recipe books.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Hacksaw Ridge came out in America on November 4, 2016.","label":"supported","evidence":"wikipedia:Hacksaw_Ridge:5","source":"fever","split":"train"}
+{"claim":"The blue-ringed octopus hunts sharks.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Buddy Holly's dog's name was Tito Rodriguez.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Michael Fassbender is an actor.","label":"supported","evidence":"wikipedia:Michael_Fassbender:0; wikipedia:Michael_Fassbender:1; wikipedia:Michael_Fassbender:2; wikipedia:Michael_Fassbender:3","source":"fever","split":"train"}
+{"claim":"Red Headed Stranger is a movie.","label":"refuted","evidence":"wikipedia:Red_Headed_Stranger:0; wikipedia:Red_Headed_Stranger:10","source":"fever","split":"train"}
+{"claim":"Richard Eyre was born on an island.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Paul Bettany has played Vision in at least two works.","label":"supported","evidence":"wikipedia:Paul_Bettany:1; wikipedia:Paul_Bettany:2","source":"fever","split":"train"}
+{"claim":"Scotland's Hebrides is widespread and diverse with many islands.","label":"supported","evidence":"wikipedia:Scotland:2; wikipedia:Hebrides:0","source":"fever","split":"train"}
+{"claim":"Ricky Martin has cried on TV.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Uzbekistan is a part of the Commonwealth of Independent States (CIS).","label":"supported","evidence":"wikipedia:Uzbekistan:14","source":"fever","split":"train"}
+{"claim":"Paul Wesley is a professional alias.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Charles, Prince of Wales is patron of numerous other organizations.","label":"supported","evidence":"wikipedia:Charles,_Prince_of_Wales:16","source":"fever","split":"train"}
+{"claim":"Chester Bennington is not a singer.","label":"refuted","evidence":"wikipedia:Chester_Bennington:0; wikipedia:Chester_Bennington:1; wikipedia:Chester_Bennington:2; wikipedia:Chester_Bennington:4; wikipedia:Chester_Bennington:7","source":"fever","split":"train"}
+{"claim":"Vincent Cassel played Jacques Mesrine in at least two films.","label":"supported","evidence":"wikipedia:Vincent_Cassel:1","source":"fever","split":"train"}
+{"claim":"Pope John Paul II co-stars many actors besides Christopher Lee.","label":"supported","evidence":"wikipedia:Pope_John_Paul_II_-LRB-miniseries-RRB-:11","source":"fever","split":"train"}
+{"claim":"David Beckham has zero middle names.","label":"refuted","evidence":"wikipedia:David_Beckham:0","source":"fever","split":"train"}
+{"claim":"Indiana Jones has only been portrayed by Harrison Ford.","label":"refuted","evidence":"wikipedia:Indiana_Jones:7","source":"fever","split":"train"}
+{"claim":"Brian Wilson was part of the Beach Boys.","label":"supported","evidence":"wikipedia:Brian_Wilson:0; wikipedia:Brian_Wilson:5; wikipedia:Pet_Sounds:0; wikipedia:Brian_Wilson:6; wikipedia:Smile_-LRB-The_Beach_Boys_album-RRB-:0","source":"fever","split":"train"}
+{"claim":"The Existence of God has been argued through the Five Ways.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"The Great Gatsby centers on a youthful person with over a million dollars.","label":"supported","evidence":"wikipedia:The_Great_Gatsby:1","source":"fever","split":"train"}
+{"claim":"Shane Black and Chris Miller wrote Iron Man 3.","label":"refuted","evidence":"wikipedia:Iron_Man_3:2","source":"fever","split":"train"}
+{"claim":"La La Anthony was conceived on June 25th, 1979.","label":"refuted","evidence":"wikipedia:La_La_Anthony:0","source":"fever","split":"train"}
+{"claim":"Led Zeppelin is a band.","label":"supported","evidence":"wikipedia:Led_Zeppelin:0; wikipedia:Led_Zeppelin:2; wikipedia:Led_Zeppelin:1; wikipedia:Led_Zeppelin:13; wikipedia:Led_Zeppelin:20","source":"fever","split":"train"}
+{"claim":"Richard Harris was born on October 25, 2002.","label":"supported","evidence":"wikipedia:Richard_Harris:0","source":"fever","split":"train"}
+{"claim":"The Fosters is a television series.","label":"supported","evidence":"wikipedia:The_Fosters_-LRB-2013_TV_series-RRB-:0; wikipedia:The_Fosters_-LRB-2013_TV_series-RRB-:4","source":"fever","split":"train"}
+{"claim":"Blair is Jonathan Hensleigh's middle name.","label":"supported","evidence":"wikipedia:Jonathan_Hensleigh:0","source":"fever","split":"train"}
+{"claim":"Filmfare is about cheese.","label":"refuted","evidence":"wikipedia:Filmfare:0","source":"fever","split":"train"}
+{"claim":"Buckingham Palace lacks brightly colored scagliola.","label":"refuted","evidence":"wikipedia:Buckingham_Palace:15","source":"fever","split":"train"}
+{"claim":"Sarah Paulson makes an appearance in What Women Want.","label":"supported","evidence":"wikipedia:Sarah_Paulson:2","source":"fever","split":"train"}
+{"claim":"David Harbour is an American.","label":"supported","evidence":"wikipedia:David_Harbour:0","source":"fever","split":"train"}
+{"claim":"Nicole Scherzinger toured 15 times.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"The terrain of Kazakhstan includes taiga.","label":"supported","evidence":"wikipedia:Kazakhstan:12","source":"fever","split":"train"}
+{"claim":"Sade (singer) has a song called London.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"José María Chacón surrendered the island of Trinidad in 1797, one year before his death.","label":"refuted","evidence":"wikipedia:José_María_Chacón:0","source":"fever","split":"train"}
+{"claim":"Liverpool F.C. was valued at $1.55 billion at one point.","label":"supported","evidence":"wikipedia:Liverpool_F.C.:11","source":"fever","split":"train"}
+{"claim":"Land Rover makes cars.","label":"supported","evidence":"wikipedia:Land_Rover:0; wikipedia:Land_Rover:11","source":"fever","split":"train"}
+{"claim":"Sully is a form of media.","label":"supported","evidence":"wikipedia:Sully_-LRB-film-RRB-:0","source":"fever","split":"train"}
+{"claim":"Stanley Tucci performed in an television series.","label":"supported","evidence":"wikipedia:Stanley_Tucci:4; wikipedia:Monk_-LRB-TV_series-RRB-:0","source":"fever","split":"train"}
+{"claim":"Martin Scorsese worked on commission.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Brock Lesnar married Randy Couture.","label":"refuted","evidence":"wikipedia:Brock_Lesnar:18","source":"fever","split":"train"}
+{"claim":"Snowden's cast includes two actors born in 1934.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Tiger Woods had an uncontested victory at the Arnold Palmer Invitational.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"The Khmer Empire was not weak.","label":"supported","evidence":"wikipedia:Khmer_Empire:0","source":"fever","split":"train"}
+{"claim":"On the Road (film) premiered at a film festival.","label":"supported","evidence":"wikipedia:On_the_Road_-LRB-film-RRB-:5; wikipedia:On_the_Road_-LRB-film-RRB-:6; wikipedia:On_the_Road_-LRB-film-RRB-:7","source":"fever","split":"train"}
+{"claim":"Bob Dylan has been inducted into four different colleges.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Paramore's co-founders left the band in March 2010.","label":"supported","evidence":"wikipedia:Paramore_-LRB-album-RRB-:2","source":"fever","split":"train"}
+{"claim":"Peter Davison has been in a BBC show.","label":"supported","evidence":"wikipedia:Peter_Davison:1; wikipedia:Peter_Davison:2; wikipedia:Sink_or_Swim_-LRB-TV_series-RRB-:0","source":"fever","split":"train"}
+{"claim":"21 Jump Street was released June 16, 2012.","label":"refuted","evidence":"wikipedia:21_Jump_Street_-LRB-film-RRB-:4","source":"fever","split":"train"}
+{"claim":"The collections of the Philadelphia Museum of Art contain over 240,000 objects.","label":"supported","evidence":"wikipedia:Philadelphia_Museum_of_Art:2","source":"fever","split":"train"}
+{"claim":"Dustin Hoffman is an award-winning actor.","label":"supported","evidence":"wikipedia:Dustin_Hoffman:6; wikipedia:Dustin_Hoffman:0; wikipedia:Dustin_Hoffman:5; wikipedia:Dustin_Hoffman:2","source":"fever","split":"train"}
+{"claim":"T. J. Miller was featured in Deadpool 2.","label":"supported","evidence":"wikipedia:Deadpool_-LRB-film-RRB-:1","source":"fever","split":"train"}
+{"claim":"Chris Terrio was born in Kansas.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Stephen Hawking is an Honorary Fellow of the Royal Society of Chemistry.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Stephon Marbury plays basketball in America.","label":"refuted","evidence":"wikipedia:Stephon_Marbury:0","source":"fever","split":"train"}
+{"claim":"Tiger Woods is a bowler.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"Sense and Sensibility was published in the summer of 1811.","label":"not_enough_info","evidence":"","source":"fever","split":"train"}
+{"claim":"CP affects people.","label":"supported","evidence":"wikipedia:Cerebral_palsy:1","source":"fever","split":"train"}
+{"claim":"Alfred Hitchcock is a person.","label":"supported","evidence":"wikipedia:Alfred_Hitchcock:0","source":"fever","split":"train"}
+{"claim":"Julius Caesar is only a book.","label":"refuted","evidence":"wikipedia:Julius_Caesar_-LRB-1953_film-RRB-:0","source":"fever","split":"train"}
+{"claim":"Pulp Fiction is directed by a male.","label":"supported","evidence":"wikipedia:Pulp_Fiction:0; wikipedia:Quentin_Tarantino:0; wikipedia:Quentin_Tarantino:1","source":"fever","split":"train"}
+{"claim":"Absolute Beginners was directed by Hitchcock.","label":"refuted","evidence":"wikipedia:Absolute_Beginners_-LRB-film-RRB-:1","source":"fever","split":"train"}
+{"claim":"No Reservations got a mixed reception from critics.","label":"supported","evidence":"wikipedia:No_Reservations_-LRB-film-RRB-:5","source":"fever","split":"train"}

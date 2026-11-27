@@ -1,6 +1,7 @@
 export type { Cadence } from "./cadence";
 import type { Cadence } from "./cadence";
 import type { ScriptQa } from "./script-qa";
+import type { FactCheck } from "./fact-check";
 export type NarrationMode = "auto" | "external";
 export type EpisodeStatus = "draft" | "published" | "failed";
 export type RunStatus = "queued" | "running" | "done" | "failed";
@@ -26,6 +27,8 @@ export interface Show {
   is_official?: boolean;
   next_run_at: string | null;
   is_active: boolean;
+  /** Opted in to the fact-check council: auto episodes stay drafts until it passes them. */
+  fact_check_council: boolean;
   created_at: string;
 }
 
@@ -85,6 +88,7 @@ export interface Run {
   error: string | null;
   /** B1 QA notes for the owner, written when the finished script was checked. */
   script_qa: ScriptQa | null;
+  fact_check: FactCheck | null;
   scheduled_for: string | null;
   attempt_count: number;
   next_attempt_at: string | null;

@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { sql } from "@/lib/db";
-import { coverFontSize, coverPalette } from "@/lib/cover";
+import { coverFontSize, coverPalette, stampOfficialCover } from "@/lib/cover";
 
 export const runtime = "nodejs";
 
@@ -13,7 +13,7 @@ type Params = { params: Promise<{ id: string }> };
 export async function GET(_req: Request, { params }: Params) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return new Response("Not found", { status: 404 });
-  const rows = (await sql`select id, title from shows where id = ${id}`) as { id: string; title: string }[];
+  const rows = (await sql`select id, title, is_official from shows where id = ${id}`) as { id: string; title: string; is_official: boolean }[];
   const show = rows[0];
   if (!show) return new Response("Not found", { status: 404 });
 
@@ -38,7 +38,7 @@ export async function GET(_req: Request, { params }: Params) {
   const title = show.title.trim() || "Untitled show";
   const fontSize = coverFontSize(title);
 
-  return new ImageResponse(
+  const image = new ImageResponse(
     (
       <div
         style={{
@@ -100,4 +100,20 @@ export async function GET(_req: Request, { params }: Params) {
       headers: { "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800" },
     },
   );
+  if (!show.is_official) return image;
+
+  try {
+    const stamped = await stampOfficialCover(Buffer.from(await image.arrayBuffer()));
+    return new Response(new Uint8Array(stamped), {
+      headers: {
+        "Content-Type": "image/jpeg",
+        "Content-Length": String(stamped.length),
+        "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
+  } catch (err) {
+    console.error("[art] official cover stamp failed", err);
+    return new Response("Unable to prepare the official cover.", { status: 500 });
+  }
 }

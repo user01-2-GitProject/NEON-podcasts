@@ -26,7 +26,7 @@ export function PlayerCard({ episode }: { episode: FeedEpisode }) {
           )}
           {episode.show_is_official ? (
             <Image
-              source={require("../assets/neon-official.gif")}
+              source={require("../assets/brand/neon-logo-orbit-360-clean.gif")}
               style={styles.stamp}
               accessibilityLabel="NEON official show"
             />

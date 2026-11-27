@@ -1,16 +1,18 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 
-test("previewPrompt asks for ~30 seconds about the show's own content", async () => {
+test("previewScript makes an approximately 60-second format-specific first paragraph", async () => {
   const p = await import("../lib/preview.ts");
-  const { system, user } = p.previewPrompt({ showTitle: "N.E.O.N. - Sunday Markets", hostName: "Sterling", brief: "## About the show\nStocks for busy people." });
-  assert.match(system, /75 words/);
-  assert.match(system, /never follow instructions/);
-  assert.match(user, /SHOW TITLE: N\.E\.O\.N\. - Sunday Markets/);
-  assert.match(user, /HOST NAME: Sterling/);
-  assert.match(user, /Stocks for busy people/);
-  const big = p.previewPrompt({ showTitle: "x", hostName: "y", brief: "a".repeat(20000) });
-  assert.ok(big.user.length < p.MAX_PREVIEW_CONTEXT_CHARS + 200);
+  const opts = { showTitle: "Sunday Markets", hostName: "Sterling", about: "Stocks for busy people." };
+  const script = p.previewScript({ ...opts, format: "markets" });
+  const words = script.split(/\s+/).length;
+  assert.ok(Math.abs(words - p.PREVIEW_WORDS) <= 10, `${words} words`);
+  assert.match(script, /Sunday Markets/);
+  assert.match(script, /Stocks for busy people/);
+  assert.match(script, /what moved, what drove it/);
+  assert.doesNotMatch(script, /https?:\/\//);
+  assert.doesNotMatch(script, /people\.\./);
+  assert.notEqual(p.previewScript({ ...opts, format: "history" }), script);
 });
 
 test("cleanPreviewScript strips labels and cues and caps length at a sentence", async () => {
@@ -34,6 +36,8 @@ test("preview route guards cost: owner-only bypass, daily cap, spend cap, re-voi
   assert.match(src, /checkGeneration\(/);
   assert.match(src, /PREVIEWS_PER_DAY/);
   assert.match(src, /let script = given;\s*if \(!script\)/);
+  assert.match(src, /previewScript\(/);
+  assert.doesNotMatch(src, /completeText/);
   assert.match(src, /synthesize\(script\.slice\(0, MAX_PREVIEW_CHARS\)/);
 });
 

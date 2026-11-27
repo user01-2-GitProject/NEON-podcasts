@@ -22,3 +22,18 @@ test("cover palette is stable per show and the title always fits", async () => {
     assert.ok(size >= 64 && size <= 200, `${t}: ${size}`);
   }
 });
+
+test("official covers get the 18% NEON mark at 4% inset and become quality-90 JPEG", async () => {
+  const sharp = require("sharp");
+  const { hasOfficialCoverStamp, stampOfficialCover, COVER_STAMP_SCALE, COVER_STAMP_MARGIN } = await import("../lib/cover.ts");
+  assert.equal(COVER_STAMP_SCALE, 0.18);
+  assert.equal(COVER_STAMP_MARGIN, 0.04);
+  const plain = await sharp({ create: { width: 1400, height: 1400, channels: 3, background: "#183341" } }).jpeg().toBuffer();
+  assert.equal(await hasOfficialCoverStamp(plain), false);
+  const stamped = await stampOfficialCover(plain);
+  const metadata = await sharp(stamped).metadata();
+  assert.equal(metadata.format, "jpeg");
+  assert.equal(metadata.width, 1400);
+  assert.equal(metadata.height, 1400);
+  assert.equal(await hasOfficialCoverStamp(stamped), true);
+});

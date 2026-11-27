@@ -18,6 +18,8 @@ export const PRIVACY_URL = `${WEB_URL}/privacy`;
 export const TERMS_URL = `${WEB_URL}/terms`;
 
 // Google OAuth client IDs (one per platform), created in Google Cloud console.
-export const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-export const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+export const GOOGLE_IOS_CLIENT_ID =
+  process.env.EXPO_PUBLIC_IOS_GOOGLE_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+export const GOOGLE_ANDROID_CLIENT_ID =
+  process.env.EXPO_PUBLIC_ANDROID_GOOGLE_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
 export const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
