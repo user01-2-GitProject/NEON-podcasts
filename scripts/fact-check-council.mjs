@@ -61,11 +61,15 @@ export function readConfig(env = process.env, argv = process.argv.slice(2)) {
   if (!TOKEN_RE.test(token)) problems.push("NEON_TOKEN must be an npt_<64 hex> token (Settings -> Devices)");
   if (!env.MUSE_INPUT_DIR) problems.push("MUSE_INPUT_DIR is required (Scholar drop folder)");
   if (!env.MUSE_OUTPUT_DIR) problems.push("MUSE_OUTPUT_DIR is required (Scholar result folder)");
+  const qwenUrl = (env.QWEN_URL || "").replace(/\/+$/, "");
+  if (qwenUrl && !/^https?:\/\//.test(qwenUrl)) problems.push("QWEN_URL must be an http(s) URL (Ollama base URL)");
   if (problems.length) throw new Error(problems.join("\n"));
   const pollMs = Number(env.POLL_INTERVAL_MS) || 120000;
   const museTimeoutMs = Number(env.MUSE_TIMEOUT_MS) || 1800000;
+  const qwenTimeoutMs = Number(env.QWEN_TIMEOUT_MS) || 60000;
   if (!Number.isSafeInteger(pollMs) || pollMs < 1000) throw new Error("POLL_INTERVAL_MS must be >= 1000");
   if (!Number.isSafeInteger(museTimeoutMs) || museTimeoutMs < 1000) throw new Error("MUSE_TIMEOUT_MS must be >= 1000");
+  if (!Number.isSafeInteger(qwenTimeoutMs) || qwenTimeoutMs < 1000) throw new Error("QWEN_TIMEOUT_MS must be >= 1000");
   return {
     baseUrl,
     token,
@@ -74,6 +78,9 @@ export function readConfig(env = process.env, argv = process.argv.slice(2)) {
     museInputDir: env.MUSE_INPUT_DIR,
     museOutputDir: env.MUSE_OUTPUT_DIR,
     museTimeoutMs,
+    qwenUrl,
+    qwenModel: env.QWEN_MODEL || "qwen3.5-9b-fc",
+    qwenTimeoutMs,
     pollMs,
     once: argv.includes("--once") || env.ONCE === "1",
   };
@@ -331,7 +338,56 @@ async function runLead(item, members, config, deps) {
   return parseLeadResult(stdout, members.map((m) => m.persona));
 }
 
+/** Optional fourth voter: a locally served Qwen model (Ollama /api/chat). */
+export async function runQwen(item, config, deps) {
+  if (!config.qwenUrl) return null;
+  const prompt = item.prompts?.qwen;
+  if (!prompt || typeof prompt.system !== "string" || typeof prompt.user !== "string") {
+    throw new Error("pending item is missing the qwen prompt");
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), config.qwenTimeoutMs);
+  try {
+    const res = await deps.fetch(`${config.qwenUrl}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: config.qwenModel,
+        stream: false,
+        format: "json",
+        messages: [
+          { role: "system", content: prompt.system },
+          { role: "user", content: prompt.user },
+        ],
+      }),
+    });
+    if (!res.ok) throw new Error(`Qwen HTTP ${res.status}`);
+    const data = await res.json();
+    const text = data?.message?.content || data?.response || JSON.stringify(data);
+    const { notes, added_sources } = parseMemberResult(text);
+    return { persona: "qwen", model: config.qwenModel, notes, added_sources };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function runRebuttal(config, deps, flag, reason, index) {
+  if (flag.persona === "qwen") {
+    const res = await deps.fetch(`${config.qwenUrl}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: config.qwenModel,
+        stream: false,
+        format: "json",
+        messages: [{ role: "user", content: rebuttalPrompt(flag, reason) }],
+      }),
+    });
+    if (!res.ok) throw new Error(`Qwen rebuttal HTTP ${res.status}`);
+    const data = await res.json();
+    return parseRebuttal(data?.message?.content || data?.response || JSON.stringify(data));
+  }
   const prompt = rebuttalPrompt(flag, reason);
   if (flag.persona === "quickdraw") {
     const dir = deps.tmpDir || (await mkdtemp(join(tmpdir(), "fc-council-")));
@@ -356,11 +412,9 @@ async function runRebuttal(config, deps, flag, reason, index) {
 /** Full council process for one episode. Errors propagate so the caller can skip it. */
 export async function processItem(item, config, deps, client) {
   deps.currentEpisodeId = item.episode_id;
-  const [quickdraw, scholar] = await Promise.all([
-    runQuickdraw(item, config, deps),
-    runScholar(item, config, deps),
-  ]);
-  const members = [quickdraw, scholar];
+  const checks = [runQuickdraw(item, config, deps), runScholar(item, config, deps)];
+  if (config.qwenUrl) checks.push(runQwen(item, config, deps));
+  const members = (await Promise.all(checks)).filter(Boolean);
   const lead = await runLead(item, members, config, deps);
   const rebuttals = [];
   for (let i = 0; i < lead.dismissed.length; i += 1) {

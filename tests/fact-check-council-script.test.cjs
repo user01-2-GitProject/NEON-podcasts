@@ -28,6 +28,35 @@ test("readConfig validates required settings and applies defaults", () => {
   assert.throws(() => council.readConfig({ ...BASE_ENV, POLL_INTERVAL_MS: "10" }, []), /POLL_INTERVAL_MS/);
 });
 
+test("readConfig accepts an optional local Qwen voter", () => {
+  const config = council.readConfig({ ...BASE_ENV, QWEN_URL: "http://127.0.0.1:11434/", QWEN_MODEL: "qwen-test" }, []);
+  assert.equal(config.qwenUrl, "http://127.0.0.1:11434");
+  assert.equal(config.qwenModel, "qwen-test");
+  assert.equal(config.qwenTimeoutMs, 60000);
+  assert.throws(() => council.readConfig({ ...BASE_ENV, QWEN_URL: "nope" }, []), /QWEN_URL/);
+});
+
+test("runQwen calls Ollama and parses its JSON answer", async () => {
+  let body;
+  const deps = {
+    fetch: async (url, init) => {
+      assert.equal(url, "http://127.0.0.1:11434/api/chat");
+      body = JSON.parse(init.body);
+      return { ok: true, json: async () => ({ message: { content: JSON.stringify({ notes: [{ kind: "wrong", message: "Qwen flag" }] }) } }) };
+    },
+  };
+  const config = council.readConfig({ ...BASE_ENV, QWEN_URL: "http://127.0.0.1:11434" }, []);
+  const item = { prompts: { qwen: { system: "QS", user: "QU" } } };
+  const result = await council.runQwen(item, config, deps);
+  assert.equal(result.persona, "qwen");
+  assert.equal(result.model, "qwen3.5-9b-fc");
+  assert.equal(result.notes[0].message, "Qwen flag");
+  assert.equal(body.model, "qwen3.5-9b-fc");
+  assert.equal(body.messages[0].content, "QS");
+  await assert.rejects(() => council.runQwen({ prompts: {} }, config, deps), /missing the qwen prompt/);
+  assert.equal(await council.runQwen(item, council.readConfig(BASE_ENV, []), deps), null);
+});
+
 test("parseMemberResult handles prose, fences, bad kinds and dedupe", () => {
   const text = [
     "Here is my report:",

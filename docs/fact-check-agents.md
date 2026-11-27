@@ -49,6 +49,9 @@ node scripts/fact-check-council.mjs [--once]
 | `MUSE_TIMEOUT_MS` | no | `1800000` | How long to wait for Muse (30 minutes). |
 | `POLL_INTERVAL_MS` | no | `120000` | Delay between polls (minimum 1000). |
 | `ONCE` | no | `0` | Set to `1` for a single pass. |
+| `QWEN_URL` | no | — | Ollama base URL for the optional Qwen voter, e.g. `http://127.0.0.1:11434`. |
+| `QWEN_MODEL` | no | `qwen3.5-9b-fc` | Ollama model name used when `QWEN_URL` is set. |
+| `QWEN_TIMEOUT_MS` | no | `60000` | Time allowed for a Qwen answer or rebuttal. |
 
 ### Quickdraw and Lead commands
 
@@ -125,4 +128,4 @@ Every council run writes a grade to `runs.fact_check.grade`:
 
 If the leader is not running, an owner can use **Copy Quickdraw prompt** / **Copy Scholar prompt** on an episode card. Those prompts are built server-side from the same locked source list; paste them into Codex or Muse and compare the answers yourself.
 
-A fine-tuned Qwen3.5-9B is planned as a fourth voter. Its training data and QLoRA setup live in `fact-check-training/`. Until it is wired in (`Q5`), the council remains the three-persona rule described above.
+A fine-tuned Qwen3.5-9B can join as an optional fourth voter. Its training data and QLoRA setup live in `fact-check-training/`. Deploy it with Ollama on the Rig, then set `QWEN_URL` (and, if needed, `QWEN_MODEL`). The leader sends it the server-built `prompts.qwen`, includes its notes in the Lead's report, and can ask it to accept or reject a dismissal. The rule does not change: every voter must be clean for a pass. Without `QWEN_URL`, the council is the three-persona rule described above.

@@ -1,0 +1,15 @@
+# Q3 training/eval dependencies. Python 3.11+ and a CUDA GPU are assumed.
+# The fetcher (fetch_data.py) uses only the Python standard library.
+
+# Install the CUDA build of torch that matches your driver first, e.g.:
+#   pip install --index-url https://download.pytorch.org/whl/cu124 torch==2.15.0
+# Then install the rest:
+#   pip install -r fact-check-training/requirements.txt
+torch==2.15.0
+transformers==5.24.1
+peft==0.22.0
+bitsandbytes==0.50.2
+accelerate==1.16.0
+datasets==5.2.0
+safetensors==0.8.0
+numpy==2.5.5

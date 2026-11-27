@@ -1,0 +1,120 @@
+{"claim":"Colin Kaepernick became a starting quarterback during the 49ers 63rd season in the National Football League.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Tilda Swinton is a vegan.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Fox 2000 Pictures released the film Soul Food.","label":"supported","evidence":"wikipedia:Soul_Food_-LRB-film-RRB-:0","source":"fever","split":"dev"}
+{"claim":"Anne Rice was born in New Jersey.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Telemundo is a English-language television network.","label":"refuted","evidence":"wikipedia:Telemundo:0; wikipedia:Telemundo:1; wikipedia:Telemundo:4; wikipedia:Hispanic_and_Latino_Americans:0; wikipedia:Telemundo:5","source":"fever","split":"dev"}
+{"claim":"Damon Albarn's debut album was released in 2011.","label":"refuted","evidence":"wikipedia:Damon_Albarn:17","source":"fever","split":"dev"}
+{"claim":"There is a capital called Mogadishu.","label":"supported","evidence":"wikipedia:Mogadishu:0","source":"fever","split":"dev"}
+{"claim":"Savages was exclusively a German film.","label":"refuted","evidence":"wikipedia:Savages_-LRB-2012_film-RRB-:3","source":"fever","split":"dev"}
+{"claim":"Happiness in Slavery is a gospel song by Nine Inch Nails.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Andrew Kevin Walker is only Chinese.","label":"refuted","evidence":"wikipedia:Andrew_Kevin_Walker:0","source":"fever","split":"dev"}
+{"claim":"Shooter is about an expert marksman who tries to stop the assassination of the president.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"House is a sitcom.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"The Cretaceous ended.","label":"supported","evidence":"wikipedia:Cretaceous:8; wikipedia:Cretaceous:9","source":"fever","split":"dev"}
+{"claim":"Murda Beatz's real name is Marshall Mathers.","label":"refuted","evidence":"wikipedia:Murda_Beatz:0","source":"fever","split":"dev"}
+{"claim":"Nicholas Brody is a character on Homeland.","label":"supported","evidence":"wikipedia:Nicholas_Brody:1; wikipedia:Nicholas_Brody:4; wikipedia:Carrie_Mathison:0; wikipedia:Carrie_Mathison:2","source":"fever","split":"dev"}
+{"claim":"Charles Manson has been proven innocent of all crimes.","label":"refuted","evidence":"wikipedia:Charles_Manson:17","source":"fever","split":"dev"}
+{"claim":"Sean Penn is only ever a stage actor.","label":"refuted","evidence":"wikipedia:Sean_Penn:5; wikipedia:Sean_Penn:7","source":"fever","split":"dev"}
+{"claim":"Don Bradman retired from soccer.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"L.A. Reid has served as the CEO of Arista Records for four years.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Brad Wilk helped co-found Rage in 1962.","label":"refuted","evidence":"wikipedia:Brad_Wilk:4","source":"fever","split":"dev"}
+{"claim":"CBS is the network that aired The Millers.","label":"supported","evidence":"wikipedia:The_Millers:1","source":"fever","split":"dev"}
+{"claim":"Annette Badland was in the 2015 NBA Finals.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Edgar Wright is a person.","label":"supported","evidence":"wikipedia:Edgar_Wright:0; wikipedia:Edgar_Wright:1; wikipedia:Edgar_Wright:2; wikipedia:Edgar_Wright:5; wikipedia:Edgar_Wright:6","source":"fever","split":"dev"}
+{"claim":"Ann Richards was professionally involved in politics.","label":"supported","evidence":"wikipedia:Ann_Richards:0; wikipedia:Ann_Richards:1; wikipedia:Ann_Richards:2","source":"fever","split":"dev"}
+{"claim":"Drake Bell put out an EP.","label":"supported","evidence":"wikipedia:Drake_Bell:18","source":"fever","split":"dev"}
+{"claim":"Janet Leigh was incapable of writing.","label":"refuted","evidence":"wikipedia:Janet_Leigh:0; wikipedia:Janet_Leigh:12","source":"fever","split":"dev"}
+{"claim":"Simón Bolívar is only known as Simón Bolívar.","label":"refuted","evidence":"wikipedia:Simón_Bolívar:0","source":"fever","split":"dev"}
+{"claim":"Bermuda Triangle is in the western part of the Himalayas.","label":"refuted","evidence":"wikipedia:Bermuda_Triangle:0","source":"fever","split":"dev"}
+{"claim":"Colin Kaepernick became a starter during the 49ers 63rd season in the Republican Party.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Marnie was directed by someone who was \"The Master of Nothing\".","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Advertising is a personal message.","label":"refuted","evidence":"wikipedia:Advertising:3; wikipedia:Advertising:0","source":"fever","split":"dev"}
+{"claim":"Hot Right Now is mistakenly attributed to DJ Fresh.","label":"refuted","evidence":"wikipedia:Hot_Right_Now:0","source":"fever","split":"dev"}
+{"claim":"Private Lives is a three act play from 1930.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Giada at Home was only available on DVD.","label":"refuted","evidence":"wikipedia:Giada_at_Home:1; wikipedia:Food_Network:0","source":"fever","split":"dev"}
+{"claim":"Harold Macmillan was born on February 20, 1894.","label":"refuted","evidence":"wikipedia:Harold_Macmillan:0","source":"fever","split":"dev"}
+{"claim":"Aristotle spent time in Athens.","label":"supported","evidence":"wikipedia:Aristotle:2","source":"fever","split":"dev"}
+{"claim":"David Packouz refused to be an entrepreneur.","label":"refuted","evidence":"wikipedia:David_Packouz:0","source":"fever","split":"dev"}
+{"claim":"Magic Johnson did not play for the Lakers.","label":"refuted","evidence":"wikipedia:Magic_Johnson:1; wikipedia:Magic_Johnson:3; wikipedia:Magic_Johnson:5","source":"fever","split":"dev"}
+{"claim":"Tenacious D started in 1997.","label":"refuted","evidence":"wikipedia:Tenacious_D:0","source":"fever","split":"dev"}
+{"claim":"James VI and I was a major advocate of a single parliament for Scotland and England.","label":"supported","evidence":"wikipedia:James_VI_and_I:10","source":"fever","split":"dev"}
+{"claim":"Marcus Bentley is a broadcaster.","label":"supported","evidence":"wikipedia:Marcus_Bentley:0","source":"fever","split":"dev"}
+{"claim":"Saxony is in Ireland.","label":"refuted","evidence":"wikipedia:Saxony:0","source":"fever","split":"dev"}
+{"claim":"In the End has baseball in it.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Mel B released a song on Virgin Records in 2007.","label":"supported","evidence":"wikipedia:Mel_B:5","source":"fever","split":"dev"}
+{"claim":"Noah Cyrus is a younger sister of Macy Grey.","label":"refuted","evidence":"wikipedia:Noah_Cyrus:4","source":"fever","split":"dev"}
+{"claim":"Mohra is a truck.","label":"refuted","evidence":"wikipedia:Mohra:0","source":"fever","split":"dev"}
+{"claim":"Hourglass is performed by a Russian singer-songwriter.","label":"refuted","evidence":"wikipedia:Hourglass_-LRB-James_Taylor_album-RRB-:0; wikipedia:James_Taylor:0","source":"fever","split":"dev"}
+{"claim":"Shane Black was born in 1961.","label":"supported","evidence":"wikipedia:Shane_Black:0","source":"fever","split":"dev"}
+{"claim":"A View to a Kill is an action movie.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Papua comprised all of Indonesia.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"There are not rumors that Augustus' wife, Livia, poisoned him.","label":"refuted","evidence":"wikipedia:Augustus:42","source":"fever","split":"dev"}
+{"claim":"Jennifer Lopez made a single.","label":"supported","evidence":"wikipedia:Jennifer_Lopez:4; wikipedia:Jennifer_Lopez:7; wikipedia:J.Lo_-LRB-album-RRB-:17; wikipedia:Jennifer_Lopez:13; wikipedia:Como_Ama_una_Mujer:12","source":"fever","split":"dev"}
+{"claim":"A working animal is trained to perform life saving tasks.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Billboard Dad is a genre of music.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Vedam was written and directed by Christopher Nolan.","label":"refuted","evidence":"wikipedia:Vedam_-LRB-film-RRB-:0","source":"fever","split":"dev"}
+{"claim":"Men in Black II stars eight children.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Sancho Panza is a character in Don Quixote.","label":"supported","evidence":"wikipedia:Sancho_Panza:0","source":"fever","split":"dev"}
+{"claim":"Magic Johnson was a tap dancer.","label":"refuted","evidence":"wikipedia:Magic_Johnson:0","source":"fever","split":"dev"}
+{"claim":"The Adventures of Pluto Nash was reviewed by Ron Underwood.","label":"refuted","evidence":"wikipedia:The_Adventures_of_Pluto_Nash:0","source":"fever","split":"dev"}
+{"claim":"Hedda Gabler's world premiere took place at the Battle of Hastings.","label":"refuted","evidence":"wikipedia:Hedda_Gabler:1","source":"fever","split":"dev"}
+{"claim":"Brazzers is a company.","label":"supported","evidence":"wikipedia:Brazzers:0","source":"fever","split":"dev"}
+{"claim":"Tim Roth is an English actor.","label":"supported","evidence":"wikipedia:Tim_Roth:0","source":"fever","split":"dev"}
+{"claim":"Juventus F.C. rejected their traditional black-and-white-striped home uniform in 1903.","label":"refuted","evidence":"wikipedia:Juventus_F.C.:1","source":"fever","split":"dev"}
+{"claim":"Ernest Medina participated in the My Lai Massacre.","label":"supported","evidence":"wikipedia:Ernest_Medina:3","source":"fever","split":"dev"}
+{"claim":"Viola Davis appeared in Kate & Leopold as Darth Maul.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Jenna Jameson worked as a glamor model and a stripper.","label":"supported","evidence":"wikipedia:Jenna_Jameson:3","source":"fever","split":"dev"}
+{"claim":"New Orleans Pelicans compete in the National Football Association.","label":"refuted","evidence":"wikipedia:New_Orleans_Pelicans:0; wikipedia:New_Orleans_Pelicans:1","source":"fever","split":"dev"}
+{"claim":"Caroline Kennedy is a Catholic.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Starrcade was an annual professional wrestling event that began in 1988.","label":"refuted","evidence":"wikipedia:Starrcade:0; wikipedia:Starrcade:5","source":"fever","split":"dev"}
+{"claim":"Jack Falahee is a person who acts.","label":"supported","evidence":"wikipedia:Jack_Falahee:0","source":"fever","split":"dev"}
+{"claim":"Seohyun is a dog.","label":"refuted","evidence":"wikipedia:Seohyun:0","source":"fever","split":"dev"}
+{"claim":"Steve Wozniak was born after the Apple II came out.","label":"refuted","evidence":"wikipedia:Steve_Wozniak:5","source":"fever","split":"dev"}
+{"claim":"A&E is a cable and satellite television network.","label":"supported","evidence":"wikipedia:A&E_-LRB-TV_channel-RRB-:0","source":"fever","split":"dev"}
+{"claim":"L.A. Reid has served as the president of a record label.","label":"supported","evidence":"wikipedia:L.A._Reid:1; wikipedia:Arista_Records:1","source":"fever","split":"dev"}
+{"claim":"Veeram is something other than an Indian Tamil film.","label":"refuted","evidence":"wikipedia:Veeram_-LRB-2014_film-RRB-:0","source":"fever","split":"dev"}
+{"claim":"Home for the Holidays stars an American actress.","label":"supported","evidence":"wikipedia:Home_for_the_Holidays_-LRB-1995_film-RRB-:5; wikipedia:Holly_Hunter:0","source":"fever","split":"dev"}
+{"claim":"Taran Killam is an American writer.","label":"supported","evidence":"wikipedia:Taran_Killam:0","source":"fever","split":"dev"}
+{"claim":"Jayasudha is an actor that stars in Daag.","label":"refuted","evidence":"wikipedia:Daag_-LRB-1973_film-RRB-:10","source":"fever","split":"dev"}
+{"claim":"XHamster's The Sex Factor forces eight men and eight women to battle to become a porn star.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"John Dolmayan was born on July 15, 1873.","label":"refuted","evidence":"wikipedia:John_Dolmayan:0","source":"fever","split":"dev"}
+{"claim":"Despicable Me 2 was directed by a lake.","label":"refuted","evidence":"wikipedia:Despicable_Me_2:1; wikipedia:Chris_Renaud_-LRB-animator-RRB-:0; wikipedia:Pierre_Coffin:0","source":"fever","split":"dev"}
+{"claim":"Island Records is a music school.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Sikkim is a part of the World Bank.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Christa McAuliffe taught social studies at Concord High School.","label":"supported","evidence":"wikipedia:Christa_McAuliffe:4","source":"fever","split":"dev"}
+{"claim":"Ron Weasley is a President.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Reign Over Me was released in 2017.","label":"refuted","evidence":"wikipedia:Reign_Over_Me:4; wikipedia:Reign_Over_Me:0","source":"fever","split":"dev"}
+{"claim":"Colin Kaepernick is a poker player.","label":"refuted","evidence":"wikipedia:Colin_Kaepernick:0","source":"fever","split":"dev"}
+{"claim":"Sheryl Lee has yet to appear in a film as of 2016.","label":"refuted","evidence":"wikipedia:Sheryl_Lee:1; wikipedia:Sheryl_Lee:5; wikipedia:Sheryl_Lee:6; wikipedia:Sheryl_Lee:7; wikipedia:Café_Society_-LRB-film-RRB-:0","source":"fever","split":"dev"}
+{"claim":"Matteo Renzi is German.","label":"refuted","evidence":"wikipedia:Matteo_Renzi:0","source":"fever","split":"dev"}
+{"claim":"The Road to El Dorado stars Tim Allen.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"The highest point of the Hindu Kush is Everest.","label":"refuted","evidence":"wikipedia:Hindu_Kush:5","source":"fever","split":"dev"}
+{"claim":"Same Old Love is disassociated from Selena Gomez.","label":"refuted","evidence":"wikipedia:Same_Old_Love:0; wikipedia:Same_Old_Love:20","source":"fever","split":"dev"}
+{"claim":"The heart beats at a resting rate close to 22 beats per minute.","label":"refuted","evidence":"wikipedia:Heart:18","source":"fever","split":"dev"}
+{"claim":"Weekly Idol is hosted by Yoo Jae Suk.","label":"refuted","evidence":"wikipedia:Weekly_Idol:1","source":"fever","split":"dev"}
+{"claim":"Heavy Metal music was developed in the early 1970's.","label":"supported","evidence":"wikipedia:Heavy_metal_music:0","source":"fever","split":"dev"}
+{"claim":"Bermuda Triangle is also known by another name.","label":"supported","evidence":"wikipedia:Bermuda_Triangle:0","source":"fever","split":"dev"}
+{"claim":"Ashton Kutcher was directed by George Clooney.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Topman has clothing outlets in six Irish cities and towns.","label":"supported","evidence":"wikipedia:Topman:1","source":"fever","split":"dev"}
+{"claim":"Wales' population changed.","label":"supported","evidence":"wikipedia:Wales:16","source":"fever","split":"dev"}
+{"claim":"Tool has won three Oscars.","label":"refuted","evidence":"wikipedia:Tool_-LRB-band-RRB-:3","source":"fever","split":"dev"}
+{"claim":"Youtube is not a website.","label":"refuted","evidence":"wikipedia:YouTube:0","source":"fever","split":"dev"}
+{"claim":"Sidse Babett Knudsen graduated on November 22nd, 1968.","label":"refuted","evidence":"wikipedia:Sidse_Babett_Knudsen:0","source":"fever","split":"dev"}
+{"claim":"Stripes had Conrad Dunn featured in it.","label":"supported","evidence":"wikipedia:Stripes_-LRB-film-RRB-:1; wikipedia:Conrad_Dunn:1","source":"fever","split":"dev"}
+{"claim":"Psych is a required course in California.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Raees (film) stars a Buddhist.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"2015 was the year when the principal photography of The Disaster Aritst (film) started.","label":"supported","evidence":"wikipedia:The_Disaster_Artist_-LRB-film-RRB-:5","source":"fever","split":"dev"}
+{"claim":"In 1971 Asylum Records the American record label was founded by David Geffen and his partner Elliot Roberts.","label":"supported","evidence":"wikipedia:Asylum_Records:0","source":"fever","split":"dev"}
+{"claim":"Trollhunters was produced by an animation company.","label":"supported","evidence":"wikipedia:Trollhunters:0","source":"fever","split":"dev"}
+{"claim":"The Armenian Genocide was the killing of Armenians who were mostly Ottoman natives.","label":"supported","evidence":"wikipedia:Armenian_Genocide:0","source":"fever","split":"dev"}
+{"claim":"There is a British actor name Marcus Bentley.","label":"supported","evidence":"wikipedia:Marcus_Bentley:0","source":"fever","split":"dev"}
+{"claim":"The first inauguration of Bill Clinton made him the 50th President of the United States.","label":"refuted","evidence":"wikipedia:First_inauguration_of_Bill_Clinton:0","source":"fever","split":"dev"}
+{"claim":"The Beach's director was Danny Boyle.","label":"supported","evidence":"wikipedia:The_Beach_-LRB-film-RRB-:0","source":"fever","split":"dev"}
+{"claim":"John Dolmayan was born in northern Lebanon.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"The dress did not inspire hashtags.","label":"refuted","evidence":"wikipedia:The_dress:5","source":"fever","split":"dev"}
+{"claim":"Bruce Shand was born on September 22nd, 1917.","label":"refuted","evidence":"wikipedia:Bruce_Shand:0","source":"fever","split":"dev"}
+{"claim":"Advertising is an sound-based manner of marketing communication.","label":"supported","evidence":"wikipedia:Advertising:0","source":"fever","split":"dev"}
+{"claim":"Alexandra Daddario is Canadian.","label":"refuted","evidence":"wikipedia:Alexandra_Daddario:0","source":"fever","split":"dev"}
+{"claim":"The Others (2001 film) lost Best Film.","label":"refuted","evidence":"wikipedia:The_Others_-LRB-2001_film-RRB-:5","source":"fever","split":"dev"}
+{"claim":"Ralph Fults was born January 23 1911 and died in prison.","label":"not_enough_info","evidence":"","source":"fever","split":"dev"}
+{"claim":"Drake Bell put out an extended play in 2011.","label":"supported","evidence":"wikipedia:Drake_Bell:18; wikipedia:A_Reminder:0","source":"fever","split":"dev"}
