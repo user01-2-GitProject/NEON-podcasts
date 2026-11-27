@@ -187,10 +187,9 @@ export function parseLeadResult(text, personas = ["quickdraw", "scholar"]) {
     if (!flag || !reason) continue;
     dismissed.push({ flag, reason, flagger_agrees: item?.flagger_agrees === true });
   }
-  const tags = (Array.isArray(parsed.tags) ? parsed.tags : [])
+  const tags = [...new Set((Array.isArray(parsed.tags) ? parsed.tags : [])
     .map((t) => clean(t, 32).toLowerCase())
-    .filter(Boolean)
-    .slice(0, 8);
+    .filter(Boolean))].slice(0, 8);
   const accepted = Array.isArray(parsed.accepted_sources)
     ? parsed.accepted_sources.map((s) => clean(s, 500)).filter(Boolean)
     : [];
