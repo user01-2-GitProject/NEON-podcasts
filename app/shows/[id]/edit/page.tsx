@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { sql } from "@/lib/db";
 import { auth } from "@/auth";
@@ -25,9 +24,9 @@ export default async function EditShowPage({ params }: { params: Promise<{ id: s
         <h1>
           <span className="brand">NEON</span> Podcasts
         </h1>
-        <Link href={`/shows/${id}`} className="btn secondary">
+        <a href={`/shows/${id}`} className="btn secondary">
           ← Back to {rows[0].title}
-        </Link>
+        </a>
         <ThemeToggle />
       </header>
       <div className="container">

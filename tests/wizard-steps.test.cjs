@@ -145,7 +145,7 @@ test("reviewLines: shows filled answers only, with short previews", async () => 
   const byId = Object.fromEntries(lines.map(({ step, line }) => [step.id, line]));
   // title and about are filled; empty answers are skipped.
   assert.equal(byId.title, "Weekly Tech");
-  assert.ok(byId.about.startsWith("A weekly rundown"));
+  assert.equal(byId.about, "A weekly rundown of the biggest tech moves. Short and sharp.");
   // Scale renders as "N out of M".
   assert.match(byId.serious, /4 out of 5/);
   // Empty ids never appear.
@@ -163,6 +163,22 @@ test("length step is back on the Show tab and minutesFromLengthAnswer still pars
   const tabs = w.stepsByTab({ ...w.EMPTY_WIZARD, host_count: 1, format: "news" });
   const showIds = (tabs.find((t) => t.tab.id === "show")?.steps || []).map((s) => s.id);
   assert.ok(showIds.includes("length"));
+});
+
+test("wizard progress has one stable total and full review answers", async () => {
+  const w = await import("../lib/wizard-steps.ts");
+  const first = w.wizardProgress("title");
+  const later = w.wizardProgress("serious");
+  assert.equal(first.total, later.total);
+  assert.equal(first.current, 1);
+  assert.ok(later.current > first.current);
+  const lines = w.reviewLines({
+    ...w.EMPTY_WIZARD,
+    title: "Test",
+    format: "news",
+    answers: { about: "Never take a political side. Never share listener names." },
+  });
+  assert.equal(lines.find(({ step }) => step.id === "about")?.line, "Never take a political side. Never share listener names.");
 });
 
 test("who's going lands in the brief under its own heading", async () => {

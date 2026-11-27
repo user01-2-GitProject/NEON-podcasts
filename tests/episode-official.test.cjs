@@ -178,10 +178,10 @@ test("only official episodes show the badge, beside the title", () => {
   assert.equal(unchanged.includes("Markets today"), true);
 });
 
-test("owners get the same toggle wording as on shows, posted to the episode", () => {
+test("owners get episode-specific toggle wording, posted to the episode", () => {
   const html = render(true, true);
-  assert.match(html, /Remove NEON-official badge/);
-  assert.match(html, /Mark as NEON-official/);
+  assert.match(html, /Remove episode badge/);
+  assert.match(html, /Mark episode official/);
 
   const source = readFileSync("components/EpisodesPanel.tsx", "utf8");
   assert.match(source, /`\/api\/episodes\/\$\{episodeId\}`/);

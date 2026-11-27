@@ -321,7 +321,7 @@ export default function ShowSpecForm({ editShowId }: { editShowId?: string } = {
 
         <div id="schedule" style={{ scrollMarginTop: 16 }}>
         {editing ? <h3 style={{ marginTop: 20 }}>Schedule</h3> : null}
-        <div className="row">
+        <div className="row schedule-row">
           <div>
             <label htmlFor="spec-cadence">5. How often?</label>
             <select

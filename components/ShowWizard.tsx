@@ -34,6 +34,7 @@ import {
   readMulti,
   reviewLines,
   stepsByTab,
+  wizardProgress,
   writeMulti,
   wizardHost,
   type WizardDraft,
@@ -78,13 +79,7 @@ export default function ShowWizard() {
   const step = slot?.step;
   const tabInfo = slot?.tab;
 
-  // Position within the current tab, for the "Show · 5 of 20" header.
-  const posInTab = useMemo(() => {
-    if (!tabInfo) return { current: 0, total: 0 };
-    const sameTab = flat.filter((f) => f.tab.id === tabInfo.id);
-    const idx = sameTab.findIndex((f) => f.step === step);
-    return { current: idx + 1, total: sameTab.length };
-  }, [flat, tabInfo, step]);
+  const progress = step ? wizardProgress(step.id) : { current: 1, total: 1 };
 
   useEffect(() => {
     firstInput.current?.focus();
@@ -162,7 +157,7 @@ export default function ShowWizard() {
     const host1 = wizardHost(draft, 1);
     const previewHost = host1.name;
     const previewVoice = host1.voice;
-    const previewAnswer = draft.answers.preview ?? "";
+    const previewAnswer = draft.answers.preview ?? "yes";
     return (
       <div className="wizard">
         <div className="wizard-tab-header">
@@ -213,13 +208,16 @@ export default function ShowWizard() {
         </div>
         {error ? <p className="error">{error}</p> : null}
         <div className="wizard-nav">
+          <button type="button" className="btn secondary" disabled={busy} onClick={() => router.push("/")}>
+            Cancel
+          </button>
           <button type="button" className="btn secondary" disabled={busy} onClick={() => { setReviewing(false); setConfirming(false); }}>
             Back
           </button>
           {confirming ? (
             <>
               <button type="button" className="btn secondary" disabled={busy} onClick={() => setConfirming(false)}>
-                Cancel
+                Keep editing
               </button>
               <button type="button" className="btn primary" disabled={busy} onClick={() => void finish()}>
                 {busy ? "Creating…" : "Yes, create it"}
@@ -251,9 +249,9 @@ export default function ShowWizard() {
     <div className="wizard">
       <div className="wizard-tab-header">
         <span className="wizard-tab-label">{tabInfo.label}</span>
-        <span className="wizard-tab-pos muted">{posInTab.current} / {posInTab.total}</span>
+        <span className="wizard-tab-pos muted">Step {progress.current} of {progress.total}</span>
       </div>
-      <WizardProgress current={clampedIdx + 1} total={flat.length} />
+      <WizardProgress current={progress.current} total={progress.total} />
       <div className="wizard-card">
         <StepView step={step} value={valueFor(step)} onChange={(v) => setAnswer(step.id, v)} firstRef={firstInput} />
         {step.id === "title" || step.id === "format" ? (
