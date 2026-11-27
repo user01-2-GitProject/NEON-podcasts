@@ -134,6 +134,7 @@ const EpisodesPanel = compile("components/EpisodesPanel.tsx", {
   "next/link": { default: ({ children, ...props }) => React.createElement("a", props, children) },
   "next/navigation": { useRouter: () => ({ refresh() {} }) },
   "@/components/OfficialBadge": { default: badge },
+  "./generation-client": { readJson: async () => ({}) },
 }, true).default;
 
 const episode = {

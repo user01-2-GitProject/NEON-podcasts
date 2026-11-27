@@ -1,8 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import type { NarrationMode } from "@/lib/types";
+import { pollRun, readJson } from "@/components/generation-client";
 
 export default function GeneratePanel({
   showId,
@@ -14,10 +15,26 @@ export default function GeneratePanel({
   narrationMode: NarrationMode;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<NarrationMode>(narrationMode);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const [runId, setRunId] = useState<string | null>(searchParams.get("runId"));
+
+  useEffect(() => {
+    if (!runId) return;
+    let active = true;
+    setBusy(true);
+    pollRun(runId).then((run) => {
+      if (!active) return;
+      if (run.status === "failed") setError(run.error || "Generation didn't finish — try again");
+      else setDone("Episode generated");
+      setBusy(false);
+      router.refresh();
+    }).catch((e) => { if (active) { setError(e.message); setBusy(false); } });
+    return () => { active = false; };
+  }, [runId, router]);
 
   async function generate() {
     setBusy(true);
@@ -29,19 +46,8 @@ export default function GeneratePanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mode }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Generation failed");
-      if (data.voice_error) {
-        setError(`${data.episode?.title || "Episode"}: ${data.voice_error}`);
-        router.refresh();
-        return;
-      }
-      setDone(
-        mode === "external"
-          ? `${data.episode?.title || "Draft"} — script ready. Download it, narrate externally, then upload the audio below.`
-          : data.episode?.title || "Episode generated",
-      );
-      router.refresh();
+      const data = await readJson<{ runId: string }>(res, "start-generation");
+      setRunId(data.runId);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -82,7 +88,7 @@ export default function GeneratePanel({
       <div style={{ marginTop: 12 }}>
         <button onClick={generate} disabled={busy}>
           {busy
-            ? "Making it… (this can take a minute)"
+            ? "Making it… (~a few minutes)"
             : mode === "external"
               ? "Generate script"
               : "Generate now"}
