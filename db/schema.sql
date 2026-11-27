@@ -124,6 +124,7 @@ create table if not exists runs (
   attempt_count     integer not null default 0,
   next_attempt_at   timestamptz,
   started_at        timestamptz not null default now(),
+  heartbeat_at      timestamptz,
   finished_at       timestamptz
 );
 create index if not exists idx_runs_show_id on runs(show_id);

@@ -10,6 +10,7 @@
 import { joinMp3 } from "@/lib/mp3";
 import { pickOpenAiVoice, resolveTtsConfig, type TtsConfig, type TtsProvider } from "@/lib/settings";
 import { DEFAULT_EDGE_VOICE, voiceName, voiceSource } from "@/lib/voices";
+import { fetchWithTimeout } from "@/lib/request-timeout";
 
 const MAX_CHARS_PER_CHUNK = 3500;
 
@@ -19,7 +20,7 @@ export interface TtsResult {
   provider: string;
 }
 
-export async function synthesize(script: string, voiceOverride?: string | null): Promise<TtsResult> {
+export async function synthesize(script: string, voiceOverride?: string | null, onChunk?: () => Promise<void>): Promise<TtsResult> {
   const config = await resolveTtsConfig();
   const provider = providerFor(voiceOverride, config.provider);
   const voice = voiceOverride ? voiceName(voiceOverride) : voiceOverride;
@@ -36,6 +37,7 @@ export async function synthesize(script: string, voiceOverride?: string | null):
     } else {
       buffers.push(await openai(chunk, voice, config));
     }
+    await onChunk?.();
   }
 
   // Joined without each piece's length header, so players don't stop or skip
@@ -102,11 +104,11 @@ async function localOpenAICompatible(text: string, voiceOverride?: string | null
   const apiKey = process.env.LOCAL_TTS_API_KEY;
   if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
 
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     method: "POST",
     headers,
     body: JSON.stringify({ model, voice, input: text, response_format: "mp3" }),
-  });
+  }, "Local TTS request");
   if (!res.ok) {
     throw new Error(`Local TTS failed (${res.status}): ${await safeText(res)}`);
   }
@@ -121,14 +123,14 @@ async function openai(text: string, voiceOverride: string | null | undefined, co
   const model = config.openAiModel;
   const voice = pickOpenAiVoice(voiceOverride, config.openAiVoice);
 
-  const res = await fetch("https://api.openai.com/v1/audio/speech", {
+  const res = await fetchWithTimeout("https://api.openai.com/v1/audio/speech", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ model, voice, input: text, response_format: "mp3" }),
-  });
+  }, "OpenAI TTS request");
   if (!res.ok) {
     throw new Error(`OpenAI TTS failed (${res.status}): ${await safeText(res)}`);
   }
@@ -141,7 +143,7 @@ async function elevenLabs(text: string, voiceOverride?: string | null): Promise<
   const voiceId = voiceOverride || process.env.ELEVENLABS_VOICE_ID || "21m00Tcm4TlvDq8ikWAM";
   const modelId = process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2";
 
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
     {
       method: "POST",
@@ -152,6 +154,7 @@ async function elevenLabs(text: string, voiceOverride?: string | null): Promise<
       },
       body: JSON.stringify({ text, model_id: modelId }),
     },
+    "ElevenLabs TTS request",
   );
   if (!res.ok) {
     throw new Error(`ElevenLabs TTS failed (${res.status}): ${await safeText(res)}`);

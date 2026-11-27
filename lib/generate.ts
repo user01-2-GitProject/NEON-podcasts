@@ -51,6 +51,7 @@ export async function generateEpisode(
   modeOverride?: NarrationMode,
   scheduledRun?: ScheduledRunContext,
   target?: RegenerateTarget,
+  existingRunId?: string,
 ): Promise<{ episode: Episode; runId: string; voiceError?: string; scriptQa?: ScriptQa | null }> {
   const showRows = (await sql`select * from shows where id = ${showId}`) as Show[];
   const show = showRows[0];
@@ -86,7 +87,7 @@ export async function generateEpisode(
   };
 
   // A regeneration already has both rows; everything else makes its own run.
-  let runId = target?.runId ?? scheduledRun?.id;
+  let runId = target?.runId ?? scheduledRun?.id ?? existingRunId;
   if (!runId) {
     const runRows = (await sql`
       insert into runs (show_id, status, briefing_snapshot)

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { currentCaller } from "@/lib/current-user";
 import { sql } from "@/lib/db";
@@ -6,10 +6,10 @@ import { generateEpisode } from "@/lib/generate";
 import { friendlyGenerateError, sanitizeError } from "@/lib/errors";
 import { checkGeneration } from "@/lib/limits";
 import { captureServerException } from "@/sentry.server.config";
-import type { NarrationMode } from "@/lib/types";
+import { runGenerationInBackground } from "@/lib/run-generation";
 
 export const runtime = "nodejs";
-// Generation calls Claude + TTS and can take a while.
+// Script generation runs in the background; TTS uses the longer audio route.
 export const maxDuration = 300;
 
 type Params = { params: Promise<{ id: string }> };
@@ -25,19 +25,14 @@ export async function POST(req: Request, { params }: Params) {
   });
   if (!decision.allowed) return NextResponse.json({ error: decision.reason }, { status: 429 });
   try {
-    // Optional per-run override. Omit to use the show's narration_mode.
-    const body = await req.json().catch(() => ({}));
-    const raw = body?.mode ?? new URL(req.url).searchParams.get("mode");
-    const mode: NarrationMode | undefined =
-      raw === "external" ? "external" : raw === "auto" ? "auto" : undefined;
-
-    const { episode, runId, voiceError, scriptQa } = await generateEpisode(id, mode);
-    // QA notes are also stored on runs.script_qa (jsonb); echoing them here
-    // lets the panel show the count as soon as generation finishes.
-    return NextResponse.json(
-      { episode, runId, voice_error: voiceError ?? null, script_qa: scriptQa ?? null },
-      { status: 201 },
-    );
+    const runs = (await sql`
+      insert into runs (show_id, status) values (${id}, 'running') returning id
+    `) as { id: string }[];
+    const runId = runs[0].id;
+    // Save the script first. For auto narration, the client then POSTs
+    // { runId } to /api/episodes/[episodeId]/audio after this run exposes its draft.
+    after(() => runGenerationInBackground(runId, () => generateEpisode(id, "external", undefined, undefined, runId)));
+    return NextResponse.json({ runId }, { status: 202 });
   } catch (err) {
     sanitizeError(err, "generateEpisode"); // logs the full details
     captureServerException(err, "generateEpisode"); // reports to Sentry in prod only

@@ -3,6 +3,7 @@ import { sql } from "@/lib/db";
 import { generateEpisode, MAX_SCHEDULED_ATTEMPTS } from "@/lib/generate";
 import { decideScheduledBatch, skipScheduledRun } from "@/lib/limits";
 import { SCHEDULED_CADENCES, firstSlot } from "@/lib/cadence";
+import { reapStuckRuns } from "@/lib/reap-runs";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -20,6 +21,8 @@ export async function GET(req: Request) {
   if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Please sign in first." }, { status: 401 });
   }
+
+  await reapStuckRuns();
 
   // Vercel can terminate work at maxDuration. Release abandoned claims after a safe buffer.
   await sql`
@@ -96,6 +99,7 @@ export async function GET(req: Request) {
       error = null,
       next_attempt_at = null,
       started_at = now(),
+      heartbeat_at = now(),
       finished_at = null
     from candidates
     where runs.id = candidates.id

@@ -20,6 +20,7 @@ let llm = { provider: "openrouter", openRouterApiKey: "or-key", openRouterModel:
 const research = load("lib/research.ts", {
   "@/lib/settings": { resolveLlmConfig: async () => llm },
   "@/lib/claude": { DEFAULT_OPENROUTER_MODEL: "default/model" },
+  "@/lib/request-timeout": { fetchWithTimeout: (url, init, _label, fetchImpl) => fetchImpl(url, init) },
 });
 
 const GUIDE = `## Voice & style

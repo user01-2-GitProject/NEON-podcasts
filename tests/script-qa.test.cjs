@@ -147,7 +147,7 @@ test("no OpenRouter key still produces local notes, with no fetch", async () => 
   assert.equal(qa.notes[0].kind, "swear");
 });
 
-test("generation writes QA notes, the API echoes them, and the owner sees a pill", () => {
+test("generation writes QA notes, returns a run id, and the owner sees a pill", () => {
   const generate = read("lib/generate.ts");
   assert.match(generate, /import \{ runScriptQa, type ScriptQa \}/);
   assert.match(generate, /const scriptQa = await runScriptQa\(\{ script: result\.script, styleGuide: show\.style_guide \}\)/);
@@ -157,7 +157,12 @@ test("generation writes QA notes, the API echoes them, and the owner sees a pill
   assert.match(generate, /needsRewrite\(issues\)/);
 
   const route = read("app/api/shows/[id]/generate/route.ts");
-  assert.match(route, /script_qa: scriptQa \?\? null/);
+  assert.match(route, /after\(\(\) => runGenerationInBackground/);
+  assert.match(route, /NextResponse\.json\(\{ runId \}, \{ status: 202 \}\)/);
+  const runRoute = read("app/api/runs/[id]/route.ts");
+  for (const field of ["status", "model", "error", "episodeId", "startedAt", "finishedAt"]) {
+    assert.match(runRoute, new RegExp(`${field}:`));
+  }
 
   const panel = read("components/EpisodesPanel.tsx");
   assert.match(panel, /className="tag qa"/);

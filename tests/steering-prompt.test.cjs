@@ -9,6 +9,7 @@ const compiled = ts.transpileModule(readFileSync("lib/claude.ts", "utf8"), {
 const exportsObj = {};
 new Function("require", "exports", compiled)((name) => {
   if (name === "@/lib/settings") return { resolveLlmConfig: async () => ({ provider: "anthropic" }) };
+  if (name === "@/lib/request-timeout") return { withRequestTimeout: (_label, request) => request(new AbortController().signal) };
   if (name === "@anthropic-ai/sdk") return {};
   throw new Error(`unexpected require: ${name}`);
 }, exportsObj);

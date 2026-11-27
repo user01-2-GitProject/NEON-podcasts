@@ -18,7 +18,9 @@ function route() {
     if (name === "@/lib/db") return { sql };
     if (name === "@/lib/storage") return { getStorage: () => storage };
     if (name === "@/lib/errors") return { sanitizeError: String };
-    if (name === "next/server") return { NextResponse: { json: Response.json } };
+    if (name === "next/server") return { NextResponse: { json: Response.json }, after: () => {} };
+    if (name === "@/lib/generate-episode-audio") return { generateEpisodeAudio: async () => {} };
+    if (name === "@/lib/run-generation") return { runGenerationInBackground: async () => {} };
     throw new Error(`Unexpected import: ${name}`);
   }, exports);
   return exports.GET;
