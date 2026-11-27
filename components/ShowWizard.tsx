@@ -277,12 +277,11 @@ export default function ShowWizard() {
             const slot = step.id === "host1_preset" ? 1 : 2;
             const host = wizardHost(draft, slot);
             const voiceKey = slot === 1 ? "host1_voice" : "host2_voice";
-            const picked = hostPreset(valueFor(step));
             return (
               <div style={{ marginTop: 16 }}>
                 <ShowPreview
                   draft={draft}
-                  hostName={picked?.name || host.name}
+                  hostName={host.name || "Host"}
                   voice={draft.answers[voiceKey] || host.voice}
                   onVoiceChange={(v) => setAnswer(voiceKey, v)}
                 />
@@ -465,7 +464,7 @@ function StepView({ step, value, onChange, firstRef }: {
               aria-pressed={value === h.id}
               onClick={() => onChange(h.id)}
             >
-              <span className="wizard-choice-title">{h.name}</span>
+              <span className="wizard-choice-title">{h.label}</span>
               <span className="muted" style={{ fontSize: 13 }}>{h.blurb}</span>
             </button>
           ))}

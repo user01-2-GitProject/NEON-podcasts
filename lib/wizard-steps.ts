@@ -366,9 +366,8 @@ export function hostPreset(id: string | undefined): HostPreset | undefined {
   return id ? HOST_PRESETS.find((h) => h.id === id) : undefined;
 }
 
-// The host a wizard draft ends up with, for slot 1 or 2. Order: the voice the
-// preview screen picked (answers.hostN_voice), then the one-tap host, then the
-// format's default host. A skipped host step still gets a free voice.
+// The host a wizard draft ends up with, for slot 1 or 2. Names are always user
+// input; presets only provide a starting voice/persona.
 export function wizardHost(draft: WizardDraft, slot: 1 | 2): { name: string; voice: string } {
   const a = draft.answers;
   const picked = a[`host${slot}_preset`];
@@ -491,7 +490,9 @@ function formatAnswer(step: WizardStep, v: string): string {
   if (step.type === "yesno") return `- ${step.question} ${val === "yes" ? "Yes" : "No"}`;
   if (step.type === "scale") return `- ${step.question} ${val}/${step.max ?? 5}${step.maxLabel ? ` (${step.minLabel} to ${step.maxLabel})` : ""}`;
   if (step.type === "multi") return `- ${step.question} ${val}`;
-  if (step.type === "host") return hostPreset(val)?.persona ?? "";
+  if (step.type === "host") {
+    return hostPreset(val)?.persona ?? "";
+  }
   // Most text answers drop the question and read as a short paragraph.
   if (step.type === "textarea") return val;
   return `- ${step.question} ${val}`;
