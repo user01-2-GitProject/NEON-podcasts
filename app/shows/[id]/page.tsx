@@ -5,8 +5,9 @@ import type { Show, Briefing, Episode, Run, Pronunciation } from "@/lib/types";
 import BriefingsPanel from "@/components/BriefingsPanel";
 import GeneratePanel from "@/components/GeneratePanel";
 import SteeringPanel from "@/components/SteeringPanel";
-import EpisodesPanel from "@/components/EpisodesPanel";
+import EpisodesPanel, { type FactCheckRunView } from "@/components/EpisodesPanel";
 import ShowHero from "@/components/ShowHero";
+import { buildCouncilPrompt } from "@/lib/fact-check";
 import ShowSpecPanel from "@/components/ShowSpecPanel";
 import { auth } from "@/auth";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -48,13 +49,44 @@ export default async function ShowPage({
     select * from runs where show_id = ${id} order by started_at desc limit 10
   `) as Run[];
 
-  // QA notes belong to the episode card, which outlives the run-history limit.
-  const qaRuns = (await sql`
-    select episode_id, script_qa from runs
-    where show_id = ${id} and episode_id is not null and script_qa is not null
+  // QA and fact-check notes belong to the episode card, which outlives the
+  // run-history limit. The briefing snapshot also feeds the copyable prompts.
+  const qaRunRows = (await sql`
+    select episode_id, script_qa, fact_check, briefing_snapshot from runs
+    where show_id = ${id} and episode_id is not null
+      and (script_qa is not null or fact_check is not null or briefing_snapshot is not null)
     order by started_at desc
-  `) as Pick<Run, "episode_id" | "script_qa">[];
+  `) as FactCheckRunView[];
 
+  // Build the council prompts here, on the server, so the client only sees
+  // finished strings. An episode needs a run with a briefing to offer them.
+  const councilPrompts: Record<string, { quickdraw: string; scholar: string }> = {};
+  if (owner) {
+    for (const run of qaRunRows) {
+      if (!run.episode_id || councilPrompts[run.episode_id]) continue;
+      const episode = episodes.find((item) => item.id === run.episode_id);
+      const briefing = run.briefing_snapshot;
+      if (!episode?.script?.trim() || !briefing?.trim()) continue;
+      const promptFor = (persona: "quickdraw" | "scholar") => {
+        const { system, user } = buildCouncilPrompt(persona, episode.script, briefing);
+        return `${system}\n\n${user}`;
+      };
+      councilPrompts[run.episode_id] = {
+        quickdraw: promptFor("quickdraw"),
+        scholar: promptFor("scholar"),
+      };
+    }
+  }
+
+  // Only the finished prompts cross to the client; briefing snapshots stay on
+  // the server. The card needs the QA and fact-check columns, not the source.
+  const qaRuns: FactCheckRunView[] = qaRunRows.map(({ episode_id, script_qa, fact_check }) => ({
+    episode_id,
+    script_qa,
+    fact_check,
+  }));
+
+  const councilEnabled = !!show.fact_check_council;
   const activeBriefings = briefings.filter((b) => b.is_active).length;
 
   return (
@@ -91,6 +123,8 @@ export default async function ShowPage({
             initialEpisodes={episodes}
             runs={runs}
             qaRuns={qaRuns}
+            councilPrompts={councilPrompts}
+            councilEnabled={councilEnabled}
             owner={owner}
             rssToken={show.rss_token}
           />
