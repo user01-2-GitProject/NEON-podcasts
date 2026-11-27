@@ -208,3 +208,23 @@ test("runFactCheck returns empty when every model fails", async () => {
   assert.equal(out.model, null);
   assert.equal(calls.length, 4);
 });
+
+test("runFactCheck passes a timeout signal and treats a timed-out model as failed", async () => {
+  const { runFactCheck } = await load();
+  const signals = [];
+  const fetchImpl = async (url, init) => {
+    signals.push(init.signal);
+    const err = new Error("timed out");
+    err.name = "TimeoutError";
+    throw err;
+  };
+  const out = await runFactCheck({
+    script: "s",
+    briefingSnapshot: "briefing",
+    config: { openRouterApiKey: "k" },
+    fetchImpl,
+  });
+  assert.equal(out.model, null);
+  assert.deepEqual(out.notes, []);
+  assert.ok(signals.length >= 3 && signals.every((s) => s instanceof AbortSignal));
+});

@@ -15,16 +15,21 @@ type Params = { params: Promise<{ id: string }> };
 // example when the voice step failed during generation). With {"redo": true}
 // it replaces existing audio, e.g. after the show's voice was changed.
 // Owner-only, like every non-GET /api route (middleware). Publishes, as auto
-// narration does.
+// narration does, unless the show uses the fact-check council and it has not
+// passed this episode (the owner can still publish by hand).
 export async function POST(req: Request, { params }: Params) {
   const { id } = await params;
   const body = (await req.json().catch(() => ({}))) as { redo?: unknown };
   const redo = body?.redo === true;
   const rows = (await sql`
-    select e.id, e.show_id, e.script, e.audio_url, s.voice_id
+    select e.id, e.show_id, e.script, e.audio_url, s.voice_id,
+      (s.fact_check_council and coalesce((
+        select r.fact_check->'council'->>'verdict' from runs r
+        where r.episode_id = e.id order by r.started_at desc limit 1
+      ), '') <> 'pass') as hold_for_council
     from episodes e join shows s on s.id = e.show_id
     where e.id = ${id}
-  `) as { id: string; show_id: string; script: string | null; audio_url: string | null; voice_id: string | null }[];
+  `) as { id: string; show_id: string; script: string | null; audio_url: string | null; voice_id: string | null; hold_for_council: boolean }[];
   const ep = rows[0];
   if (!ep) return NextResponse.json({ error: "We couldn't find that episode." }, { status: 404 });
   if (ep.audio_url && !redo) return NextResponse.json({ error: "This episode already has audio" }, { status: 409 });
@@ -47,7 +52,9 @@ export async function POST(req: Request, { params }: Params) {
   const updated = (await sql`
     update episodes set
       audio_url = ${storage.url(id)}, byte_size = ${tts.audio.length},
-      audio_content_type = ${tts.contentType}, status = 'published', published_at = now()
+      audio_content_type = ${tts.contentType},
+      status = case when ${ep.hold_for_council} then status else 'published' end,
+      published_at = case when ${ep.hold_for_council} then published_at else now() end
     where id = ${id} and (${redo} or audio_url is null)
     returning *
   `) as unknown[];

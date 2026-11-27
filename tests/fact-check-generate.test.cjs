@@ -9,7 +9,7 @@ const gen = read("lib/generate.ts");
 test("generate imports and calls runFactCheck after runScriptQa", () => {
   assert.match(gen, /import \{ runFactCheck \} from "@\/lib\/fact-check"/);
   const qa = gen.indexOf("await runScriptQa(");
-  const fc = gen.indexOf("await runFactCheck({ script: result.script, briefingSnapshot })");
+  const fc = gen.indexOf("await runFactCheck({ script: result.script, briefingSnapshot: storedSnapshot })");
   assert.ok(qa > 0 && fc > qa);
 });
 
@@ -34,4 +34,17 @@ test("migration and schema carry both columns", () => {
   const schema = read("db/schema.sql");
   assert.match(schema, /fact_check\s+jsonb/);
   assert.match(schema, /fact_check_council boolean not null default false/);
+});
+
+test("fact-check sees exactly the stored briefing_snapshot", () => {
+  assert.match(gen, /storedSnapshot = `\$\{briefingSnapshot\}/);
+  assert.match(gen, /update runs set briefing_snapshot = \$\{storedSnapshot\}/);
+});
+
+test("narrate route does not publish council-held episodes", () => {
+  const route = read("app/api/episodes/[id]/narrate/route.ts");
+  assert.match(route, /s\.fact_check_council/);
+  assert.match(route, /fact_check->'council'->>'verdict'/);
+  assert.match(route, /status = case when \$\{ep\.hold_for_council\} then status else 'published' end/);
+  assert.doesNotMatch(route, /status = 'published', published_at = now\(\)/);
 });

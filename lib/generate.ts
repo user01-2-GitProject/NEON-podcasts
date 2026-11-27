@@ -97,6 +97,8 @@ export async function generateEpisode(
     runId = runRows[0].id;
   }
 
+  // What the run stores as its briefing_snapshot; the fact-check must see exactly this.
+  let storedSnapshot = briefingSnapshot;
   let pendingAudioEpisodeId: string | undefined;
   try {
     if (scheduledRun) {
@@ -124,8 +126,9 @@ export async function generateEpisode(
       });
       const looked = researchBriefing(research, today);
       docs = [...selection.docs, looked];
+      storedSnapshot = `${briefingSnapshot}\n\n### ${looked.filename}\n${looked.content_md}`;
       await sql`
-        update runs set briefing_snapshot = ${`${briefingSnapshot}\n\n### ${looked.filename}\n${looked.content_md}`}
+        update runs set briefing_snapshot = ${storedSnapshot}
         where id = ${runId} and show_id = ${showId}
       `;
     }
@@ -175,7 +178,7 @@ export async function generateEpisode(
     // Fact-check layer 1: free models compare the script to the briefing
     // snapshot. Notes are stored for the owner; they never block publishing
     // by themselves (the council gate below does, for opted-in shows).
-    const factCheck = await runFactCheck({ script: result.script, briefingSnapshot });
+    const factCheck = await runFactCheck({ script: result.script, briefingSnapshot: storedSnapshot });
     const fcJson = JSON.stringify(factCheck);
 
     // Shows that opted in to the fact-check council stay drafts until the
