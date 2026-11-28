@@ -1,20 +1,30 @@
 import { sql } from "@/lib/db";
 import { joinMp3 } from "@/lib/mp3";
-import { synthesize, chunkText } from "@/lib/tts";
+import { synthesize, chunkText, speakerRuns, type TtsHost } from "@/lib/tts";
 import { getStorage } from "@/lib/storage";
 
 export async function generateEpisodeAudio(episodeId: string, runId: string): Promise<{ complete: boolean }> {
   try {
     const rows = (await sql`
-      select e.script, s.voice_id
+      select e.script, s.voice_id, s.hosts
       from episodes e join shows s on s.id = e.show_id
       join runs r on r.show_id = e.show_id and r.episode_id = e.id
       where e.id = ${episodeId} and r.id = ${runId} and r.status = 'running'
-    `) as { script: string; voice_id: string | null }[];
+    `) as { script: string; voice_id: string | null; hosts: TtsHost[] | null }[];
     const episode = rows[0];
     if (!episode) throw new Error("The draft or generation run could not be found.");
 
-    const chunks = chunkText(episode.script, 2500);
+    // Multi-host shows read each speaker's lines in that host's own voice, so
+    // the per-POST unit must be a speaker run (not a raw text slice) or both
+    // hosts collapse into the show's single voice. Single-host shows keep the
+    // simple character chunking. synthesize() still sub-chunks each unit for
+    // the provider's own length limit.
+    const hosts = episode.hosts ?? [];
+    const units: { text: string; voice: string | null }[] =
+      hosts.length > 1
+        ? speakerRuns(episode.script, hosts)
+        : chunkText(episode.script, 2500).map((text) => ({ text, voice: null }));
+    const chunks = units;
     const existing = (await sql`
       select chunk_index, data, content_type, provider from episode_audio_chunks
       where run_id = ${runId} and episode_id = ${episodeId} order by chunk_index
@@ -23,7 +33,8 @@ export async function generateEpisodeAudio(episodeId: string, runId: string): Pr
     const chunkIndex = chunks.findIndex((_, index) => !savedIndices.has(index));
 
     if (chunkIndex !== -1) {
-      const tts = await synthesize(chunks[chunkIndex], episode.voice_id);
+      const unit = chunks[chunkIndex];
+      const tts = await synthesize(unit.text, unit.voice || episode.voice_id);
       await sql`
         insert into episode_audio_chunks (run_id, episode_id, chunk_index, content_type, provider, data)
         values (${runId}, ${episodeId}, ${chunkIndex}, ${tts.contentType}, ${tts.provider}, ${tts.audio})
