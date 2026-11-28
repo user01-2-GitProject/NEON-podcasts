@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { NarrationMode } from "@/lib/types";
-import { pollRun, readJson } from "@/components/generation-client";
+import { makeEpisodeAudio, pollRun, readJson } from "@/components/generation-client";
 
 export default function GeneratePanel({
   showId,
@@ -20,21 +20,36 @@ export default function GeneratePanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
   const [runId, setRunId] = useState<string | null>(searchParams.get("runId"));
+  const [runMode, setRunMode] = useState<NarrationMode>(narrationMode);
 
   useEffect(() => {
     if (!runId) return;
     let active = true;
     setBusy(true);
-    pollRun(runId).then((run) => {
-      if (!active) return;
-      if (run.status === "failed") setError(run.error || "Generation didn't finish — try again");
-      else setDone("Episode generated");
-      setBusy(false);
-      router.refresh();
-    }).catch((e) => { if (active) { setError(e.message); setBusy(false); } });
+    (async () => {
+      try {
+        setProgress("Writing script…");
+        const run = await pollRun(runId);
+        if (!active) return;
+        if (run.status === "failed") throw new Error(run.error || "Generation didn't finish — try again");
+        if (runMode === "auto") {
+          if (!run.episodeId) throw new Error("Episode was created without an episode id. Please try again.");
+          setProgress("Making audio…");
+          await makeEpisodeAudio(run.episodeId, runId);
+        }
+        if (!active) return;
+        setDone(runMode === "auto" ? "Episode generated with audio" : "Episode script generated");
+        router.refresh();
+      } catch (e) {
+        if (active) setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        if (active) { setBusy(false); setProgress(null); }
+      }
+    })();
     return () => { active = false; };
-  }, [runId, router]);
+  }, [runId, router, runMode]);
 
   async function generate() {
     setBusy(true);
@@ -47,6 +62,7 @@ export default function GeneratePanel({
         body: JSON.stringify({ mode }),
       });
       const data = await readJson<{ runId: string }>(res, "start-generation");
+      setRunMode(mode);
       setRunId(data.runId);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -88,7 +104,7 @@ export default function GeneratePanel({
       <div style={{ marginTop: 12 }}>
         <button onClick={generate} disabled={busy}>
           {busy
-            ? "Making it… (~a few minutes)"
+            ? progress || "Making it… (~a few minutes)"
             : mode === "external"
               ? "Generate script"
               : "Generate now"}
